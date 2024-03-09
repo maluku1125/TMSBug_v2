@@ -1,0 +1,2764 @@
+{
+    "巴洛古": {
+        "簡單":{
+            "EntryLevel" : 65,
+            "Timelimit": 20,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "每日7次",
+            "Defense" : "25%",
+            "UseArcorAUT" : "none",
+            "Arcane" : 0,
+            "Authentic" : 0,
+            "1stStage": {
+                "65 巴洛古": "478萬7520",
+                "44 小巴洛古": "5萬",
+                "44 地獄巴洛古": "5萬",
+                "48 迷你巴洛古": "2800"
+            },
+            "MainDrop" : [
+                "巴洛古系列武器",
+                "貝恩系列武器",
+                "巴洛古的毛鞋",
+                "巴洛古的皮鞋",
+                "巴洛古尖角椅子"
+            ],
+            "SubDrop" : [
+                "巴洛古的皮",
+                " ",
+                " ",
+                "巴洛古鞋子卷5%",
+                " ",
+                " ",
+                "巴洛古騎乘卡",
+                " ",
+                " ",
+                "混沌卷軸60%"
+            ],     
+            "CubeDrop" : "可疑附加方塊:0",
+            "GlowingSoulCrystal" :  0
+        }
+    },
+    "殘暴炎魔": {
+        "簡單":{
+            "EntryLevel" : 50,
+            "Timelimit": "20",
+            "PotionCoolDown" : "15",
+            "DeathCount" : 50,
+            "SpecialKill" : false,
+            "CompleteCount" : "簡單或普通 每天1次",
+            "Defense" : "30%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "55 弱化的殘暴炎魔" : "220萬",
+                "50 殘暴炎魔的手臂" : "20.4萬"      
+            },
+            "2ndStage": {
+                   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [                
+                "凝聚力量的結晶石",
+                "水中信紙眼飾",
+                "殘暴炎魔的頭盔",
+                "殘暴炎魔的樹枝"
+            ],
+            "SubDrop" :  [                 
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  1158000
+        },
+        "普通":{
+            "EntryLevel" : 90,
+            "Timelimit": "30",
+            "PotionCoolDown" : "10",
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "簡單或普通 每天1次",
+            "Defense" : "40%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "110 殘暴炎魔" : "700萬",
+                "110 殘暴炎魔的手臂" : "70萬"      
+            },
+            "2ndStage": {
+                   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [            
+                "殘暴炎魔系列武器",
+                "凝聚力量的結晶石",
+                "水中信紙眼飾",
+                "殘暴炎魔的頭盔",
+                "殘暴炎魔的樹枝"
+            ],
+            "SubDrop" :  [ 
+                "紅石",
+                "綠石"              
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  354800
+        },
+        "混沌":{
+        "EntryLevel" : 90,
+        "Timelimit": "30",
+        "PotionCoolDown" : "10",
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "100%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "180 混沌殘暴炎魔" : "840億",
+            "180 殘暴炎魔的手臂" : "105億"      
+        },
+        "2ndStage": {
+               
+        },
+        "3rdStage": {
+
+        },
+        "MainDrop" : [            
+            "殘暴炎魔系列武器",
+            "憤怒的殘暴炎魔的頭盔",
+            "憤怒的殘暴炎魔的腰帶",
+            "憤怒的殘暴炎魔的披風",
+            "凝聚力量的結晶石",
+            "水中信紙眼飾",
+            "混沌殘暴炎魔的頭盔",
+            "殘暴炎魔的樹枝",
+            "炎魔之手桌子"
+        ],
+        "SubDrop" :  [ 
+            "紅石",
+            "綠石"              
+        ],    
+        "CubeDrop" : "可疑的方塊:12",
+        "GlowingSoulCrystal" :  7059750
+        }
+    },
+    "梅格耐斯": {
+        "簡單":{
+            "EntryLevel" : 115,
+            "Timelimit": "30",
+            "PotionCoolDown" : "5",
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "簡單或普通 每天1次",
+            "Defense" : "50%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "110 梅格耐斯" : "4億"     
+            },
+            "MainDrop" : [                
+                "水晶溫杜斯胸章",
+                "皇家暗黑合金護肩",
+                "凱撒",
+                "超新星系列裝備",
+                "赫力席母精銳系列腰帶"
+            ],
+            "SubDrop" :  [   
+                "紅祈禱",
+                "綠祈禱"                 
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  418300
+        },
+        "普通":{
+            "EntryLevel" : 155,
+            "Timelimit": "30",
+            "PotionCoolDown" : "5",
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "簡單或普通 每天1次",
+            "Defense" : "50%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "130 梅格耐斯" : "60億"    
+            },
+            "MainDrop" : [            
+                "水晶溫杜斯胸章",
+                "皇家暗黑合金護肩",
+                "凱撒",
+                "超新星系列裝備",
+                "赫力席母精銳系列腰帶"
+            ],
+            "SubDrop" :  [ 
+                "紅祈禱",
+                "綠祈禱"              
+            ],    
+            "CubeDrop" : "可疑的方塊:3",
+            "GlowingSoulCrystal" :  1501700
+        },
+        "困難":{
+        "EntryLevel" : 175,
+        "Timelimit": "30",
+        "PotionCoolDown" : "5",
+        "DeathCount" : 15,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "120%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "190 梅格耐斯" : "1200億"     
+        },
+        "MainDrop" : [        
+            "被詛咒的凱撒利恩",
+            "塔蘭特系列披風",
+            "水晶溫杜斯胸章",
+            "皇家暗黑合金護肩",
+            "凱撒",
+            "超新星系列裝備",
+            "赫力席母精銳系列腰帶",
+            "梅格耐斯尖角椅子"
+        ],
+        "SubDrop" :  [ 
+            "紅祈禱",
+            "綠祈禱"              
+        ],    
+        "CubeDrop" : "可疑的方塊:14",
+        "GlowingSoulCrystal" :  8819007
+        }
+    },
+    "希拉": {
+        "普通":{
+            "EntryLevel" : 120,
+            "Timelimit": "30",
+            "PotionCoolDown" : "0",
+            "DeathCount" : "無限",
+            "SpecialKill" : false,
+            "CompleteCount" : "每天1次",
+            "Defense" : "50%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "110 希拉" : "5億",  
+                "115 致命祭壇" : "800萬",
+                "110 精銳骷髏騎士" : "315萬"
+            },
+            "MainDrop" : [          
+                "死靈系列裝備",
+                "永生之石",
+                "[寵物箱子]黑暗之魂"
+            ],
+            "SubDrop" :  [ 
+                "紅祈禱",
+                "綠祈禱"              
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  463500
+        },
+        "困難":{
+        "EntryLevel" : 170,
+        "Timelimit": "30",
+        "PotionCoolDown" : "0",
+        "DeathCount" : 15,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "100%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "190 白髮的希拉" : "168億",  
+            "188 阿斯旺的幽靈" : "3.3億",
+            "188 致命祭壇" : "1億",
+            "188 血牙": "2760萬",
+            "185 骸骨槍騎兵" : "6900萬"    
+        },
+        "MainDrop" : [        
+            "地獄火耳環",
+            "死靈系列裝備",
+            "永生之石",
+            "[寵物箱子]黑暗之魂",
+            "希拉方尖碑造型立燈"
+        ],
+        "SubDrop" :  [ 
+            "紅祈禱",
+            "綠祈禱"              
+        ],    
+        "CubeDrop" : "可疑的方塊:9",
+        "GlowingSoulCrystal" :  6677700
+        }
+    },
+    "卡翁": {
+        "普通":{
+            "EntryLevel" : 180,
+            "Timelimit": "30",
+            "PotionCoolDown" : "0",
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "每天1次",
+            "Defense" : "60%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "180 卡翁" : "16.8億",  
+                "179 雨刷" : "666萬6400"
+            },
+            "MainDrop" : [          
+                "卡翁零件",
+                "卡翁吸塵器"
+            ],
+            "SubDrop" :  [ 
+                             
+            ],    
+            "CubeDrop" : "可疑的方塊:2",
+            "GlowingSoulCrystal" :  724200
+        }
+    },
+    "拉圖斯": {
+        "簡單":{
+            "EntryLevel" : 115,
+            "Timelimit": "30",
+            "PotionCoolDown" : "0",
+            "DeathCount" : 50,
+            "SpecialKill" : false,
+            "CompleteCount" : "簡單或普通 每天1次",
+            "Defense" : "50%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "125 拉圖斯的時鐘" : "3億"     
+            },
+            "2ndStage": {
+                "125 拉圖斯" : "1億"     
+            },
+            "MainDrop" : [
+            ],
+            "SubDrop" :  [            
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  396500
+        },
+        "普通":{
+            "EntryLevel" : 155,
+            "Timelimit": "30",
+            "PotionCoolDown" : "0",
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "簡單或普通 每天1次",
+            "Defense" : "90%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "155 拉圖斯的時鐘" : "124.5億"     
+            },
+            "2ndStage": {
+                "155 拉圖斯" : "41.5億"     
+            },
+            "MainDrop" : [            
+                "拉圖斯的時間椅子"
+            ],
+            "SubDrop" :  [          
+            ],    
+            "CubeDrop" : "可疑的方塊:3",
+            "GlowingSoulCrystal" :  1543700
+        },
+        "困難":{
+        "EntryLevel" : 190,
+        "Timelimit": "30",
+        "PotionCoolDown" : "10",
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "250%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "190 拉圖斯的時鐘" : "3780億"     
+        },
+        "2ndStage": {
+            "190 拉圖斯" : "1260億"     
+        },
+        "MainDrop" : [        
+            "拉圖斯標誌",
+            "拉圖斯的時間椅子",
+            "拉圖斯壁鐘"
+        ],
+        "SubDrop" :  [         
+        ],    
+        "CubeDrop" : "可疑的方塊:2",
+        "GlowingSoulCrystal" :  20088150
+        }
+    },
+    "森蘭丸": {
+        "普通":{
+            "EntryLevel" : 120,
+            "Timelimit": "60",
+            "PotionCoolDown" : "0",
+            "DeathCount" : "無限",
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "55%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "129 森蘭丸" : "10億"
+            },
+            "MainDrop" : [          
+                "聚力量的結晶石",
+                "水中信紙眼飾"
+            ],
+            "SubDrop" :  [            
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  375500
+        },
+        "困難":{
+        "EntryLevel" : 180,
+        "Timelimit": "60",
+        "PotionCoolDown" : "0",
+        "DeathCount" : "無限",
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "55%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "195 森蘭丸" : "105億"
+        },
+        "MainDrop" : [        
+            "戰國系列裝備"
+        ],
+        "SubDrop" :  [            
+        ],    
+        "CubeDrop" : "可疑的方塊:3",
+        "GlowingSoulCrystal" :  1543700
+        }
+    },
+    "比艾樂": {
+        "普通":{
+            "EntryLevel" : 125,
+            "Timelimit": "15",
+            "PotionCoolDown" : "0",
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "每天1次",
+            "Defense" : "50%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "120 比艾樂" : "3.15億"
+            },
+            "MainDrop" : [          
+                "比艾樂帽",
+                "開心的比艾樂"
+            ],
+            "SubDrop" :  [       
+                "紅祈禱",
+                "綠祈禱"     
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  560800
+        },
+        "混沌":{
+        "EntryLevel" : 180,
+        "Timelimit": "20",
+        "PotionCoolDown" : "0",
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "80%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "190 混沌比艾樂" : "800億"
+        },
+        "MainDrop" : [     
+            "嘲弄的碎片",   
+            "混沌比艾樂帽",
+            "比艾樂帽",
+            "開心的比艾樂",
+            "比艾樂傘架"
+        ],
+        "SubDrop" :  [       
+            "紅祈禱",
+            "綠祈禱"     
+        ], 
+        "CubeDrop" : "可疑的方塊:13",
+        "GlowingSoulCrystal" :  7313306
+        }
+    },
+    "斑斑": {
+        "普通":{
+            "EntryLevel" : 125,
+            "Timelimit": 8,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "每天1次",
+            "Defense" : "50%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "120 斑斑" : "3.15億"
+            },
+            "MainDrop" : [          
+                "斑斑頭盔",
+                "與斑斑一起"
+            ],
+            "SubDrop" :  [       
+                "紅祈禱",
+                "綠祈禱"     
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  560800
+        },
+        "混沌":{
+        "EntryLevel" : 180,
+        "Timelimit": "10",
+        "PotionCoolDown" : "0",
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "100%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "190 混沌斑斑" : "1000億",
+            "190 混沌斑斑的無意識" : "8億"
+        },
+        "MainDrop" : [     
+            "時間碎片",   
+            "混沌斑斑頭盔",
+            "斑斑頭盔",
+            "與斑斑一起",
+            "斑斑的發條鐘"
+        ],
+        "SubDrop" :  [       
+            "紅祈禱",
+            "綠祈禱"     
+        ], 
+        "CubeDrop" : "可疑的方塊:13",
+        "GlowingSoulCrystal" :  7693781
+        }
+    },
+    "血腥皇后": {
+        "普通":{
+            "EntryLevel" : 125,
+            "Timelimit": 15,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "每天1次",
+            "Defense" : "50%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "120 血腥皇后" : "3.15億",
+                "120 魅惑之境" : "550萬"
+            },
+            "MainDrop" : [          
+                "皇后的皇冠",
+                "怕怕皇后"
+            ],
+            "SubDrop" :  [       
+                "紅祈禱",
+                "綠祈禱"     
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  560800
+        },
+        "混沌":{
+        "EntryLevel" : 180,
+        "Timelimit": 20,
+        "PotionCoolDown" : 0,
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "120%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "190 混沌血腥皇后" : "1400億",
+            "190 混沌魅惑之鏡" : "5.5億"
+        },
+        "MainDrop" : [     
+            "吶喊的碎片",   
+            "混沌皇后的皇冠",
+            "皇后的皇冠",
+            "怕怕皇后",
+            "血腥皇后梳妝台"
+        ],
+        "SubDrop" :  [       
+            "紅祈禱",
+            "綠祈禱"     
+        ], 
+        "CubeDrop" : "可疑的方塊:13",
+        "GlowingSoulCrystal" :  7682035
+        }
+    },
+    "貝倫": {
+        "普通":{
+            "EntryLevel" : 125,
+            "Timelimit": 15,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "每天1次",
+            "Defense" : "55%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "130 貝倫" : "5.5億"
+            },
+            "MainDrop" : [          
+                "貝倫的頭盔",
+                "奇岩礦石之椅"
+            ],
+            "SubDrop" :  [       
+                "紅祈禱",
+                "綠祈禱"     
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  560800
+        },
+        "混沌":{
+        "EntryLevel" : 180,
+        "Timelimit": 20,
+        "PotionCoolDown" : 0,
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "200%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "190 混沌貝倫" : "2000億"
+        },
+        "MainDrop" : [     
+            "破滅的碎片",   
+            "混沌貝倫的頭盔",
+            "貝倫的頭盔",
+            "奇岩礦石之椅",
+            "貝倫熔岩浴缸"
+        ],
+        "SubDrop" :  [       
+            "紅祈禱",
+            "綠祈禱"     
+        ], 
+        "CubeDrop" : "可疑的方塊:15",
+        "GlowingSoulCrystal" :  9070003
+        }
+    },
+    "凡雷恩": {
+        "簡單":{
+            "EntryLevel" : 125,
+            "Timelimit": 30,
+            "PotionCoolDown" : 30,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "50%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "120 凡雷恩" : "7億", 
+                "120 教官鮑爾" : "150萬", 
+                "120 教官萊諾" : "150萬", 
+                "120 迷你要塞" : "500萬"    
+            },
+            "MainDrop" : [
+            ],
+            "SubDrop" :  [    
+                "紅祈禱",
+                "綠祈禱"     
+            ],    
+            "CubeDrop" : "可疑的方塊:2",
+            "GlowingSoulCrystal" :  612900
+        },
+        "普通":{
+            "EntryLevel" : 125,
+            "Timelimit": 30,
+            "PotionCoolDown" : 30,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "80%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "120 凡雷恩" : "63億", 
+                "127 教官鮑爾" : "3000萬", 
+                "127 教官萊諾" : "3000萬", 
+                "123 迷你要塞" : "5000萬"    
+            },
+            "MainDrop" : [            
+                
+            ],
+            "SubDrop" :  [     
+                "紅祈禱",
+                "綠祈禱"       
+            ],    
+            "CubeDrop" : "可疑的方塊:3",
+            "GlowingSoulCrystal" :  844700
+        },
+        "困難":{
+        "EntryLevel" : 125,
+        "Timelimit": 30,
+        "PotionCoolDown" : 10,
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "不分難度 每天1次",
+        "Defense" : "90%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "120 凡雷恩" : "105億", 
+            "140 教官鮑爾" : "6000萬", 
+            "140 教官萊諾" : "6000萬", 
+            "135 迷你要塞" : "1.25億"    
+        },
+        "MainDrop" : [        
+            "皇家凡雷恩系列裝備",
+            "伊菲亞的戒指",
+            "伊菲亞的耳環",
+            "伊菲亞的項鍊",
+            "凍結的獅子雕像"
+        ],
+        "SubDrop" :  [      
+            "紅祈禱",
+            "綠祈禱"        
+        ],     
+        "CubeDrop" : "可疑的方塊:3",
+        "GlowingSoulCrystal" :  1419500
+        }
+    },
+    "闇黑龍王": {
+        "簡單":{
+            "EntryLevel" : 130,
+            "Timelimit": 30,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "40%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "130 闇黑龍王的左頭" : "1億", 
+                "130 闇黑龍王的右頭" : "1億", 
+                "130 闇黑龍王" : "8億1760萬"  
+            },
+            "MainDrop" : [
+                "戴雅希杜斯耳環",
+                "銀花戒指" 
+            ],
+            "SubDrop" :  [    
+                "紅祈禱",
+                "綠祈禱"       
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  511000
+        },
+        "普通":{
+            "EntryLevel" : 130,
+            "Timelimit": 30,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "40%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "130 闇黑龍王的左頭" : "3.3億", 
+                "130 闇黑龍王的右頭" : "3.3億", 
+                "130 闇黑龍王" : "20.9億"  
+            },
+            "MainDrop" : [
+                "戴雅希杜斯耳環",
+                "闇黑龍王項鍊",
+                "銀花戒指" 
+            ],
+            "SubDrop" :  [     
+                "紅祈禱",
+                "綠祈禱"       
+            ],    
+            "CubeDrop" : "可疑的方塊:2",
+            "GlowingSoulCrystal" :  586600
+        },
+        "困難":{
+        "EntryLevel" : 135,
+        "Timelimit": 30,
+        "PotionCoolDown" : 0,
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "不分難度 每天1次",
+        "Defense" : "50%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "130 闇黑龍王的左頭" : "33億", 
+            "130 闇黑龍王的右頭" : "33億", 
+            "130 闇黑龍王" : "200億"     
+        },
+        "MainDrop" : [        
+            "戴雅希杜斯耳環",
+            "闇黑龍王項鍊",
+            "銀花戒指",
+            "闇黑龍王噴泉"
+        ],
+        "SubDrop" :  [      
+            "紅祈禱",
+            "綠祈禱"        
+        ],     
+        "CubeDrop" : "可疑的方塊:2",
+        "GlowingSoulCrystal" :  783300
+        }
+    },
+    "阿卡伊農": {
+        "簡單":{
+            "EntryLevel" : 140,
+            "Timelimit": 30,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "60%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "130 阿卡伊農" : "21億",
+                "130 異界的祭司" : "2000萬"
+            },
+            "MainDrop" : [          
+                "梅克奈特墜飾"
+            ],
+            "SubDrop" :  [       
+                "紅祈禱",
+                "綠祈禱"     
+            ],    
+            "CubeDrop" : "可疑的方塊:2",
+            "GlowingSoulCrystal" :  667400
+        },
+        "普通":{
+        "EntryLevel" : 140,
+        "Timelimit": 30,
+        "PotionCoolDown" : 0,
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "不分難度 每天1次",
+        "Defense" : "90%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "130 阿卡伊農" : "126億",
+            "130 異界的祭司" : "1億"
+        },
+        "MainDrop" : [     
+            "支配者墜飾",   
+            "梅克奈特墜飾"
+        ],
+        "SubDrop" :  [       
+            "紅祈禱",
+            "綠祈禱"     
+        ], 
+        "CubeDrop" : "可疑的方塊:3",
+        "GlowingSoulCrystal" :  1460300
+        }
+    },
+    "皮卡啾": {
+        "普通":{
+            "EntryLevel" : 160,
+            "Timelimit": 30,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "每天1次",
+            "Defense" : "70%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "180 賢者所羅門" : "8億",
+                "180 賢者雷克斯" : "8億",
+                "180 輝沁" : "11.85億",
+                "180 穆寧" : "11.85億",
+                "180 艾莉爾" : "15.8億"
+            },
+            "2ndStage": {
+                "180 皮卡啾" : "21億"
+            },
+            "MainDrop" : [          
+                "金花草腰帶",
+                "粉紅聖杯",
+                "黑豆標記"
+            ],
+            "SubDrop" :  [       
+                "紅祈禱",
+                "綠祈禱"     
+            ],    
+            "CubeDrop" : "可疑的方塊:2",
+            "GlowingSoulCrystal" :  813700
+        },
+        "混沌":{
+        "EntryLevel" : 170,
+        "Timelimit": 30,
+        "PotionCoolDown" : 0,
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "每週1次",
+        "Defense" : "180%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "190 混沌賢者所羅門" : "210億",
+            "190 混沌賢者雷克斯" : "210億",
+            "190 混沌輝沁" : "252億",
+            "190 混沌穆寧" : "252億",
+            "190 混沌艾莉爾" : "378億"
+        },
+        "2ndStage": {
+            "180 混沌皮卡啾" : "693億"
+        },
+        "MainDrop" : [          
+            "金花草腰帶",
+            "粉紅聖杯",
+            "黑豆標記",
+            "混沌皮卡啾裝備",
+            "黑啾裝備",
+            "皮卡啾沙發"
+        ],
+        "SubDrop" :  [       
+            "紅祈禱",
+            "綠祈禱"     
+        ], 
+        "CubeDrop" : "可疑的方塊:9",
+        "GlowingSoulCrystal" :  7630700
+        }
+    },
+    "西格諾斯": {
+        "簡單":{
+            "EntryLevel" : 165,
+            "Timelimit": 30,
+            "PotionCoolDown" : 15,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "100%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "140 西格諾斯" : "105億",
+                "140 上級騎士" : "2.5~3.05億",
+                "140 神獸" : "4億",
+                "140 軍團長" : "10.5億"
+            },
+            "MainDrop" : [          
+                "黑色破壞的碎片",
+                "黑色守護的碎片"
+            ],
+            "SubDrop" :  [       
+                "紅祈禱",
+                "綠祈禱"     
+            ],    
+            "CubeDrop" : "可疑的方塊:8",
+            "GlowingSoulCrystal" :  5307400
+        },
+        "普通":{
+        "EntryLevel" : 165,
+        "Timelimit": 30,
+        "PotionCoolDown" : 30,
+        "DeathCount" : 5,
+        "SpecialKill" : false,
+        "CompleteCount" : "不分難度 每週1次",
+        "Defense" : "100%",
+        "UseArcorAUT" : "none",
+        "Arcane" : "0",
+        "Authentic" : "0",
+        "1stStage": {
+            "140 西格諾斯" : "630億",
+            "140 上級騎士" : "2.5~3.05億",
+            "140 神獸" : "21億",
+            "140 軍團長" : "21億",
+            "140 覺醒軍團長" : "63億"
+        },
+        "MainDrop" : [          
+            "黑色破壞的碎片",
+            "黑色守護的碎片",
+            "女皇系列肩膀",
+            "西格諾斯娃娃置物架"
+        ],
+        "SubDrop" :  [       
+            "紅祈禱",
+            "綠祈禱"     
+        ], 
+        "CubeDrop" : "可疑的方塊:11",
+        "GlowingSoulCrystal" :  8709400
+        }
+    },
+    "培羅德": {
+        "初級模式":{
+            "EntryLevel" : 180,
+            "Timelimit": 30,
+            "PotionCoolDown" : 15,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "10%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "170 培羅德(嘴)" : "5000萬", 
+                "180 培羅德(眼)" : "5000萬", 
+                "180 培羅德(額)" : "1000萬"  
+            },
+            "MainDrop" : [
+                "初級培羅德裝備"
+            ],
+            "SubDrop" :  [   
+            ],    
+            "CubeDrop" : "可疑的方塊:5~10",
+            "GlowingSoulCrystal" :  0
+        },
+        "中級模式":{
+            "EntryLevel" : 180,
+            "Timelimit": 30,
+            "PotionCoolDown" : 15,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "15%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "180 培羅德(嘴)" : "30億", 
+                "190 培羅德(眼)" : "30億", 
+                "190 培羅德(額)" : "6億"  
+            },
+            "MainDrop" : [
+                "初級培羅德裝備",
+                "中級培羅德裝備"
+            ],
+            "SubDrop" :  [   
+            ],    
+            "CubeDrop" : "可疑的方塊:5~10",
+            "GlowingSoulCrystal" :  0
+        },
+        "高級模式":{
+            "EntryLevel" : 180,
+            "Timelimit": 30,
+            "PotionCoolDown" : 15,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "150%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "180 培羅德(嘴)" : "750億", 
+                "190 培羅德(眼)" : "750億", 
+                "190 培羅德(額)" : "150億"  
+            },
+            "MainDrop" : [
+                "初級培羅德裝備",
+                "中級培羅德裝備",
+                "高級培羅德裝備",
+                "培羅德硬幣(15~20個)"
+            ],
+            "SubDrop" :  [   
+            ],    
+            "CubeDrop" : "可疑的方塊:5~10",
+            "GlowingSoulCrystal" :  0
+        },
+        "頂級模式":{
+            "EntryLevel" : 180,
+            "Timelimit": 30,
+            "PotionCoolDown" : 15,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每天1次",
+            "Defense" : "250%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "180 培羅德(嘴)" : "3500億", 
+                "190 培羅德(眼)" : "3500億", 
+                "190 培羅德(額)" : "700億"  
+            },
+            "MainDrop" : [
+                "初級培羅德裝備",
+                "中級培羅德裝備",
+                "高級培羅德裝備",
+                "頂級培羅德裝備",
+                "培羅德硬幣(20~35個)",
+                "真正守護者的終章",
+                "培羅德長木椅",
+                "培羅德墮落鑰匙"
+            ],
+            "SubDrop" :  [   
+            ],    
+            "CubeDrop" : "可疑的方塊:6~10",
+            "GlowingSoulCrystal" :  0
+        }
+    },
+    "濃姬": {
+        "普通":{
+            "EntryLevel" : 140,
+            "Timelimit": 60,
+            "PotionCoolDown" : 0,
+            "DeathCount" : 20,
+            "SpecialKill" : false,
+            "CompleteCount" : "每周1次",
+            "Defense" : "100%",
+            "UseArcorAUT" : "none",
+            "Arcane" : "0",
+            "Authentic" : "0",
+            "1stStage": {
+                "160 水鏡" : "20萬(傷害10)",  
+                "160 被洗腦的槍兵" : "270萬"
+            },
+            "2ndStage": {
+                "160 蓮華" : "20億",
+                "150 織田軍的劍兵" : "2萬(傷害10)"
+            },
+            "3rdStage": {
+                "160 翁羅將軍(0破損)" : "20億",
+                "160 翁羅將軍(1~2破損)" : "21億",
+                "160 翁羅將軍(3破損以上)" : "20億",
+                "150 翁羅將軍的召喚獸" : "1萬(傷害10)",
+                "150 雷電封印球" : "250萬",
+                "160 被洗腦的槍兵" : "270萬"
+            },
+            "4thStage":{
+                "160 彌弄矩": "21億",
+                "160 被洗腦的槍兵": "270萬"
+            },
+            "5thStage":{
+                "160 濃姬": "2000億",
+                "160 陰陽師召喚儀式": "50萬",
+                "150 織田軍陰陽師": "5000(傷害10)",
+                "150 濃姬的召喚獸": "1000(傷害10)",
+                "150 攻擊力增加的八卦": "50萬"
+            },
+            "MainDrop" : [          
+                "魅惑的碎片",
+                "濃姬特效交換券",
+                "妖蝶姬之座椅",
+                "濃姬傷害字型"
+            ],
+            "SubDrop" :  [                              
+            ],    
+            "CubeDrop" : "可疑的方塊:1",
+            "GlowingSoulCrystal" :  8953200
+        }
+    },
+    "史烏": {
+        "普通":{
+            "EntryLevel" : 190,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "none",
+            "Arcane" : 0,
+            "Authentic" : 0,
+            "1stStage": {
+                "210 暗黑天堂核心": "4000億",
+                "190 自爆紅": "10億",
+                "190 自爆藍": "10億",
+                "190 自爆黃": "10億",
+                "190 自爆綠": "10億"
+            },
+            "2ndStage": {
+                "210 史烏": "4000億"                
+            },
+            "3rdStage": {
+                "210 史烏": "7000億"
+            },
+            "MainDrop" : [
+                "特殊能量硬幣"
+            ],
+            "SubDrop" : [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "綠玉"
+            ],     
+            "CubeDrop" : "可疑附加方塊:3",
+            "GlowingSoulCrystal" :  27207040
+        },
+        "困難":{
+            "EntryLevel" : 190,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "none",
+            "Arcane" : 0,
+            "Authentic" : 0,
+            "1stStage": {
+                "210 暗黑天堂核心": "1.6兆",
+                "190 自爆紅": "20億",
+                "190 自爆藍": "20億",
+                "190 自爆黃": "20億",
+                "190 自爆綠": "20億"
+            },
+            "2ndStage": {
+                "210 史烏": "6.8兆"                
+            },
+            "3rdStage": {
+                "210 史烏": "23.1兆"
+            },
+            "MainDrop" : [
+                "口紅控制器標誌",
+                "受損的黑心臟",
+                "史烏機器人",
+                "航海師武器箱",
+                "航海師防具箱",
+                "特殊能量硬幣",
+                "殺人鯨兔子娃娃抱枕"
+            ],
+            "SubDrop" :  [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "飾品卷",
+                "驚訝混沌",
+                "紅玉",
+                "艾爾達氣息:50"
+            ],    
+            "CubeDrop" : "可疑附加方塊:8",
+            "GlowingSoulCrystal" :  87503781
+        }
+    },
+    "戴米安": {
+        "普通":{
+            "EntryLevel" : 190,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "none",
+            "Arcane" : 0,
+            "Authentic" : 0,
+            "1stStage": {
+                "210 戴米安": "8400億"
+            },
+            "2ndStage": {
+                "210 戴米安": "3600億"                
+            },
+            "3rdStage": {
+                
+            },
+            "MainDrop" : [
+                "毀滅力量盾牌",
+                "扭曲烙印的靈魂石"
+            ],
+            "SubDrop" : [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "綠玉"
+            ],     
+            "CubeDrop" : "可疑附加方塊:3",
+            "GlowingSoulCrystal" :  28843452
+        },
+        "困難":{
+            "EntryLevel" : 190,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "none",
+            "Arcane" : 0,
+            "Authentic" : 0,
+            "1stStage": {
+                "210 戴米安": "25.2兆"
+            },
+            "2ndStage": {
+                "210 戴米安": "10.8兆"                
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "附有魔力的眼罩",
+                "毀滅力量盾牌",
+                "航海師武器箱",
+                "航海師防具箱",
+                "扭曲烙印的靈魂石",
+                "戴米安的劍"
+            ],
+            "SubDrop" :  [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "飾品卷",
+                "驚訝混沌",
+                "綠玉",
+                "艾爾達氣息:50"
+            ],    
+            "CubeDrop" : "可疑附加方塊:7",
+            "GlowingSoulCrystal" :  80612548
+        }
+    },
+    "守護天使綠水靈": {
+        "普通":{
+            "EntryLevel" : 210,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "none",
+            "Arcane" : 0,
+            "Authentic" : 0,
+            "1stStage": {
+                "220 守護天使綠水靈": "5兆",
+                "每60秒恢復": "500億",
+                "減傷":"15%"
+            },
+            "2ndStage": {
+                               
+            },
+            "3rdStage": {
+                
+            },
+            "MainDrop" : [
+                "守護者天使戒指"
+            ],
+            "SubDrop" : [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "永遠",
+                "綠玉"
+            ],     
+            "CubeDrop" : "可疑附加方塊:3",
+            "GlowingSoulCrystal" :  39114492
+        },
+        "混沌":{
+            "EntryLevel" : 220,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "none",
+            "Arcane" : 0,
+            "Authentic" : 0,
+            "1stStage": {
+                "220 守護天使綠水靈": "90兆",
+                "每30秒恢復": "9000億",
+                "減傷":"15%"
+            },
+            "2ndStage": {               
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "守護者天使戒指",
+                "守護天使綠水靈噴泉",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",
+                "飾品卷",
+                "驚訝混沌",
+                "黑玉",
+                "艾爾達氣息:70"
+            ],    
+            "CubeDrop" : "可疑附加方塊:9",
+            "GlowingSoulCrystal" :  120450252
+        }
+    },
+    "露希妲": {
+        "簡單":{
+            "EntryLevel" : 220,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 360,
+            "Authentic" : 0,
+            "1stStage": {
+                "230 露希妲": "6兆",
+                "230 惡夢石巨人": "650億",
+                "230 惡夢毒菇菇": "650億"
+            },
+            "2ndStage": {
+                "230 露希妲": "6兆",
+                "230 惡夢石巨人": "450億"                               
+            },
+            "3rdStage": {
+                
+            },
+            "MainDrop" : [
+                ""
+            ],
+            "SubDrop" : [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "永遠",
+                "綠玉"
+            ],     
+            "CubeDrop" : "可疑附加方塊:3",
+            "GlowingSoulCrystal" :  48799200
+        },
+        "普通":{
+            "EntryLevel" : 220,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 360,
+            "Authentic" : 0,
+            "1stStage": {
+                "230 露希妲": "12兆",
+                "230 惡夢石巨人": "1500億",
+                "230 惡夢毒菇菇": "1500億"
+            },
+            "2ndStage": {  
+                "230 露希妲": "12兆",
+                "230 惡夢石巨人": "1000億" 
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "暮光印記",
+                "蝴蝶翅膀水滴石"
+            ],
+            "SubDrop" :  [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "永遠",
+                "綠玉"
+            ],    
+            "CubeDrop" : "可疑附加方塊:4",
+            "GlowingSoulCrystal" :  58457600
+        },
+        "困難":{
+            "EntryLevel" : 220,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 360,
+            "Authentic" : 0,
+            "1stStage": {
+                "230 露希妲": "50.8兆",
+                "230 惡夢石巨人": "6000億",
+                "230 惡夢毒菇菇": "6000億"
+            },
+            "2ndStage": {  
+                "230 露希妲": "54兆",
+                "230 惡夢石巨人": "2000億" 
+            },
+            "3rdStage": {
+                "230 露希妲": "11.97兆",
+                "鎖血後回復血量": "5985億"
+            },
+            "MainDrop" : [
+                "夢幻的腰帶",
+                "暮光印記",
+                "露希妲機器人",
+                "神秘冥界幽靈武器箱",
+                "神秘冥界幽靈防具箱",
+                "蝴蝶翅膀水滴石",
+                "露希妲床鋪",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",                
+                "飾品卷",
+                "驚訝混沌",
+                "紅玉",
+                "艾爾達氣息:50"
+            ],    
+            "CubeDrop" : "可疑附加方塊:9",
+            "GlowingSoulCrystal" :  97438242
+        }
+    },
+    "威爾": {
+        "簡單":{
+            "EntryLevel" : 235,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 560,
+            "Authentic" : 0,
+            "1stStage": {
+                "235 威爾": "2.8兆 x2"
+            },
+            "2ndStage": {
+                "235 威爾": "4.2兆"                               
+            },
+            "3rdStage": {
+                "235 威爾": "7兆" 
+            },
+            "MainDrop" : [
+                ""
+            ],
+            "SubDrop" : [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "永遠",
+                "綠玉"
+            ],     
+            "CubeDrop" : "可疑附加方塊:4",
+            "GlowingSoulCrystal" :  52139000
+        },
+        "普通":{
+            "EntryLevel" : 235,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 760,
+            "Authentic" : 0,
+            "1stStage": {
+                "235 威爾": "4.2兆 x2"
+            },
+            "2ndStage": {  
+                "235 威爾": "6.3兆"
+            },
+            "3rdStage": {
+                "235 威爾": "10.5兆"
+            },
+            "MainDrop" : [
+                "暮光印記",
+                "克伯威水滴石"
+            ],
+            "SubDrop" :  [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "永遠",
+                "綠玉"
+            ],    
+            "CubeDrop" : "可疑附加方塊:5",
+            "GlowingSoulCrystal" :  67421000
+        },
+        "困難":{
+            "EntryLevel" : 235,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 360,
+            "Authentic" : 0,
+            "1stStage": {
+                "235 威爾": "21兆 x2"
+            },
+            "2ndStage": {  
+                "235 威爾": "31.5兆"
+            },
+            "3rdStage": {
+                "235 威爾": "52.5兆"
+            },
+            "MainDrop" : [
+                "受詛咒的魔導書選擇箱",
+                "暮光印記",
+                "神秘冥界幽靈武器箱",
+                "神秘冥界幽靈防具箱",
+                "鏡子世界的核心寶石",
+                "克伯威水滴石",
+                "威爾的蜘蛛網狀吊椅",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",                
+                "飾品卷",
+                "驚訝混沌",
+                "紅玉",
+                "艾爾達氣息:50"
+            ],    
+            "CubeDrop" : "可疑附加方塊:9",
+            "GlowingSoulCrystal" :  109805699
+        }
+    },
+    "戴斯克": {
+        "普通":{
+            "EntryLevel" : 245,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 730,
+            "Authentic" : 0,
+            "1stStage": {
+                "255 戴斯克": "25.5兆",
+                "255 幻覺": "100億",
+                "255 緊抓的手": "300億"
+            },
+            "2ndStage": {
+
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "星耀耳環",
+                "心願的火焰"
+            ],
+            "SubDrop" : [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "永遠",
+                "暗黑",
+                "綠玉"
+            ],     
+            "CubeDrop" : "可疑附加方塊:6",
+            "GlowingSoulCrystal" :  67421000
+        },
+        "混沌":{
+            "EntryLevel" : 245,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 10,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 730,
+            "Authentic" : 0,
+            "1stStage": {
+                "255 戴斯克": "127.5兆",
+                "255 幻覺": "300億",
+                "255 緊抓的手": "無敵"
+            },
+            "2ndStage": {
+
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "巨大的恐怖",
+                "星耀耳環",
+                "神秘冥界幽靈武器箱",
+                "神秘冥界幽靈防具箱",
+                "心願的火焰",
+                "戴斯克黑暗懶骨頭",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",                
+                "飾品卷",
+                "驚訝混沌",
+                "黑玉",
+                "艾爾達氣息:100"
+            ],    
+            "CubeDrop" : "可疑附加方塊:10",
+            "GlowingSoulCrystal" :  109805699
+        }
+    },
+    "真希拉": {
+        "普通":{
+            "EntryLevel" : 250,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 900,
+            "Authentic" : 0,
+            "1stStage": {
+                "250 真希拉": "88兆",
+                "255 慾望的現身": "1億",
+                "255 死靈史烏": "186.8869億",
+                "255 死靈戴米安": "186.8869億"                
+            },
+            "2ndStage": {
+
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "破曉墜飾",
+                "神秘冥界幽靈武器箱",
+                "神秘冥界幽靈防具箱",
+                "匠人的氣息"
+            ],
+            "SubDrop" : [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",                
+                "飾品卷",
+                "驚訝混沌",
+                "紅玉",
+                "艾爾達氣息:70"
+            ],     
+            "CubeDrop" : "可疑附加方塊:9",
+            "GlowingSoulCrystal" :  118489900
+        },
+        "困難":{
+            "EntryLevel" : 245,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 900,
+            "Authentic" : 0,
+            "1stStage": {
+                "250 真希拉": "176兆",
+                "255 慾望的現身": "1億",
+                "255 死靈史烏": "186.8869億",
+                "255 死靈戴米安": "186.8869億"                
+            },
+            "2ndStage": {
+
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "苦痛的根源",
+                "破曉墜飾",
+                "神秘冥界幽靈武器箱",
+                "神秘冥界幽靈防具箱",
+                "黑暗力量的氣息",
+                "靈魂燃燒的蠟燭",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "黑玉",
+                "艾爾達氣息:100"
+            ],    
+            "CubeDrop" : "可疑附加方塊:10",
+            "GlowingSoulCrystal" :  138191654
+        }
+    },
+    "頓凱爾": {
+        "普通":{
+            "EntryLevel" : 255,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 850,
+            "Authentic" : 0,
+            "1stStage": {
+                "265 親衛隊長頓凱爾": "26兆",
+                "265 墮落勇士": "100億"             
+            },
+            "2ndStage": {
+
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "星耀耳環",
+                "心願的火焰"
+            ],
+            "SubDrop" : [
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "強力",
+                "永遠",
+                "暗黑",
+                "綠玉"
+            ],     
+            "CubeDrop" : "可疑附加方塊:6",
+            "GlowingSoulCrystal" :  77908300
+        },
+        "困難":{
+            "EntryLevel" : 255,
+            "Timelimit": 30,
+            "PotionCoolDown" : 5,
+            "DeathCount" : 5,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 850,
+            "Authentic" : 0,
+            "1stStage": {
+                "265 親衛隊長頓凱爾": "157.5兆",
+                "265 墮落勇士": "300億"              
+            },
+            "2ndStage": {
+
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "指揮官力量耳環",
+                "星耀耳環",
+                "神秘冥界幽靈武器箱",
+                "神秘冥界幽靈防具箱",
+                "心願的火焰",
+                "頓凱爾的頭盔裝飾",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "黑玉",
+                "艾爾達氣息:120"
+            ],    
+            "CubeDrop" : "可疑附加方塊:10",
+            "GlowingSoulCrystal" :  120151104
+        }
+    },
+    "黑魔法師": {
+        "困難":{
+            "EntryLevel" : 255,
+            "Timelimit": 60,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 12,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每月1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 1320,
+            "Authentic" : 0,
+            "1stStage": {
+                "265 創造的伊恩": "63兆",
+                "265 破壞的雅達巴特": "63兆(合併計算)",
+                "265 生成護盾" : "7500億"
+            },
+            "2ndStage": {
+                "275 黑魔法師" : "115.5兆",
+                "275 生成護盾" : "2.2兆"
+            },
+            "3rdStage": {
+                "275 黑魔法師" : "157.5兆",
+                "275 生成護盾" : "3.5兆"
+            },
+            "4thStage": {
+                "275 黑魔法師" : "140兆",
+                "275 生成護盾" : "3兆"
+            },
+            "MainDrop" : [
+                "創世的胸章",
+                "封印的創世武器箱子",
+                "黑魔法師的片段",
+                "神秘冥界幽靈武器箱",
+                "神秘冥界幽靈防具箱",
+                "黑魔法師的鏡子",  
+                "匠人的氣息"
+            ],
+            "SubDrop" : [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:300"
+            ],     
+            "CubeDrop" : "可疑附加方塊:30",
+            "GlowingSoulCrystal" :  990841916
+        },
+        "終極":{
+            "EntryLevel" : 255,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 12,
+            "SpecialKill" : false,
+            "CompleteCount" : "不分難度 每月1次",
+            "Defense" : "300%",
+            "UseArcorAUT" : "Arcane",
+            "Arcane" : 1320,
+            "Authentic" : 0,
+            "1stStage": {
+                "265 創造的伊恩": "1260兆",
+                "265 破壞的雅達巴特": "1260兆(合併計算)",
+                "265 生成護盾" : "未知"
+            },
+            "2ndStage": {
+                "275 黑魔法師" : "1470兆(推估)",
+                "275 生成護盾" : "未知"
+            },
+            "3rdStage": {
+                "275 黑魔法師" : "1575兆(推估)",
+                "275 生成護盾" : "未知"
+            },
+            "4thStage": {
+                "275 黑魔法師" : "1680兆(推估)",
+                "275 生成護盾" : "未知"
+            },
+            "MainDrop" : [
+                "創世的胸章",
+                "惡夢的雕刻",
+                "神秘冥界幽靈武器箱",
+                "神秘冥界幽靈防具箱",
+                "黑魔法師的鏡子",  
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:600"
+            ],    
+            "CubeDrop" : "可疑附加方塊:未知",
+            "GlowingSoulCrystal" :  3000000000
+        }
+    },
+    "受選的賽蓮": {
+        "普通":{
+            "EntryLevel" : 260,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "150/200",
+            "1stStage": {
+                "270 受選的賽連": "52.5兆"           
+            },
+            "2ndStage": {
+                "270 受選的賽連": "155.5兆",
+                "270 奈洛塔的力量" : "1.8兆"   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "破曉墜飾"
+            ],
+            "SubDrop" : [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "黑玉",
+                "艾爾達氣息:150"
+            ],     
+            "CubeDrop" : "可疑附加方塊:10",
+            "GlowingSoulCrystal" :  145101237
+        },
+        "困難":{
+            "EntryLevel" : 265,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "150/200",
+            "1stStage": {
+                "275 受選的賽連": "126兆"           
+            },
+            "2ndStage": {
+                "275 受選的賽連": "360兆",
+                "275 奈洛塔的力量" : "1.8兆"   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "米特拉的憤怒選擇箱",
+                "破曉墜飾",
+                "米特拉的核心寶石",
+                "聖劍壁掛裝飾",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:220"
+            ],    
+            "CubeDrop" : "可疑附加方塊:11",
+            "GlowingSoulCrystal" :  262989400
+        },
+        "終極":{
+            "EntryLevel" : 265,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "150/200",
+            "1stStage": {
+                "275 受選的賽連": "1489兆(推估)"           
+            },
+            "2ndStage": {
+                "280 受選的賽連": "5800兆(推估)",
+                "280 奈洛塔的力量" : "1.8兆"   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "米特拉的憤怒選擇箱",
+                "重力模組",
+                "破曉墜飾",
+                "米特拉的核心寶石",
+                "聖劍壁掛裝飾",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:560"
+            ],    
+            "CubeDrop" : "可疑附加方塊:未知",
+            "GlowingSoulCrystal" :  700000000
+        }
+    },
+    "監視者卡洛斯": {
+        "簡單":{
+            "EntryLevel" : 265,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "330%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "200",
+            "1stStage": {
+                "270 監視者卡洛斯" : "94.5兆"           
+            },
+            "2ndStage": {
+                "270 監視者卡洛斯" : "262.5兆",
+                "270 監視者的爪牙" : "5.5兆"   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "遺留的卡洛斯意志碎片",
+                "卡洛斯吊扇(待確認)",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:200"
+            ],    
+            "CubeDrop" : "可疑附加方塊:11",
+            "GlowingSoulCrystal" :  230000000
+        },
+        "普通":{
+            "EntryLevel" : 265,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "330%/380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "250/300",
+            "1stStage": {
+                "275 監視者卡洛斯" : "336兆"           
+            },
+            "2ndStage": {
+                "280 監視者卡洛斯" : "720兆",
+                "280 監視者的爪牙" : "5.5兆"   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "遺留的卡洛斯意志",
+                "卡洛斯吊扇",
+                "尼基機器人",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:250"
+            ],    
+            "CubeDrop" : "可疑附加方塊:11",
+            "GlowingSoulCrystal" :  300000000
+        },
+        "混沌":{
+            "EntryLevel" : 265,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "330",
+            "1stStage": {
+                "285 監視者卡洛斯" : "1200兆"           
+            },
+            "2ndStage": {
+                "285 監視者卡洛斯" : "4800兆",
+                "285 監視者的爪牙" : "5.5兆"   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "遺留的卡洛斯意志:2",
+                "卡洛斯吊扇",
+                "尼基機器人",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:400"
+            ],    
+            "CubeDrop" : "可疑附加方塊:未知",
+            "GlowingSoulCrystal" :  600000000
+        },
+        "極限":{
+            "EntryLevel" : 265,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : 5,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "440",
+            "1stStage": {
+                "285 監視者卡洛斯" : "6720兆"           
+            },
+            "2ndStage": {
+                "285 監視者卡洛斯" : "2京4000兆",
+                "285 監視者的爪牙" : "5.5兆"   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [
+                "遺留的卡洛斯意志:3",
+                "卡洛斯吊扇",
+                "破滅的印記",
+                "尼基機器人",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:700"
+            ],    
+            "CubeDrop" : "可疑附加方塊:未知",
+            "GlowingSoulCrystal" :  1200000000
+        }
+    },
+    "咖凌": {
+        "簡單":{
+            "EntryLevel" : 275,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : "1000分",
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "230",
+            "1stStage": {
+                "275 檮杌" : "96兆",
+                "275 混沌" : "96兆",
+                "275 窮奇" : "96兆",
+                "275 檮杌給予護盾" : "9600億"
+
+            },
+            "2ndStage": {
+                "275 咖凌" : "105兆"  
+            },
+            "3rdStage": {
+                "275 爆走的咖凌" : "132兆",
+                "275 被死亡圍繞的混沌" : "132兆",
+                "275 被死亡圍繞的窮奇" : "132兆",
+                "275 被死亡圍繞的檮杌" : "132兆"
+            },
+            "MainDrop" : [
+                "交織的兇獸之環碎片",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:200"
+            ],    
+            "CubeDrop" : "可疑附加方塊:11",
+            "GlowingSoulCrystal" :  250000000
+        },
+        "普通":{
+            "EntryLevel" : 275,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : "1000分",
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "330",
+            "1stStage": {
+                "285 檮杌" : "400兆",
+                "285 混沌" : "400兆",
+                "285 窮奇" : "400兆",
+                "285 檮杌給予護盾" : "4兆"
+
+            },
+            "2ndStage": {
+                "285 咖凌" : "468兆"  
+            },
+            "3rdStage": {
+                "285 爆走的咖凌" : "536兆",
+                "285 被死亡圍繞的混沌" : "536兆",
+                "285 被死亡圍繞的窮奇" : "536兆",
+                "285 被死亡圍繞的檮杌" : "536兆"
+            },
+            "MainDrop" : [
+                "交織的兇獸之環",
+                "咖凌機器人",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:300"
+            ],    
+            "CubeDrop" : "可疑附加方塊:11",
+            "GlowingSoulCrystal" :  350000000
+        },
+        "困難":{
+            "EntryLevel" : 275,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : "1000分",
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "350",
+            "1stStage": {
+                "285 檮杌" : "1400兆",
+                "285 混沌" : "1400兆",
+                "285 窮奇" : "1400兆",
+                "285 檮杌給予護盾" : "14兆"
+
+            },
+            "2ndStage": {
+                "285 咖凌" : "2500兆"  
+            },
+            "3rdStage": {
+                "285 爆走的咖凌" : "5000兆",
+                "285 被死亡圍繞的混沌" : "2500兆",
+                "285 被死亡圍繞的窮奇" : "2500兆",
+                "285 被死亡圍繞的檮杌" : "2500兆"
+            },
+            "MainDrop" : [
+                "交織的兇獸之環",
+                "咖凌機器人",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:500"
+            ],    
+            "CubeDrop" : "可疑附加方塊:未知",
+            "GlowingSoulCrystal" :  700000000
+        },
+        "極限":{
+            "EntryLevel" : 275,
+            "Timelimit": 30,
+            "PotionCoolDown" : 10,
+            "DeathCount" : "1000分",
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 每週1次",
+            "Defense" : "380%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 0,
+            "Authentic" : "480",
+            "1stStage": {
+                "285 檮杌" : "9500兆",
+                "285 混沌" : "9500兆",
+                "285 窮奇" : "9500兆",
+                "285 檮杌給予護盾" : "95兆"
+    
+            },
+            "2ndStage": {
+                    "285 咖凌" : "?"  
+            },
+            "3rdStage": {
+                "285 爆走的咖凌" : "?",
+                "285 被死亡圍繞的混沌" : "?",
+                "285 被死亡圍繞的窮奇" : "?",
+                "285 被死亡圍繞的檮杌" : "?"
+            },
+            "MainDrop" : [
+                "交織的兇獸之環：3",
+                "忠誠頭盔",
+                "咖凌機器人",
+                "匠人的氣息"
+            ],
+            "SubDrop" :  [
+                "太初",
+                "名譽",
+                "經驗秘藥",
+                "天氣",
+                "閃紅",
+                "閃藍",
+                "紅火",
+                "紫火",
+                "黑火",
+                "強力",
+                "永遠",
+                "暗黑",
+                "優武卷",
+                "優防卷",
+                "優寵卷",              
+                "飾品卷",
+                "驚訝混沌",
+                "白玉",
+                "艾爾達氣息:800"
+            ],    
+            "CubeDrop" : "可疑附加方塊:未知",
+            "GlowingSoulCrystal" :  1400000000
+        }
+    },
+    "蟲蟲": {
+        "究極":{
+            "EntryLevel" : 999,
+            "Timelimit": "＊＊＊",
+            "PotionCoolDown" : "∞",
+            "DeathCount" : 1,
+            "SpecialKill" : true,
+            "CompleteCount" : "不分難度 終生1次",
+            "Defense" : "＊＊＊%",
+            "UseArcorAUT" : "Authentic",
+            "Arcane" : 999,
+            "Authentic" : "＊＊＊",
+            "1stStage": {
+                "999 蟲蟲" : "＊＊＊兆"           
+            },
+            "2ndStage": {
+                   
+            },
+            "3rdStage": {
+
+            },
+            "MainDrop" : [                
+                "E404:NotFound",
+                "E502:InvalidConnection"
+            ],
+            "SubDrop" :  [
+                "ErrorCode:Fragment"                
+            ],    
+            "CubeDrop" : "破碎的方塊:0",
+            "GlowingSoulCrystal" :  0
+        }
+    }
+}
