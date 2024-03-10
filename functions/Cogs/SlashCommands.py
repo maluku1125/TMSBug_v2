@@ -13,28 +13,44 @@ from functions.CreateBossDataEmbed import Create_Boss_Data_Embed, get_difficulty
 from functions.RequestUnionRank import Create_UnionRank_embed
 from functions.CreateSolErdaFragmentEmbed import CreateSolErdaFragment
 
+SlashCount = 0
 
-now_HMS = datetime.datetime.now().strftime('%H:%M:%S')
+def get_now_HMS():
+    return datetime.datetime.now().strftime('%H:%M:%S')
+
+def SlashCountAdd():
+    global SlashCount
+    SlashCount += 1
+
+def PrintSlash(type, interaction: discord.Interaction):
+    SlashCountAdd()
+    print(f'{get_now_HMS()}, #{SlashCount}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type}')
+    print('-'*40)
+
 
 class SlashCommands(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
         
+    now_HMS = datetime.datetime.now().strftime('%H:%M:%S')    
+
     #-----------------ping-----------------
     @app_commands.command(name="ping", description="ping")
     async def ping(self, interaction: discord.Interaction):
         bot_latency = round(self.client.latency * 1000)
+        PrintSlash('ping', interaction)
         await interaction.response.send_message(f"pong, latency is {bot_latency} ms.")
 
     #-----------------help-----------------
     @app_commands.command(name="help", description="help")
     async def help(self, interaction: discord.Interaction):
         embed = discord.Embed(
-            title=f"**TMSBug_v2**", 
-            description = f'Ver2.2.0\n\n[__TMS Discord & Support Guild__](https://discord.gg/maplestory-tw)\n\n[__功能/指令列表__](https://reurl.cc/kr25Wq)\n\n有問題請聯繫(.yuyu0)處理', 
+            title=f"**TMS新楓之谷BOT**", 
+            description = f'Ver2.1.2\n\n[__TMS Discord & Support Guild__](https://discord.gg/maplestory-tw)\n\n[__邀請TMSBug__](https://reurl.cc/aLj8V9)\n\n[__功能/指令列表__](https://reurl.cc/kr25Wq)\n\n有問題請聯繫(.yuyu0)處理', 
             color=0x6f00d2,
             )
         embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/957283103364235284.webp?size=96&quality=lossless')
+        PrintSlash('help', interaction)
         await interaction.response.send_message(embed=embed)
 
     #-----------------抽獎-----------------
@@ -59,8 +75,7 @@ class SlashCommands(commands.Cog):
             Message = "抽不到"
 
         
-        print(f'{now_HMS}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：GetPrize')
-        print('-'*40)
+        PrintSlash('getprize', interaction)
         await interaction.response.send_message(content=f"{Message}")
 
     #-----------------當期抽獎機率-----------------
@@ -78,8 +93,7 @@ class SlashCommands(commands.Cog):
         elif type == "FashionBox":
             embed = Create_FashionBox_embed()
             
-        print(f'{now_HMS}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：GetPrizeChance')
-        print('-'*40)
+        PrintSlash('getprizechance', interaction)
         await interaction.response.send_message(embed=embed)
 
     #-----------------BOSS-----------------
@@ -122,8 +136,7 @@ class SlashCommands(commands.Cog):
             return
 
         embed, num_subtitles = Create_Boss_Data_Embed(bossname, index)
-        print(f'{now_HMS}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：Bossinfo')
-        print('-'*40)
+        PrintSlash('easybossinfo', interaction)
         await interaction.response.send_message(embed=embed)
         
     @app_commands.command(name="boss", description="BOSS資料")
@@ -158,16 +171,15 @@ class SlashCommands(commands.Cog):
             return
 
         embed, num_subtitles = Create_Boss_Data_Embed(bossname, index)
-        print(f'{now_HMS}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：Bossinfo')
-        print('-'*40)
+        PrintSlash('bossinfo', interaction)
         await interaction.response.send_message(embed=embed)
 
     #-----------------戰地-----------------
     @app_commands.command(name="戰地查詢", description="查戰地排行")
     async def unionsearch(self, interaction: discord.Interaction, playername: str):
         embed = Create_UnionRank_embed(playername)
-        print(f'{now_HMS}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：UnionRank')
-        print('-'*40)
+        
+        PrintSlash('unionsearch', interaction)
         await interaction.response.send_message(embed=embed)
 
     #-----------------碎碎-----------------
@@ -176,8 +188,7 @@ class SlashCommands(commands.Cog):
     async def calculatefragment(self, interaction: discord.Interaction, skillnodes1: int, masterynodes1: int, boostnode1: int, boostnode2: int, boostnode3: int, boostnode4: int):
         embed = CreateSolErdaFragment(skillnodes1, masterynodes1, boostnode1, boostnode2, boostnode3, boostnode4, interaction.user.mention)
         
-        print(f'{now_HMS}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：SolErdaFragment')
-        print('-'*40)
+        PrintSlash('calculatefragment', interaction)
         await interaction.response.send_message(embed=embed)
 
 

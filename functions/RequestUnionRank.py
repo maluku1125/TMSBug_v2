@@ -36,14 +36,6 @@ def Request_UnionRank(target):
     # Assuming 'data' is the response dictionary you received
     if data['Code'] == 1:
         character_data = data['Data']
-        '''print(f"Character Name: {character_data['CharacterName']}")
-        print(f"Rank: {character_data['Rank']}")
-        print(f"Game World Name: {character_data['GameWorldName']}")
-        print(f"Job Name: {character_data['JobName']}")
-        print(f"Union DPS: {character_data['UnionDPS']}")
-        print(f"Union Total Level: {character_data['UnionTotalLevel']}")
-        print(f"Level: {character_data['UnionLevel']}")
-        print(f"Guild: {character_data['Guild']}")'''
 
         CharacterName = character_data['CharacterName']
         CharacterJob = character_data['JobName']
@@ -76,20 +68,21 @@ def Create_UnionRank_embed(playername):
 
     CharacterName, CharacterJob, Level, UnionTotalLevel, UnionDPS, Guild, Rank, GameWorldName, CharacterLookUrl, RequestSuccess = Request_UnionRank(playername)
     nowtime = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
-
+    
     if RequestSuccess == 'False':
         embed = discord.Embed(
-            title=f"**發生錯誤**", 
-            description = f'{playername} 不存在或請求錯誤', 
-            color=0xff0000,
-            )        
-        return embed
-    else:     
-
+            title = f"**{playername}**", 
+            description = f'查無此角色ID或該名角色ID未在10000名排行榜名單內', 
+            color = 0xff0000,
+            )       
+        embed.set_footer(text=f'查詢時間:{nowtime}')
+    
+    if RequestSuccess == 'True':    
+        
         embed = discord.Embed(
-            title=f"**{CharacterName}**", 
+            title = f"**{CharacterName}**", 
             description = f'[TMS聯盟戰地排行榜](https://tw-event.beanfun.com/MapleStory/UnionWebRank/Index.aspx)', 
-            color=0x6f00d2,
+            color = 0x6f00d2,
             )
         embed.add_field(name="等級", value=f"{Level}", inline = True) 
         embed.add_field(name="職業", value=f"{CharacterJob}", inline = True)
@@ -107,7 +100,5 @@ def Create_UnionRank_embed(playername):
 
         embed.set_footer(text=f'查詢時間:{nowtime}')
 
-        return embed
+    return embed
 
-if __name__ == "__main__":
-    Request_UnionRank("諭諭0")

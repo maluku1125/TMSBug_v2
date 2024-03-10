@@ -91,9 +91,7 @@ class TMSBot(commands.AutoShardedBot):
 
 
     async def on_message(self, message, /):
-        
-        await self.process_commands(message)
-
+                
         if datetime.datetime.now().strftime('%m%d') != self.time_date:
             self.time_date = datetime.datetime.now().strftime('%m%d')
             self.speak_count = 0
@@ -101,7 +99,10 @@ class TMSBot(commands.AutoShardedBot):
         # 略自己
         if message.author == self.user:
             return
+        
         now_HMS = datetime.datetime.now().strftime('%H:%M:%S')
+
+        await self.process_commands(message)
 
         # 略 TMS server
         if message.guild.id == int(self._config["function"]["tmsguildid"]):

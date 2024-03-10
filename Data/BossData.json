@@ -400,7 +400,7 @@
         ],
         "SubDrop" :  [         
         ],    
-        "CubeDrop" : "可疑的方塊:2",
+        "CubeDrop" : "可疑的附加方塊:1",
         "GlowingSoulCrystal" :  20088150
         }
     },
@@ -502,7 +502,7 @@
             "紅祈禱",
             "綠祈禱"     
         ], 
-        "CubeDrop" : "可疑的方塊:13",
+        "CubeDrop" : "可疑的附加方塊:1",
         "GlowingSoulCrystal" :  7313306
         }
     },
@@ -558,7 +558,7 @@
             "紅祈禱",
             "綠祈禱"     
         ], 
-        "CubeDrop" : "可疑的方塊:13",
+        "CubeDrop" : "可疑的附加方塊:1",
         "GlowingSoulCrystal" :  7693781
         }
     },
@@ -615,7 +615,7 @@
             "紅祈禱",
             "綠祈禱"     
         ], 
-        "CubeDrop" : "可疑的方塊:13",
+        "CubeDrop" : "可疑的附加方塊:1",
         "GlowingSoulCrystal" :  7682035
         }
     },
@@ -642,7 +642,7 @@
                 "紅祈禱",
                 "綠祈禱"     
             ],    
-            "CubeDrop" : "可疑的方塊:1",
+            "CubeDrop" : "可疑的附加方塊:1",
             "GlowingSoulCrystal" :  560800
         },
         "混沌":{
