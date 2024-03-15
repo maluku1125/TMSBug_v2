@@ -103,18 +103,21 @@ def Print_Website_data_to_JSON(text, table_data, table_num, page):
     # 轉換後的JSON
     print(json.dumps(result_json, indent=4, ensure_ascii=False))
 
-page = 8373
-table_num = 1
-
-page = 8369
-table_num = 3
-
-
-text, table_data = Get_Website_data(page)
-Print_Website_data_to_JSON(text, table_data, table_num, page)
+page1 = 8373
+table_num1 = 1
+page2 = 8369
+table_num2 = 1
+page3 = 8369
+table_num3 = 3
 
 
+text1, table_data1 = Get_Website_data(page1)
+text2, table_data2 = Get_Website_data(page2)
+text3, table_data3 = Get_Website_data(page3)
 
+Print_Website_data_to_JSON(text1, table_data1, table_num1, page1)
+Print_Website_data_to_JSON(text2, table_data2, table_num2, page2)
+Print_Website_data_to_JSON(text3, table_data3, table_num3, page3)
 
 
 

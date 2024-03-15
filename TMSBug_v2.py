@@ -12,7 +12,7 @@ from functions.Cogs.SlashCommands import SlashCommands
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
-    config_path = 'C:\\Users\\User\\Desktop\\DiscordBot\\Config\\TMSBug_v2_config.ini'
+    config_path = 'C:\\Users\\User\\Desktop\\DiscordBot\\Config\\TMSBug_testconfig.ini'
     _TMSBot_CONF.read(config_path, encoding="utf-8")
 except FileNotFoundError:
     print("`config.ini` file missing.")
@@ -101,12 +101,14 @@ class TMSBot(commands.AutoShardedBot):
             return
         
         now_HMS = datetime.datetime.now().strftime('%H:%M:%S')
-
-        await self.process_commands(message)
-
+        
         # 略 TMS server
         if message.guild.id == int(self._config["function"]["tmsguildid"]):
             return
+
+        await self.process_commands(message)
+
+        
 
         #MEMO資訊
         if message.content == '練等備忘' or message.content == '鍊等備忘':
