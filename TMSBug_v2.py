@@ -12,7 +12,7 @@ from functions.Cogs.SlashCommands import SlashCommands
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
-    config_path = 'C:\\Users\\User\\Desktop\\DiscordBot\\Config\\TMSBug_testconfig.ini'
+    config_path = 'C:\\Users\\User\\Desktop\\DiscordBot\\Config\\TMSBug_v2_config.ini'
     _TMSBot_CONF.read(config_path, encoding="utf-8")
 except FileNotFoundError:
     print("`config.ini` file missing.")

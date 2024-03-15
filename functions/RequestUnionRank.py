@@ -28,25 +28,21 @@ def Request_UnionRank(target):
     if response.status_code == 200:
         # 請求成功，處理響應
         data = response.json()
-        #print(data)
         RequestSuccess = 'True'
     else:
         # 請求失敗，處理錯誤
-        print(f"Error: {response.status_code}, {response.text}")
         RequestSuccess = 'False'
+        data = None
 
     return data, RequestSuccess
     
-    
-
 def Create_UnionRank_embed(playername):
 
     data, RequestSuccess = Request_UnionRank(playername)
     nowtime = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
 
     # Assuming 'data' is the response dictionary you received
-
-    if data['Code'] != 1 or RequestSuccess == 'False':
+    if data.get('Code', -1) != 1 or RequestSuccess == 'False':
         embed = discord.Embed(
             title = f"**{playername}**", 
             description = f'查無此角色ID或該名角色ID未在10000名排行榜名單內', 
@@ -54,7 +50,6 @@ def Create_UnionRank_embed(playername):
             )       
         embed.set_footer(text=f'查詢時間:{nowtime}')
         return embed
-
 
     else:
         character_data = data['Data']
@@ -87,12 +82,6 @@ def Create_UnionRank_embed(playername):
         embed.add_field(name="公會", value=f"{Guild}", inline = True)
 
         embed.set_thumbnail(url=CharacterLookUrl)
-
         embed.set_footer(text=f'查詢時間:{nowtime}')
 
         return embed
-        
-        
-        
-
-
