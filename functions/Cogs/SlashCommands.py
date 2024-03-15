@@ -12,6 +12,7 @@ from functions.CreatePrizeEmbed import Create_FashionBox_embed, Create_Apple_emb
 from functions.CreateBossDataEmbed import Create_Boss_Data_Embed, get_difficulty_value
 from functions.RequestUnionRank import Create_UnionRank_embed
 from functions.CreateSolErdaFragmentEmbed import CreateSolErdaFragment
+from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
 
 SlashCount = 0
 
@@ -192,5 +193,18 @@ class SlashCommands(commands.Cog):
         PrintSlash('calculatefragment', interaction)
         await interaction.response.send_message(embed=embed)
 
+    #-----------------MEMO-----------------
+    @app_commands.command(name="練等備忘", description="練等備忘")
+    async def farmingmemo(self, interaction: discord.Interaction):
+        embed = CreateFarmingEmbed()
+        PrintSlash('farmingmemo', interaction)
+        await interaction.response.send_message(embed=embed)
+
+  
+    @app_commands.command(name="打王備忘", description="打王備忘")
+    async def combatmemo(self, interaction: discord.Interaction):
+        embed = CreateCombatEmbed()
+        PrintSlash('combatmemo', interaction)
+        await interaction.response.send_message(embed=embed)
 
     

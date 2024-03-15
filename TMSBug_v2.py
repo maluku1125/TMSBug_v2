@@ -106,63 +106,7 @@ class TMSBot(commands.AutoShardedBot):
         if message.guild.id == int(self._config["function"]["tmsguildid"]):
             return
 
-        await self.process_commands(message)
-
-        
-
-        #MEMO資訊
-        if message.content == '練等備忘' or message.content == '鍊等備忘':
-            embed = CreateFarmingEmbed()
-            sent_message = await message.channel.send(embed=embed)
-            print(f'{now_HMS}, Guild：{message.channel.guild}, User：{message.author} ,FarmingMemo')
-            print('-'*40)
-
-        if message.content == '打王備忘' or message.content == 'BOSS備忘' or message.content == 'Boss備忘' or message.content == 'boss備忘':
-            embed = CreateCombatEmbed()
-            sent_message = await message.channel.send(embed=embed)
-            print(f'{now_HMS}, Guild：{message.channel.guild}, User：{message.author} ,CombatMemo')
-            print('-'*40)
-
-        #BOSS資訊    
-        #----------------------------------------        
-        if message.content in boss_aliases:    
-
-            if message.content == '蟲蟲':
-                await message.channel.send(f'叫我嗎?')
-            else:
-                await message.add_reaction('<:img17:588950160399269889>')
-                embed, num_subtitles= Create_Boss_Data_Embed(message.content, 0)
-                if probably(0.02):
-                    embed, num_subtitles= Create_Boss_Data_Embed("蟲蟲", 0)  
-                sent_message = await message.channel.send(embed=embed)
-                await sent_message.add_reaction('🔄')
-                await sent_message.add_reaction('❌')
-
-            Bossmode = [0]   # 將 Bossmode 定義為全域變數
-
-            @self.event
-            async def on_reaction_add(reaction, user):
-                if user == self.user:
-                    return  # 忽略機器人自身的反應
-
-                if reaction.message.author != self.user:
-                    return  # 忽略機器人所發送訊息以外的反應
-
-                if reaction.message.id != sent_message.id:
-                    return  # 忽略其他訊息的反應
-
-                if reaction.emoji == '🔄':
-                    await reaction.remove(user)  # 刪除使用者加上的反應                
-                    await asyncio.wait_for(switch_boss_mode(), timeout=10)  # 等待使用者反應，設定超時時間為 10 秒    
-                if reaction.emoji == '❌':
-                    await sent_message.delete()
-                                
-
-            async def switch_boss_mode():
-                Bossmode[0] = (Bossmode[0] + 1) % num_subtitles
-
-                embed, _ = Create_Boss_Data_Embed(message.content, Bossmode[0])    
-                await sent_message.edit(embed=embed)
+        #await self.process_commands(message)
 
 async def main():
     loop = asyncio.new_event_loop()
