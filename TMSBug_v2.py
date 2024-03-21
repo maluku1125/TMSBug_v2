@@ -4,11 +4,13 @@ from discord.ext import commands
 import configparser
 import asyncio
 
-from functions.CreateBossDataEmbed import Create_Boss_Data_Embed, boss_aliases
-from functions.tinyfunctions import probably
-from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
-from functions.Cogs.Discord_Commands import DiscordCommands
-from functions.Cogs.SlashCommands import SlashCommands
+
+from functions.Cogs.Prefix_BasicCommands import Prefix_BasicCommands
+from functions.Cogs.Slash_BasicCommands import Slash_BasicCommands
+from functions.Cogs.Slash_RequestUnionRank import Slash_RequestUnionRank
+from functions.Cogs.Slash_CreateBossDataEmbed import Slash_CreateBossDataEmbed
+from functions.Cogs.Slash_CreatePrizeEmbed import Slash_CreatePrizeEmbed
+from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Slash_CreateSolErdaFragmentEmbed
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -64,10 +66,18 @@ class TMSBot(commands.AutoShardedBot):
 
     async def on_ready(self):       
         
-        await self.add_cog(DiscordCommands(self))
-        print('Cogs:DiscordCommands loaded')
-        await self.add_cog(SlashCommands(self))
-        print('Cogs:SlashCommands loaded')
+        await self.add_cog(Prefix_BasicCommands(self))
+        print('Cogs:Prefix_BasicCommands loaded')
+        await self.add_cog(Slash_BasicCommands(self))
+        print('Cogs:Slash_BasicCommands loaded')
+        await self.add_cog(Slash_RequestUnionRank(self))
+        print('Cogs:Slash_RequestUnionRank loaded')
+        await self.add_cog(Slash_CreateBossDataEmbed(self))
+        print('Cogs:Slash_CreateBossDataEmbed loaded')
+        await self.add_cog(Slash_CreatePrizeEmbed(self))
+        print('Cogs:Slash_CreatePrizeEmbed loaded')
+        await self.add_cog(Slash_CreateSolErdaFragmentEmbed(self))
+        print('Cogs:Slash_CreateSolErdaFragmentEmbed loaded')
 
 
         dev_guild_id = self._config["bot"]["dev_guild"]

@@ -1,7 +1,7 @@
 from discord.ext import commands
 from functions.RequestUnionRank import Create_UnionRank_embed
 
-class DiscordCommands(commands.Cog):
+class Prefix_BasicCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
