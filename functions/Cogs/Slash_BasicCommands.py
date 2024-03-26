@@ -2,8 +2,33 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import datetime
+import psutil
+import time
 
 from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
+
+
+process = psutil.Process()
+
+# 獲取 CPU 使用率
+cpu_usage = f"{(process.cpu_percent() / psutil.cpu_count()):.2f}"
+
+# 獲取當前進程的記憶體使用量（MB）
+memory_usage_mb = process.memory_info().rss / 1024 / 1024
+# 獲取系統的總記憶體量（MB）
+total_memory_mb = psutil.virtual_memory().total / 1024 / 1024
+# 計算記憶體使用率
+memory_usage_percent = memory_usage_mb / total_memory_mb * 100
+
+# 作者
+owner_id = '310164490391912448'
+
+# 版本  
+version = 'v2.4.0'
+
+# 在程式開始運行時記錄當前的時間
+start_time = time.time()
+
 
 def get_now_HMS():
     return datetime.datetime.now().strftime('%H:%M:%S')
@@ -48,9 +73,66 @@ class Slash_BasicCommands(commands.Cog):
 
         embed = discord.Embed(
             title=f"**TMS新楓之谷BOT**", 
-            description = f'Ver2.4.0\n\n[__TMS Discord & Support Guild__](https://discord.gg/maplestory-tw)\n\n[__邀請TMSBug__](https://reurl.cc/aLj8V9)\n\n[__功能/指令列表__](https://reurl.cc/kr25Wq)\n\n有問題請聯繫(.yuyu0)處理', 
-            color=0x6f00d2,
+            description = f'', 
+            color=0x32EBA7,
             )
+        
+        owner = await self.client.fetch_user(owner_id)
+
+        embed.add_field(
+            name="**作者**",
+            value=f"諭諭({owner.name})",
+        )        
+        embed.add_field(
+            name="版本",
+            value=f"{version}",
+        )    
+        embed.add_field(
+            name="BOT",
+            value=(
+                ""
+                f"[__TMS Discord & Support Guild__](https://discord.gg/maplestory-tw)\n"
+                f"[__邀請TMSBug__](https://reurl.cc/aLj8V9)\n"
+                f"[__功能/指令列表__](https://reurl.cc/kr25Wq)\n"
+                ""
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="BOT資料",
+            value=(
+                "```autohotkey\n"
+                f"指令數量: {len(self.client.tree.get_commands())}\n"
+                f"群組數量: {len(self.client.guilds):,}\n"
+                f"成員人數: {sum([_.member_count or 0 for _ in self.client.guilds if not _.unavailable]):,}\n" 
+                "```"
+            ),
+            inline=False,
+        )
+        # 在需要的時候計算運行時間
+        runtime_seconds = time.time() - start_time
+        runtime_minutes, runtime_seconds = divmod(runtime_seconds, 60)
+        runtime_hours, runtime_minutes = divmod(runtime_minutes, 60)
+        runtime_days, runtime_hours = divmod(runtime_hours, 24)
+        if runtime_days > 0:
+            runtime_str = f"{int(runtime_days)}天{int(runtime_hours)}時{int(runtime_minutes)}分{int(runtime_seconds)}秒"
+        else:
+            runtime_str = f"{int(runtime_hours)}小時{int(runtime_minutes)}分{int(runtime_seconds)}秒"
+
+
+        embed.add_field(
+            name="運行狀態",
+            value=(
+                "```autohotkey\n"
+                f"CPU使用率: {cpu_usage}%\n"
+                f"MEM使用率: {memory_usage_percent:.2f}%\n"
+                f"MEM使用量: {memory_usage_mb:.2f} MB\n"
+                f"BOT運行時間: {runtime_str} \n"
+                "```"
+            ),
+            inline=False,
+        )
+        
         embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/957283103364235284.webp?size=96&quality=lossless')
         PrintSlash('help', interaction)
         await interaction.response.send_message(embed=embed)
