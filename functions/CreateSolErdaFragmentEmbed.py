@@ -30,7 +30,7 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
             error_embed = discord.Embed(title="等級輸入錯誤", description="必須在0~30等之間", color=0xff0000)
             return error_embed
         
-    if probably(0.01):
+    if probably(0.002):
         totalcount = Calculatefragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, BoostNode3, BoostNode4)
         embed = discord.Embed(
         title=f"**靈魂艾爾達碎片進度**", 

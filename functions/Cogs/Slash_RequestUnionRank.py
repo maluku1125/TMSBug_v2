@@ -17,7 +17,7 @@ class Slash_RequestUnionRank(commands.Cog):
         self.client = client
 
     #-----------------戰地-----------------
-    @app_commands.command(name="戰地查詢", description="查戰地排行")
+    @app_commands.command(name="union戰地查詢", description="查戰地排行")
     async def unionsearch(self, interaction: discord.Interaction, playername: str):
         await interaction.response.defer()
         embed = Create_UnionRank_embed(playername)

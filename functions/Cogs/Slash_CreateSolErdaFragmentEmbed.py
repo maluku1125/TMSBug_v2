@@ -17,7 +17,7 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
         self.client = client
 
     #-----------------碎碎-----------------
-    @app_commands.command(name="碎片進度", description="碎碎進度")
+    @app_commands.command(name="solerda碎片進度", description="碎碎進度")
     @app_commands.describe(skillnodes1 = "起源", masterynodes1 = "精通1", boostnode1 = "強化1", boostnode2 = "強化2", boostnode3 = "強化3", boostnode4 = "強化4")
     async def calculatefragment(self, interaction: discord.Interaction, skillnodes1: int, masterynodes1: int, boostnode1: int, boostnode2: int, boostnode3: int, boostnode4: int):
         embed = CreateSolErdaFragment(skillnodes1, masterynodes1, boostnode1, boostnode2, boostnode3, boostnode4, interaction.user.mention)

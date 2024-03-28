@@ -18,7 +18,7 @@ class Slash_CreateBossDataEmbed(commands.Cog):
         self.client = client
 
     #-----------------BOSS-----------------
-    @app_commands.command(name="easyboss", description="BOSS資料")
+    @app_commands.command(name="easyboss里程周王", description="BOSS資料")
     @app_commands.describe(bossname = "哪一隻", difficulty = "難度")
     @app_commands.choices(
         bossname = [
@@ -59,7 +59,7 @@ class Slash_CreateBossDataEmbed(commands.Cog):
         PrintSlash('easybossinfo', interaction)
         await interaction.response.send_message(embed=embed)
         
-    @app_commands.command(name="boss", description="BOSS資料")
+    @app_commands.command(name="boss困王", description="BOSS資料")
     @app_commands.describe(bossname = "哪一隻", difficulty = "難度")
     @app_commands.choices(
         bossname = [
