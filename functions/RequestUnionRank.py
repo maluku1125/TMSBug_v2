@@ -121,7 +121,7 @@ def Create_UnionRank_embed(playername):
 
         embed = discord.Embed(
             title = f"", 
-            description = f'[TMS聯盟戰地排行榜](https://tw-event.beanfun.com/MapleStory/UnionWebRank/Index.aspx)', 
+            description = f'[TMS 新楓之谷 全伺服器聯盟戰地排行榜](https://tw-event.beanfun.com/MapleStory/UnionWebRank/Index.aspx)', 
             color = 0x6f00d2,
             )
         
@@ -131,9 +131,9 @@ def Create_UnionRank_embed(playername):
             name="基本資料",
             value=(
                 "```autohotkey\n"
-                f"等級: {Level}\n"
-                f"職業: {CharacterJob}\n"
-                f"公會: {Guild}\n```"
+                f"等級 : {Level}\n"
+                f"職業 : {CharacterJob}\n"
+                f"公會 : {Guild}\n```"
             ),
             inline=False,
         )
@@ -142,9 +142,9 @@ def Create_UnionRank_embed(playername):
             name="聯盟戰地",
             value=(
                 "```autohotkey\n"
-                f"聯盟等級: {UnionTotalLevel}\n"
-                f"攻擊力　: {UnionDPS:<9,}\n"
-                f"戰地硬幣: {round(UnionDPS/1251251.26,1)}\n```"
+                f"聯盟等級 : {UnionTotalLevel}\n"
+                f"攻擊力　 : {UnionDPS:<9,}\n"
+                f"戰地硬幣 : {round(UnionDPS/1251251.26,1)}\n```"
                 
             ),
             inline=False,
@@ -154,22 +154,11 @@ def Create_UnionRank_embed(playername):
             name="排行",
             value=(
                 "```autohotkey\n"
-                f"全服聯盟總等級: {Rank}\n"
-                f"伺服器角色等級: {server_lv_rank}\n```"                
+                f"全服聯盟總等級 : {Rank}\n"
+                f"伺服器角色等級 : {server_lv_rank}\n```"                
             ),
             inline=False,
         )
-        #embed.add_field(name="等級", value=f"{Level}", inline = True) 
-        #embed.add_field(name="職業", value=f"{CharacterJob}", inline = True)
-
-        #embed.add_field(name="戰地排名", value=f"{Rank}", inline = False)
-        #embed.add_field(name="戰地等級", value=f"{UnionTotalLevel}", inline = True)
-        #embed.add_field(name="戰地攻擊力", value=f"{UnionDPS}", inline = True)
-
-        #embed.add_field(name="每日戰地硬幣", value=f"{round(UnionDPS/1251251.26,1)}", inline = False)   
-
-        #embed.add_field(name="伺服器", value=f"{GameWorldName}", inline = True)
-        #embed.add_field(name="公會", value=f"{Guild}", inline = True)
 
         embed.set_thumbnail(url=CharacterLookUrl)
         embed.set_footer(text=f'查詢時間 : {nowtime}')

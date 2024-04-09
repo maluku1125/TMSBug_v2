@@ -24,7 +24,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v2.4.2'
+version = 'v2.4.3'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -135,8 +135,10 @@ class Slash_BasicCommands(commands.Cog):
         
         embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/957283103364235284.webp?size=96&quality=lossless')
         PrintSlash('help', interaction)
-        await interaction.response.send_message(embed=embed)
-
+        if interaction.guild_id != 420666881368784929:
+            await interaction.response.send_message("TMS_Bug未通過Discord驗證，可以轉至TMSBug_v2服務，請聯絡管理員邀請並於邀請後踢除TMS_Bug\n具體差異：\n```diff\n+通過discord認證\n+無法閱讀聊天室內容\n-無法使用<!>指令或讀取聊天室相關互動```\n[邀請TMSBug_v2](https://reurl.cc/aLj8V9)",embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)
     #-----------------MEMO-----------------
     @app_commands.command(name="練等備忘", description="練等備忘")
     async def farmingmemo(self, interaction: discord.Interaction):
@@ -150,4 +152,5 @@ class Slash_BasicCommands(commands.Cog):
         embed = CreateCombatEmbed()
         PrintSlash('combatmemo', interaction)
         await interaction.response.send_message(embed=embed)
+        
 
