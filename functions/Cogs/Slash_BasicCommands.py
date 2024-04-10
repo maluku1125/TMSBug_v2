@@ -24,7 +24,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v2.4.3'
+version = 'v2.5.0'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()

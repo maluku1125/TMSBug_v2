@@ -60,7 +60,7 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
                 "```autohotkey\n"
                 f"技能核心1 : 0\n```"
             ),
-            inline=True,
+            inline=False,
         )
         embed.add_field(
             name="精通核心",
@@ -68,11 +68,6 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
                 "```autohotkey\n"
                 f"精通核心1 : 0\n```"
             ),
-            inline=True,
-        )
-        embed.add_field(
-            name="",
-            value=f"",
             inline=False,
         )
         embed.add_field(
@@ -84,7 +79,7 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
                 f"強化核心3 : 0\n"
                 f"強化核心4 : 0\n```"
             ),
-            inline=True,
+            inline=False,
         )
         embed.add_field(
             name="共用核心",
@@ -93,10 +88,10 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
                 f"共用核心1 :"
                 "```"
             ),
-            inline=True,
+            inline=False,
         )
         embed.add_field(
-            name=f"蟲蟲已經累計偷走了{stolen_fragments:,}個碎片", value=f"請小心", inline = False
+            name=f"蟲蟲已經累計偷走了{stolen_fragments:,}個碎片", value=f"請保護好你的碎片", inline = False
         )
         
         embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/1196836355225952336.webp?size=96&quality=lossless')
@@ -108,7 +103,7 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
     percentagemsg = f"{totalcount}/{maxfragment} ({percentage:.2f}%)"
 
     # 計算進度條的長度
-    progress_length = 30
+    progress_length = 20
     progress = int(totalcount / maxfragment * progress_length)
 
     # 創建進度條
@@ -119,8 +114,8 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
         color=0x6f00d2,
         )
     embed.add_field(
-        name="當前進度", 
-        value=f"{percentagemsg}\n{progress_bar}", 
+        name=f"當前進度：{percentagemsg}", 
+        value=f"{progress_bar}", 
         inline = False
     )
 
@@ -130,7 +125,7 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
             "```autohotkey\n"
             f"技能核心1 : {SkillNodes1}\n```"
         ),
-        inline=True,
+        inline=False,
     )
     embed.add_field(
         name="精通核心",
@@ -138,11 +133,6 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
             "```autohotkey\n"
             f"精通核心1 : {MasteryNodes1}\n```"
         ),
-        inline=True,
-    )
-    embed.add_field(
-        name="",
-        value=f"",
         inline=False,
     )
     embed.add_field(
@@ -154,16 +144,16 @@ def CreateSolErdaFragment(SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, Bo
             f"強化核心3 : {BoostNode3}\n"
             f"強化核心4 : {BoostNode4}\n```"
         ),
-        inline=True,
+        inline=False,
     )
     embed.add_field(
         name="共用核心",
         value=(
             "```autohotkey\n"
-            f"共用核心1 :"
+            f"共用核心1 : "
             "```"
         ),
-        inline=True,
+        inline=False,
     )
 
 
