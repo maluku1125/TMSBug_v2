@@ -12,6 +12,12 @@ from discord.ext import commands
 API_BULLETIN = "https://maplestory.beanfun.com/api/GamaAd/FindAdData?AdType=MainBulletin&_=" 
 # Resp	{"ListData", "Data", "Code", "Message", "Url"}
 
+def get_now_HMS():
+    return datetime.datetime.now().strftime('%H:%M:%S')
+
+def PrintSlash(type, interaction: discord.Interaction):
+    print(f'{get_now_HMS()}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type}')
+    print('-'*40)
 
 class EventsDropdown(discord.ui.Select):
     def __init__(self, embedlist):
@@ -41,7 +47,7 @@ class Slash_RequestMapleEvents(commands.Cog):
 
     @app_commands.command(name="events當前活動", description="查看官網活動訊息")
     async def events(self, interaction: discord.Interaction):
-  
+        PrintSlash('events', interaction)
         await interaction.response.defer()
         if datetime.datetime.now().timestamp() > self.bulletin_update_ts + 1800.0 or self.bulletin_code != 1:
             # Refresh API is outdate or fail            
