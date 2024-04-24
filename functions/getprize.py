@@ -1,7 +1,5 @@
 import random
 import json
-import os
-import glob
 
 from functions.tinyfunctions import probably
 
@@ -16,8 +14,8 @@ def use_apple(messageauthor):
 
         AppleProbabilityTableDate = list(data.keys())[-1]
 
-        apple_chance_dict = data[AppleProbabilityTableDate]['apple_chance']
-        box_chance_dict = data[AppleProbabilityTableDate]['box_chance']
+        apple_chance_dict = data[AppleProbabilityTableDate]['appletable']
+        box_chance_dict = data[AppleProbabilityTableDate]['boxtable']
 
     applecnt = 0
     boxcnt = 0
@@ -72,10 +70,10 @@ def use_apple_FrenzyTotem(messageauthor):
     with open(AplleProbabilityFile, 'r', encoding='utf-8') as file:
         data = json.load(file)
 
-        AppleProbabilityTableDate = '000000'
+        AppleProbabilityTableDate = '00000000'
 
-        apple_chance_dict = data[AppleProbabilityTableDate]['apple_chance']
-        box_chance_dict = data[AppleProbabilityTableDate]['box_chance']
+        apple_chance_dict = data[AppleProbabilityTableDate]['appletable']
+        box_chance_dict = data[AppleProbabilityTableDate]['boxtable']
 
     applecnt = 0
     boxcnt = 0
@@ -132,7 +130,7 @@ def use_fashionbox(messageauthor):
 
         FashionBoxProbabilityTableDate = list(data.keys())[-1]
 
-        fashion_box_chance_dict = data[FashionBoxProbabilityTableDate]    
+        fashion_box_chance_dict = data[FashionBoxProbabilityTableDate]['table']    
 
     boxcnt = 0
     boxgetprize = False

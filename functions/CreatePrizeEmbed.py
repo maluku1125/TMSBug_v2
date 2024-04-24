@@ -8,7 +8,7 @@ def Create_FashionBox_embed():
         data = json.load(f)
 
         FashionBoxProbabilityTableDate = list(data.keys())[-1]
-        fashion_box_chance_dict = data[FashionBoxProbabilityTableDate]
+        fashion_box_chance_dict = data[FashionBoxProbabilityTableDate]['table'] 
 
         max_length = max(len(unit) for unit in fashion_box_chance_dict.keys())
 
@@ -21,9 +21,12 @@ def Create_FashionBox_embed():
 
         fashionboxValue = '```autohotkey\n' + '\n'.join(fashionbox_table) + '\n```'
 
+        starttime = data[FashionBoxProbabilityTableDate]['starttime']
+        endtime = data[FashionBoxProbabilityTableDate]['endtime']
+
         embed = discord.Embed(
             title=f"**時尚隨機箱**", 
-            description = f'開始日期{FashionBoxProbabilityTableDate}', 
+            description = f'開始時間 : {starttime}\n結束時間 : {endtime}', 
             color=0xfbe222,
             )
 
@@ -40,8 +43,8 @@ def Create_Apple_embed():
 
         AppleProbabilityTableDate = list(data.keys())[-1]
 
-        Apple_chance_dict = data[AppleProbabilityTableDate]['apple_chance']
-        box_chance_dict = data[AppleProbabilityTableDate]['box_chance']
+        Apple_chance_dict = data[AppleProbabilityTableDate]['appletable']
+        box_chance_dict = data[AppleProbabilityTableDate]['boxtable']
 
         max_length1 = max(len(unit) for unit in Apple_chance_dict.keys())
         max_length2 = max(len(unit) for unit in box_chance_dict.keys())
@@ -64,9 +67,12 @@ def Create_Apple_embed():
 
         BoxValue = '```autohotkey\n' + '\n'.join(BOX_table) + '\n```'
 
+        starttime = data[AppleProbabilityTableDate]['starttime']
+        endtime = data[AppleProbabilityTableDate]['endtime']
+
         embed = discord.Embed(
             title=f"**黃金蘋果**", 
-            description = f'開始日期{AppleProbabilityTableDate}', 
+            description = f'開始時間 : {starttime}\n結束時間 : {endtime}',  
             color=0xfbe222,
             )
         
