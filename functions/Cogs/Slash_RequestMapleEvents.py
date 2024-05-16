@@ -55,17 +55,14 @@ class Slash_RequestMapleEvents(commands.Cog):
                 async with session.get(API_BULLETIN + str(int(datetime.datetime.now().timestamp() * 1000))) as response:
                     if response.status == 200:
                         json = await response.json()
-                        self.bulletin_code = json['data'].get("resultCode", 0)  
-                        self.bulletin_cache = json['data'].get("resultData", {})  
+                        self.bulletin_code = 1
+                        self.bulletin_cache = json['listData']
                         self.bulletin_update_ts = datetime.datetime.now().timestamp()
-        if self.bulletin_code != 1:
-            await interaction.edit_original_response(embed=discord.Embed(description="讀取網頁失敗，請稍後再嘗試。"))
-        else:
-      
-            embeds = self.CreateMapleEventsEmbeds()
-            
-            events_view = EventsView(embeds)
-            await interaction.edit_original_response(embed=embeds[0], view=events_view)
+              
+        embeds = self.CreateMapleEventsEmbeds()
+        
+        events_view = EventsView(embeds)
+        await interaction.edit_original_response(embed=embeds[0], view=events_view)
 
     def CreateMapleEventsEmbeds(self):
         embeds = []
@@ -77,8 +74,8 @@ class Slash_RequestMapleEvents(commands.Cog):
                 description = f""
             )
             embed.set_image(url=data["adImage"])
-            start_dt = datetime.datetime.strptime(data["adSTime"], "%Y-%m-%dT%H:%M:%S")
-            end_dt = datetime.datetime.strptime(data["adETime"], "%Y-%m-%dT%H:%M:%S")
+            start_dt = datetime.datetime.strptime(data["adsTime"], "%Y-%m-%dT%H:%M:%S")
+            end_dt = datetime.datetime.strptime(data["adeTime"], "%Y-%m-%dT%H:%M:%S")
             if isinstance(start_dt, datetime.datetime) and isinstance(end_dt, datetime.datetime):
                 text = f"{start_dt.strftime('%Y年%m月%d日 %H點%M分')} ~ {end_dt.strftime('%Y年%m月%d日 %H點%M分')}"
             else:

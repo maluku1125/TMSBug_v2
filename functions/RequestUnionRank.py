@@ -2,8 +2,9 @@ import requests
 import json
 import discord
 import datetime
+import time
 
-serverlogo = {
+worldlogo = {
     "艾麗亞" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/ai_li_ya.png",
     "普力特" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/pu_li_te.png",
     "琉德" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/liu_de.png",
@@ -55,13 +56,13 @@ def Request_UnionRank(target):
 
     return data, RequestSuccess
 
-def Request_serverUnionRank(server, target):
+def Request_serverUnionRank(type, server, target):
 
     url = "https://tw-event.beanfun.com/MapleStory/api/UnionWebRank/GetRank"
 
     # 設置請求酬載
     payload = {
-        "RankType": "2", #3 = 總等級排行 2 = 角色等級排行 1 = 攻擊力排行
+        "RankType": f"{type}", #3 = 總等級排行 2 = 角色等級排行 1 = 攻擊力排行
         "GameWorldId": f"{server}", 
         "CharacterName": f"{target}",
         #"page": "4"
@@ -91,6 +92,8 @@ def Request_serverUnionRank(server, target):
     
 def Create_UnionRank_embed(playername):
 
+    start_time = time.time()
+
     data, RequestSuccess = Request_UnionRank(playername)
     nowtime = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
 
@@ -117,15 +120,19 @@ def Create_UnionRank_embed(playername):
         GameWorldName = character_data['GameWorldName']
         CharacterLookUrl = character_data['CharacterLookUrl']
 
-        server_lv_rank = Request_serverUnionRank(worldnumber[GameWorldName], playername)
+        server_lv_rank = Request_serverUnionRank(2, worldnumber[GameWorldName], playername)
+        server_total_rank = Request_serverUnionRank(3, worldnumber[GameWorldName], playername)
+        lv_rank = Request_serverUnionRank(2, -1, playername)
+
+        response_time = round(time.time() - start_time, 3)
 
         embed = discord.Embed(
             title = f"", 
-            description = f'[TMS 新楓之谷 全伺服器聯盟戰地排行榜](https://tw-event.beanfun.com/MapleStory/UnionWebRank/Index.aspx)', 
+            description = f'[TMS聯盟戰地排行榜](https://tw-event.beanfun.com/MapleStory/UnionWebRank/Index.aspx)', 
             color = 0x6f00d2,
             )
         
-        embed.set_author(name=f"{CharacterName}", icon_url=serverlogo[GameWorldName])
+        embed.set_author(name=f"{CharacterName}", icon_url=worldlogo[GameWorldName])
 
         embed.add_field(
             name="基本資料",
@@ -154,13 +161,17 @@ def Create_UnionRank_embed(playername):
             name="排行",
             value=(
                 "```autohotkey\n"
-                f"全服聯盟總等級 : {Rank}\n"
-                f"伺服器角色等級 : {server_lv_rank}\n```"                
+                f"{GameWorldName}\n"
+                f"角色等級　 : {server_lv_rank}\n"
+                f"聯盟總等級 : {server_total_rank}\n"
+                f"全服\n"
+                f"角色等級　 : {lv_rank}\n"
+                f"聯盟總等級 : {Rank}\n```"                
             ),
             inline=False,
         )
 
         embed.set_thumbnail(url=CharacterLookUrl)
-        embed.set_footer(text=f'查詢時間 : {nowtime}')
+        embed.set_footer(text=f'請求 : {response_time}s | 查詢 : {nowtime}')
 
         return embed
