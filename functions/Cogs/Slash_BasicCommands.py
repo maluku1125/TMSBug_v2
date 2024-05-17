@@ -7,6 +7,7 @@ import time
 
 from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
 from functions.MSCrawler import Format_ApplePrizeData, Format_FashionBoxPrizeData, save_apple_json_file, save_fashionbox_json_file
+from functions.GetPrize import reloaddata
  
 process = psutil.Process()
 
@@ -24,7 +25,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v2.5.3'
+version = 'v2.5.6'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -85,7 +86,11 @@ class Slash_BasicCommands(commands.Cog):
             appleresult = save_apple_json_file()
             fashionmboxresult =save_fashionbox_json_file()
             await interaction.edit_original_response(content=f'已更新抽獎機率表\n黃金蘋果 : {appleresult}\n時尚隨機箱 : {fashionmboxresult}')
-        
+
+        if dev_func == 'reloadprize' and str(interaction.user.id) == '310164490391912448':
+            print('reloadprize')
+            reloaddata()
+            await interaction.response.send_message(content=f'已重新加載抽獎機率表(黃金蘋果,時尚隨機箱)')
 
         embed = discord.Embed(
             title=f"**TMS新楓之谷BOT**", 

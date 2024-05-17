@@ -4,8 +4,7 @@ from discord.ext import commands
 import datetime
 from discord.app_commands import Choice
 
-from functions.GetPrize import use_apple, use_fashionbox, use_apple_FrenzyTotem
-from functions.CreatePrizeEmbed import Create_FashionBox_embed, Create_Apple_embed
+from functions.GetPrize import use_apple, use_fashionbox, use_apple_FrenzyTotem, Create_FashionBox_embed, Create_Apple_embed
 
 def get_now_HMS():
     return datetime.datetime.now().strftime('%H:%M:%S')

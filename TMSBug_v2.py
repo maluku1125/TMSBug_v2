@@ -101,6 +101,11 @@ class TMSBot(commands.AutoShardedBot):
         print('TMSBot_v2 is Online')
         print('-'*25)
 
+    async def on_guild_join(self, guild):
+        
+        print(f'Joined new guild: {guild.name} (id: {guild.id})')
+        print(f'Currently in {len(self.guilds)} guilds')
+        print('-'*25)
 
     async def on_message(self, message, /):
                 
