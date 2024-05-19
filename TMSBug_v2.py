@@ -107,23 +107,6 @@ class TMSBot(commands.AutoShardedBot):
         print(f'Currently in {len(self.guilds)} guilds')
         print('-'*25)
 
-    async def on_message(self, message, /):
-                
-        if datetime.datetime.now().strftime('%m%d') != self.time_date:
-            self.time_date = datetime.datetime.now().strftime('%m%d')
-            self.speak_count = 0
-        
-        # 略自己
-        if message.author == self.user:
-            return
-        
-        now_HMS = datetime.datetime.now().strftime('%H:%M:%S')
-        
-        # 略 TMS server
-        if message.guild.id == int(self._config["function"]["tmsguildid"]):
-            return
-
-        #await self.process_commands(message)
 
 async def main():
     loop = asyncio.new_event_loop()
