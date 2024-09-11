@@ -4,6 +4,8 @@ from discord.ext import commands
 import datetime
 from discord.app_commands import Choice
 
+from functions.tinyfunctions import probably
+
 from functions.CreateBossDataEmbed import Create_Boss_Data_Embed, get_difficulty_value
 
 def get_now_HMS():
@@ -74,7 +76,8 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             Choice(name = "黑魔法師", value = "黑魔法師"),
             Choice(name = "受選的賽蓮", value = "受選的賽蓮"),
             Choice(name = "監視者卡洛斯", value = "監視者卡洛斯"),
-            Choice(name = "咖凌", value = "咖凌")
+            Choice(name = "咖凌", value = "咖凌"),
+            Choice(name = "林波", value = "林波")
         ],
         difficulty = [
             Choice(name = "簡單", value = "easy"),
@@ -85,12 +88,19 @@ class Slash_CreateBossDataEmbed(commands.Cog):
     )
     async def bossinfo(self, interaction: discord.Interaction, bossname: str, difficulty: str):
         
+
         index, indexerror = get_difficulty_value(bossname, difficulty)
+        
         if indexerror == "True":
             await interaction.response.send_message(content=f"{interaction.user.mention} {bossname} 沒有這個難度")
             return
 
-        embed, num_subtitles = Create_Boss_Data_Embed(bossname, index)
+        if probably(0.001):
+            embed = Create_Boss_Data_Embed("蟲蟲", 0)
+        else:
+            embed = Create_Boss_Data_Embed(bossname, index)
         PrintSlash('bossinfo', interaction)
+        
+        
         await interaction.response.send_message(embed=embed)
     

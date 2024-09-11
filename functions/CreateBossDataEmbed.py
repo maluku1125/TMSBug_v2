@@ -43,6 +43,7 @@ boss_aliases = {
     '監視者卡洛斯':'監視者卡洛斯',
     '卡洛斯':'監視者卡洛斯',
     '咖凌':'咖凌',
+    '林波':'林波',
     '蟲蟲':'蟲蟲'
 }
 with open(f'C:\\Users\\User\\Desktop\DiscordBot\\TMSBug_v2\\Data\\BossData.json', 'r', encoding='utf-8') as f:
@@ -95,7 +96,7 @@ def Create_Boss_Data_Embed(Content, Bossmode):
         description = f'🚩入場等級：{entry_level}\n⌛時間限制：{timelimit}mins\n🧪藥水冷卻：{potion_cooldown}sec\n💀死亡次數：{death_print}\n📆完成次數：{complete_count}{arcane_authentic}\n🛡怪物防禦：{defense}\n{"-"*40}', 
         color=0xfbe200,
         )
-    embed.set_footer(text='資料由 音奈希莉亞(hsiliya) 提供')
+    embed.set_footer(text='資料引用自hsiliya/zxcvll1379')
     embed.add_field(name="", value="> 🩸__**BOSS血量**__", inline = False)
     stage_count = ["第一階段", "第二階段", "第三階段", "第四階段", "第五階段"]
     for _ in range(len([_ for _ in stages if _])):
@@ -105,7 +106,7 @@ def Create_Boss_Data_Embed(Content, Bossmode):
     embed.add_field(name="🎁__其他掉落物__", value=f"{sub_drop_description}", inline = True)
     embed.add_field(name="💰結晶石", value=f"{glowing_soul_crystal:,}", inline = True)
 
-    return embed, len(subtitles)
+    return embed
 
 def get_difficulty_value(bossname: str, difficulty: str) -> int:
     difficulties = list(boss_data[bossname].keys())

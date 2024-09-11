@@ -25,7 +25,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v2.5.9'
+version = 'v2.6.0'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -52,7 +52,7 @@ class Slash_BasicCommands(commands.Cog):
 
     #-----------------help-----------------
     @app_commands.command(name="help",description="help")
-    @app_commands.describe(dev_func = "起源")
+    @app_commands.describe(dev_func = "dev_func")
 
     async def help(self, interaction: discord.Interaction, dev_func: str = None):
 
