@@ -4,6 +4,7 @@ from discord.ext import commands
 import datetime
 import json
 from functions.tinyfunctions import probably
+from functions.SlashCommandManager import UseSlashCommand
 
 # 偷走的數量
 stolen_fragments = 0
@@ -11,13 +12,6 @@ stolen_fragments = 0
 
 with open(f'C:\\Users\\User\\Desktop\\DiscordBot\\TMSBug_v2\\Data\\HexaNodesCost.json', 'r', encoding='utf-8') as f:
     HexaNodesCost = json.load(f)
-
-def get_now_HMS():
-    return datetime.datetime.now().strftime('%H:%M:%S')
-
-def PrintSlash(type, interaction: discord.Interaction):
-    print(f'{get_now_HMS()}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type}')
-    print('-'*40)
 
 class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -48,7 +42,7 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
             extrafragment
         )
 
-        PrintSlash('calculatefragment', interaction)
+        UseSlashCommand('calculatefragment', interaction)
         await interaction.response.send_message(embed=embed)
 
 

@@ -5,13 +5,7 @@ import datetime
 from discord.app_commands import Choice
 
 from functions.GetPrize import use_apple, use_fashionbox, use_apple_FrenzyTotem, Create_FashionBox_embed, Create_Apple_embed
-
-def get_now_HMS():
-    return datetime.datetime.now().strftime('%H:%M:%S')
-
-def PrintSlash(type, interaction: discord.Interaction):
-    print(f'{get_now_HMS()}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type}')
-    print('-'*40)
+from functions.SlashCommandManager import UseSlashCommand
 
 class Slash_CreatePrizeEmbed(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -39,7 +33,7 @@ class Slash_CreatePrizeEmbed(commands.Cog):
             Message = "抽不到"
 
         
-        PrintSlash('getprize', interaction)
+        UseSlashCommand('getprize', interaction)
         await interaction.response.send_message(content=f"{Message}")
 
     #-----------------當期抽獎機率-----------------
@@ -57,5 +51,5 @@ class Slash_CreatePrizeEmbed(commands.Cog):
         elif type == "FashionBox":
             embed = Create_FashionBox_embed()
             
-        PrintSlash('getprizechance', interaction)
+        UseSlashCommand('getprizechance', interaction)
         await interaction.response.send_message(embed=embed)

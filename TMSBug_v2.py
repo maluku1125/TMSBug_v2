@@ -5,7 +5,6 @@ import configparser
 import asyncio
 
 
-from functions.Cogs.Prefix_BasicCommands import Prefix_BasicCommands
 from functions.Cogs.Slash_BasicCommands import Slash_BasicCommands
 from functions.Cogs.Slash_RequestUnionRank import Slash_RequestUnionRank
 from functions.Cogs.Slash_CreateBossDataEmbed import Slash_CreateBossDataEmbed
@@ -68,8 +67,6 @@ class TMSBot(commands.AutoShardedBot):
 
     async def on_ready(self):       
         
-        await self.add_cog(Prefix_BasicCommands(self))
-        print('Cogs:Prefix_BasicCommands loaded')
         await self.add_cog(Slash_BasicCommands(self))
         print('Cogs:Slash_BasicCommands loaded')
         await self.add_cog(Slash_RequestUnionRank(self))

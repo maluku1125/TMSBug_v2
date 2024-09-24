@@ -8,6 +8,7 @@ import time
 from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
 from functions.MSCrawler import Format_ApplePrizeData, Format_FashionBoxPrizeData, save_apple_json_file, save_fashionbox_json_file
 from functions.GetPrize import reloaddata
+from functions.SlashCommandManager import UseSlashCommand, GetSlashCommandUsage
  
 process = psutil.Process()
 
@@ -25,19 +26,10 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v2.6.3'
+version = 'v2.6.4'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
-
-
-def get_now_HMS():
-    return datetime.datetime.now().strftime('%H:%M:%S')
-
-def PrintSlash(type, interaction: discord.Interaction):
-    print(f'{get_now_HMS()}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type}')
-    print('-'*40)
-
 
 class Slash_BasicCommands(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -47,7 +39,7 @@ class Slash_BasicCommands(commands.Cog):
     @app_commands.command(name="ping", description="ping")
     async def ping(self, interaction: discord.Interaction):
         bot_latency = round(self.client.latency * 1000)
-        PrintSlash('ping', interaction)
+        UseSlashCommand('ping', interaction)
         await interaction.response.send_message(f"pong, latency is {bot_latency} ms.")
 
     #-----------------help-----------------
@@ -91,6 +83,12 @@ class Slash_BasicCommands(commands.Cog):
             print('reloadprize')
             reloaddata()
             await interaction.response.send_message(content=f'已重新加載抽獎機率表(黃金蘋果,時尚隨機箱)')
+            
+        if dev_func == "usage" and str(interaction.user.id) == '310164490391912448':
+            print("slash_command_usage")
+            embed = GetSlashCommandUsage()
+            await interaction.response.send_message(embed=embed)
+            
 
         embed = discord.Embed(
             title=f"**TMS新楓之谷BOT**", 
@@ -155,7 +153,7 @@ class Slash_BasicCommands(commands.Cog):
         )
         
         embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/957283103364235284.webp?size=96&quality=lossless')
-        PrintSlash('help', interaction)
+        UseSlashCommand('help', interaction)
         if interaction.guild_id != 420666881368784929 and self.client.user.id == 684625575729561609:
             await interaction.response.send_message("TMS_Bug未通過Discord驗證，可以轉至TMSBug_v2服務，請聯絡管理員邀請並於邀請後踢除TMS_Bug\n具體差異：\n```diff\n+通過discord認證\n+無法閱讀聊天室內容\n-無法使用<!>指令或讀取聊天室相關互動```\n[邀請TMSBug_v2](https://reurl.cc/aLj8V9)",embed=embed)
         else:
@@ -164,13 +162,13 @@ class Slash_BasicCommands(commands.Cog):
     @app_commands.command(name="練等備忘", description="練等備忘")
     async def farmingmemo(self, interaction: discord.Interaction):
         embed = CreateFarmingEmbed()
-        PrintSlash('farmingmemo', interaction)
+        UseSlashCommand('farmingmemo', interaction)
         await interaction.response.send_message(embed=embed)
 
   
     @app_commands.command(name="打王備忘", description="打王備忘")
     async def combatmemo(self, interaction: discord.Interaction):
         embed = CreateCombatEmbed()
+        UseSlashCommand('Bossingmemo', interaction)
         await interaction.response.send_message(embed=embed)
         
-

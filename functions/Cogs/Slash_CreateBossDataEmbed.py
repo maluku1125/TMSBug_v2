@@ -7,13 +7,7 @@ from discord.app_commands import Choice
 from functions.tinyfunctions import probably
 
 from functions.CreateBossDataEmbed import Create_Boss_Data_Embed, get_difficulty_value
-
-def get_now_HMS():
-    return datetime.datetime.now().strftime('%H:%M:%S')
-
-def PrintSlash(type, interaction: discord.Interaction):
-    print(f'{get_now_HMS()}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type}')
-    print('-'*40)
+from functions.SlashCommandManager import UseSlashCommand
 
 class Slash_CreateBossDataEmbed(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -58,7 +52,7 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             return
 
         embed, num_subtitles = Create_Boss_Data_Embed(bossname, index)
-        PrintSlash('easybossinfo', interaction)
+        UseSlashCommand('easybossinfo', interaction)
         await interaction.response.send_message(embed=embed)
         
     @app_commands.command(name="boss困王", description="BOSS資料")
@@ -99,7 +93,7 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             embed = Create_Boss_Data_Embed("蟲蟲", 0)
         else:
             embed = Create_Boss_Data_Embed(bossname, index)
-        PrintSlash('bossinfo', interaction)
+        UseSlashCommand('bossinfo', interaction)
         
         
         await interaction.response.send_message(embed=embed)

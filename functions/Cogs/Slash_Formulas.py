@@ -5,12 +5,7 @@ import datetime
 from discord.app_commands import Choice
 import math
 
-def get_now_HMS():
-    return datetime.datetime.now().strftime('%H:%M:%S')
-
-def PrintSlash(type, interaction: discord.Interaction):
-    print(f'{get_now_HMS()}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type}')
-    print('-'*40)
+from functions.SlashCommandManager import UseSlashCommand
     
 def CalculateUnionPower_combatpower(combatpower):
     if combatpower <= 499999:
@@ -133,7 +128,7 @@ class Slash_Formulas(commands.Cog):
     @app_commands.command(name="formulas各式公式", description="各種公式")
     @app_commands.describe(
             formulas = "功能", 
-            calculatevar_1 = "變數1", calculatevar_2 = "變數2", calculatevar_3 = "變數3", calculatevar_4 = "變數4", calculatevar_5 = "變數5",
+            var_1 = "變數1", var_2 = "變數2", var_3 = "變數3", var_4 = "變數4", var_5 = "變數5",
         )
     @app_commands.choices(
         formulas = [
@@ -146,7 +141,7 @@ class Slash_Formulas(commands.Cog):
     async def formulas(
         self, interaction: discord.Interaction, 
         formulas: str, 
-        calculatevar_1: int=0, calculatevar_2: int=0, calculatevar_3: int=0, calculatevar_4: int=0, calculatevar_5: int=0):
+        var_1: int=0, var_2: int=0, var_3: int=0, var_4: int=0, var_5: int=0):
         
         await interaction.response.defer()
         
@@ -183,15 +178,14 @@ class Slash_Formulas(commands.Cog):
             )
             
         if formulas == "unionattackdamage":
-            embed = unionattackdamage(calculatevar_1, calculatevar_2)    
+            embed = unionattackdamage(var_1, var_2)    
         elif formulas == "levelfinaldamage":    
-            embed = levelfinaldamage(calculatevar_1, calculatevar_2)   
+            embed = levelfinaldamage(var_1, var_2)   
         elif formulas == "levelexpmpdifier":
-            embed = levelexpmpdifier(calculatevar_1, calculatevar_2)
+            embed = levelexpmpdifier(var_1, var_2)
             
-                
-                
-        PrintSlash('formulas', interaction)                
+        UseSlashCommand('formulas', interaction)   
+                     
         await interaction.edit_original_response(embed=embed)
 
 def unionattackdamage(calculatevar_1, calculatevar_2):  
