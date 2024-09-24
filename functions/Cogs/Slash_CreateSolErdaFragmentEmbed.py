@@ -105,7 +105,7 @@ def CreateSolErdaFragment(
     nodes = [SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, BoostNode3, BoostNode4]
     for node in nodes:
         if node < -30 or node > 30:
-            error_embed = discord.Embed(title="等級輸入錯誤", description="必須填入-1~30之間的數", color=0xff0000)
+            error_embed = discord.Embed(title="等級輸入錯誤", description="必須填入-30~30之間的數", color=0xff0000)
             return error_embed
 
     # 愚人節機率

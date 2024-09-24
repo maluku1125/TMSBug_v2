@@ -25,7 +25,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v2.6.0'
+version = 'v2.6.3'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -171,7 +171,6 @@ class Slash_BasicCommands(commands.Cog):
     @app_commands.command(name="打王備忘", description="打王備忘")
     async def combatmemo(self, interaction: discord.Interaction):
         embed = CreateCombatEmbed()
-        PrintSlash('combatmemo', interaction)
         await interaction.response.send_message(embed=embed)
         
 
