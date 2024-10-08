@@ -56,7 +56,7 @@ def UseSlashCommand(type, interaction: discord.Interaction):
     
 def pad_string(s, width):
     pad_length = width - wcswidth(s)
-    return s + ' ' * pad_length
+    return ' ' * pad_length + s
     
 def GetSlashCommandUsage():
     
@@ -68,38 +68,41 @@ def GetSlashCommandUsage():
     today_topguild_message = ""
     
     # 設定對齊寬度
-    width = 20
-    
-    topusage = sorted(Slash_Command_Usage.items(), key=lambda item: item[1], reverse=True)
+    width = 7
+        
+    topusage = sorted(Slash_Command_Usage.items(), key=lambda item: item[1], reverse=True)[:5]
     for command, count in topusage:
-         usage_message += f'{pad_string(command, width)} : {count}\n'
+        formatted_count = f"{count:,}"
+        usage_message += f'{pad_string(str(formatted_count), width)} : {command}\n'
     if usage_message == "":
         usage_message = "No commands have been used yet."   
+    print("Command Usage")
+    print(usage_message)    
     
-    topguild = sorted(Slash_Command_Usage_Guild.items(), key=lambda item: item[1], reverse=True)[:10]
-    for command, count in topguild:
-        topguild_message += f'{pad_string(command, width)} : {count}\n'
-    if topguild_message == "Top 10 Guild Command Usage:\n":
-        topguild_message = "No guild commands have been used yet." 
-    # Today
-    today_topusagge = sorted(Today_Slash_Command_Usage.items(), key=lambda item: item[1], reverse=True)
+    today_topusagge = sorted(Today_Slash_Command_Usage.items(), key=lambda item: item[1], reverse=True)[:5]
     for command, count in today_topusagge:
-        today_usage_message += f'{pad_string(command, width)} : {count}\n'
+        formatted_count = f"{count:,}"
+        today_usage_message += f'{pad_string(str(formatted_count), width)} : {command}\n'
     if today_usage_message == "":
         today_usage_message = "No commands have been used yet." 
-    
-    today_topguild = sorted(Today_Slash_Command_Usage_Guild.items(), key=lambda item: item[1], reverse=True)[:10]
-    for command, count in today_topguild:
-        today_topguild_message += f'{pad_string(command, width)} : {count}\n'
-    if today_topguild_message == "Top 10 Guild Command Usage:\n":
-        today_topguild_message = "No guild commands have been used yet."
-    
-    print("Command Usage")
-    print(usage_message)
-    print("Top Guild")
-    print(topguild_message)
     print("Command Usage(today)")
-    print(today_usage_message)
+    print(today_usage_message)   
+    
+    topguild = sorted(Slash_Command_Usage_Guild.items(), key=lambda item: item[1], reverse=True)[:5]
+    for command, count in topguild:
+        formatted_count = f"{count:,}"
+        topguild_message += f'{pad_string(str(formatted_count), width)} : {command}\n'
+    if topguild_message == "":
+        topguild_message = "No guild commands have been used yet." 
+    print("Top Guild")
+    print(topguild_message)        
+        
+    today_topguild = sorted(Today_Slash_Command_Usage_Guild.items(), key=lambda item: item[1], reverse=True)[:5]
+    for command, count in today_topguild:
+        formatted_count = f"{count:,}"
+        today_topguild_message += f'{pad_string(str(formatted_count), width)} : {command}\n'
+    if today_topguild_message == "":
+        today_topguild_message = "No guild commands have been used yet."
     print("Top Guild(today)")
     print(today_topguild_message)
         
@@ -114,18 +117,17 @@ def GetSlashCommandUsage():
         value=f'```autohotkey\n{usage_message}```', 
         inline=False
         )
-        
-    embed.add_field(
-        name="**Top Guild**", 
-        value=f'```autohotkey\n{topguild_message}```', 
-        inline=False
-        )  
-    
     embed.add_field(
         name="**Command Used(today)**", 
         value=f'```autohotkey\n{today_usage_message}```', 
         inline=False
-        )
+        )    
+    
+    embed.add_field(
+        name="**Top Guild**", 
+        value=f'```autohotkey\n{topguild_message}```', 
+        inline=False
+        )          
         
     embed.add_field(
         name="**Top Guild(today)**", 
