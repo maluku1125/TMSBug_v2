@@ -13,6 +13,7 @@ from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Slash_CreateSolErdaF
 from functions.Cogs.Slash_RequestMapleEvents import Slash_RequestMapleEvents
 from functions.Cogs.Slash_Formulas import Slash_Formulas
 from functions.Cogs.Slash_CalculateScrolls import Slash_CalculateScrolls
+from functions.Cogs.Slash_Cubes import Slash_Cubes
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -84,6 +85,8 @@ class TMSBot(commands.AutoShardedBot):
         print('Cogs:Slash_Formulas loaded')
         await self.add_cog(Slash_CalculateScrolls(self))
         print('Cogs:Slash_CalculateScrolls loaded')
+        await self.add_cog(Slash_Cubes(self))
+        print('Cogs:Slash_Cubes loaded')
 
         dev_guild_id = self._config["bot"]["dev_guild"]
         print('slash command is now loading')

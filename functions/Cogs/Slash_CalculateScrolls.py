@@ -3,7 +3,9 @@ from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
 from functions.tinyfunctions import probably
- 
+
+from functions.SlashCommandManager import UseSlashCommand 
+
 class Slash_CalculateScrolls(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
@@ -52,26 +54,29 @@ class Slash_CalculateScrolls(commands.Cog):
                 ScrollType = "RED卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252068416422051.webp?size=96&quality=lossless'
             elif 12 > avgvalue > 10:
-                ScrollType = "RED卷 + 以上混衝"
+                ScrollType = "混衝(RED卷+)"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252068416422051.webp?size=96&quality=lossless'
             elif avgvalue == 12:
                 ScrollType = "X卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252072321318983.webp?size=96&quality=lossless'
             elif 13 > avgvalue > 12:
-                ScrollType = "X卷 + 以上混衝"
+                ScrollType = "混衝(X卷+)"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252072321318983.webp?size=96&quality=lossless'
             elif avgvalue == 13:
                 ScrollType = "V卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252070429687909.webp?size=96&quality=lossless'
             elif 14 > avgvalue > 13:
-                ScrollType = "V卷 + 以上混衝"
+                ScrollType = "混衝(V卷+)"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252070429687909.webp?size=96&quality=lossless'
             elif avgvalue == 14:
                 ScrollType = "B卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252074540240916.webp?size=96&quality=lossless'
-            elif 20 >= avgvalue > 14:
+            elif 17 >= avgvalue > 14:
                 ScrollType = "榮耀/命運/救世"
-                emojilink = 'https://cdn.discordapp.com/emojis/1293252079086993408.webp?size=96&quality=lossless'
+                emojilink = 'https://cdn.discordapp.com/emojis/1293260931471638632.webp?size=96&quality=lossless'
+            elif 20 >= avgvalue > 17:
+                ScrollType = "榮耀/命運/救世"
+                emojilink = 'https://cdn.discordapp.com/emojis/1293252079086993408.webp?size=96&quality=lossless'    
             elif avgvalue > 20:
                 ScrollType = "您超越了"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252076180078713.webp?size=96&quality=lossless'
@@ -83,32 +88,35 @@ class Slash_CalculateScrolls(commands.Cog):
                 ScrollType = "極電卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252080781492296.webp?size=96&quality=lossless'
             elif 5 > avgvalue > 4:
-                ScrollType = "極電卷 + 混衝"
+                ScrollType = "混衝(極電卷+)"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252080781492296.webp?size=96&quality=lossless'
             elif avgvalue == 5:
                 ScrollType = "RED卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252068416422051.webp?size=96&quality=lossless'
             elif 7 > avgvalue > 5:
-                ScrollType = "RED卷 + 以上混衝"
+                ScrollType = "混衝(RED卷+)"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252068416422051.webp?size=96&quality=lossless'
             elif avgvalue == 7:
                 ScrollType = "X卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252072321318983.webp?size=96&quality=lossless'
             elif 8 > avgvalue > 7:
-                ScrollType = "X卷 + 以上混衝"
+                ScrollType = "混衝(X卷+)"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252072321318983.webp?size=96&quality=lossless'
             elif avgvalue == 8:
                 ScrollType = "V卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252070429687909.webp?size=96&quality=lossless'
             elif 9 > avgvalue > 8:
-                ScrollType = "V卷 + 以上混衝"
+                ScrollType = "混衝(V卷+)"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252070429687909.webp?size=96&quality=lossless'
             elif avgvalue == 9:
                 ScrollType = "B卷"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252074540240916.webp?size=96&quality=lossless'
-            elif 15 >= avgvalue > 9:
+            elif 12 >= avgvalue > 9:
                 ScrollType = "榮耀/命運/救世"
-                emojilink = 'https://cdn.discordapp.com/emojis/1293252079086993408.webp?size=96&quality=lossless'
+                emojilink = 'https://cdn.discordapp.com/emojis/1293260931471638632.webp?size=96&quality=lossless'
+            elif 15 >= avgvalue > 12:
+                ScrollType = "榮耀/命運/救世"
+                emojilink = 'https://cdn.discordapp.com/emojis/1293252079086993408.webp?size=96&quality=lossless'    
             elif avgvalue > 15:
                 ScrollType = "您超越了"
                 emojilink = 'https://cdn.discordapp.com/emojis/1293252076180078713.webp?size=96&quality=lossless'
@@ -128,13 +136,15 @@ class Slash_CalculateScrolls(commands.Cog):
             name="模擬結果",
             value=(
                 "```autohotkey\n"
-                f"裝備類型: {equipname}\n"
-                f"卷軸類型: {ScrollType}\n"    
-                f"均攻　　: {avgvalue}\n```"            
+                f"裝備類型 : {equipname}(+{equipscrollscount})\n"
+                f"卷軸類型 : {ScrollType}\n"    
+                f"均攻　　 : {round(avgvalue,2)}(+{purplevalue})\n```"          
             ),
             inline=True,
         )
         
         embed.set_thumbnail(url=emojilink)
+        
+        UseSlashCommand('scrollsimulator', interaction)
         
         await interaction.response.send_message(embed=embed)
