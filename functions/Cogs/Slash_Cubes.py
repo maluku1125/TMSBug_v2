@@ -39,6 +39,10 @@ class Slash_Cubes(commands.Cog):
             Choice(name = "閃炫方塊", value = "violet_cube"),
             Choice(name = "新對等方塊", value = "equality_cube"),
             Choice(name = "結合方塊", value = "uni_cube"),
+            Choice(name = "珍貴附加方塊", value = "bonus_cube"),
+            Choice(name = "恢復附加方塊", value = "bonus_renew_cube"),
+            Choice(name = "閃亮附加方塊", value = "shiney_bonus_cube"),
+            Choice(name = "絕對附加方塊", value = "abs_bonus_cube"),
         ],
         target = [
             Choice(name = "萌獸", value = ""),
@@ -164,20 +168,50 @@ def Convert_cubeandtarget(cubetype, target):
         cubeemoji = "<:cube15:1135615190524776559>"
     elif cubetype == "mirror_cube":
         cubename = "閃耀鏡射方塊"
-        cubecolor = 0x548C00      
+        cubecolor = 0xCB8119      
         cubeemoji = "<:cube9:901346916833574982>"
     elif cubetype == "violet_cube":
         cubename = "閃炫方塊"
-        cubecolor = 0x548C00      
+        cubecolor = 0xAE79DF      
         cubeemoji = "<:cube7:901346808591179796>"
     elif cubetype == "equality_cube":
         cubename = "新對等方塊"
-        cubecolor = 0x548C00      
+        cubecolor = 0x9CE1FF      
         cubeemoji = "<:cube10:901346946248233000>"
     elif cubetype == "uni_cube":
         cubename = "結合方塊"
-        cubecolor = 0x548C00      
+        cubecolor = 0x4488CC      
         cubeemoji = "<:cube8:901346878854135869>"
+    elif cubetype == "bonus_cube":
+        cubename = "珍貴附加方塊"
+        cubecolor = 0xffC8E1      
+        cubeemoji = "<:cube16:1135615213413085234>"
+        if target == "2ndweapon":
+            target = "2ndweapon"
+            targetname = "副武器"
+            
+    elif cubetype == "bonus_renew_cube":
+        cubename = "恢復附加方塊"
+        cubecolor = 0xC2EB9F      
+        cubeemoji = "<:cube17:1135615229259153449>"
+        if target == "2ndweapon":
+            target = "2ndweapon"
+            targetname = "副武器"
+    elif cubetype == "shiney_bonus_cube":
+        cubename = "閃亮附加方塊"
+        cubecolor = 0xF6F9A2      
+        cubeemoji = "<:cube18:1300867791985053716>"
+        if target == "2ndweapon":
+            target = "2ndweapon"
+            targetname = "副武器"
+    elif cubetype == "abs_bonus_cube":
+        cubename = "絕對附加方塊"
+        cubecolor = 0x9E9E9E      
+        cubeemoji = "<:cube13:1283030624080367701>"
+        if target == "2ndweapon":
+            target = "2ndweapon"
+            targetname = "副武器"
+    
         
     return target, targetname, cubename, cubecolor, cubeemoji
  
@@ -225,6 +259,32 @@ def create_rollcube_content(target, cubetype):
             f'```{rolldice(cubestable["renew_cube"]["legendary"][target])}```'
             f'```{rolldice(cubestable["renew_cube"]["legendary"][target])}```'
             )
+    
+    #附加恢復方塊 / 珍貴附加方塊
+    if cubetype == "bonus_cube" or cubetype == "bonus_renew_cube":
+        content = (
+            f'```{rolldice(cubestable["bonus_renew_cube"]["legendary"][target])}```'     
+            f'```{rolldice(cubestable["bonus_renew_cube"]["legendary"][target]) if probably(0.005) else rolldice(cubestable["bonus_renew_cube"]["unique"][target])}```'
+            f'```{rolldice(cubestable["bonus_renew_cube"]["legendary"][target]) if probably(0.005) else rolldice(cubestable["bonus_renew_cube"]["unique"][target])}```'
+            )
+        
+    #閃亮附加方塊
+    if cubetype == "shiney_bonus_cube":
+        content = (
+            f'```{rolldice(cubestable["shiney_bonus_cube"]["legendary"][target])}```'     
+            f'```{rolldice(cubestable["shiney_bonus_cube"]["legendary"][target]) if probably(0.005) else rolldice(cubestable["shiney_bonus_cube"]["unique"][target])}```'
+            f'```{rolldice(cubestable["shiney_bonus_cube"]["legendary"][target]) if probably(0.005) else rolldice(cubestable["shiney_bonus_cube"]["unique"][target])}```'
+            )
+    
+    #絕對附加方塊
+    if cubetype == "abs_bonus_cube":
+        content = (
+            f'```{rolldice(cubestable["abs_bonus_cube"]["legendary"][target])}```'     
+            f'```{rolldice(cubestable["abs_bonus_cube"]["legendary"][target])}```'
+            f'```{rolldice(cubestable["abs_bonus_cube"]["unique"][target])}```'
+            )
+        
+        
            
     return content
    
@@ -303,6 +363,16 @@ def roll_equipment_cube(cubetype, target):
             value = content,
             inline = True,
         )
+        if cubetype == "shiney_bonus_cube":
+            UnitoLegchance = round(0.003 + 0.00005*usedcubecount,5)
+            if probably(UnitoLegchance):
+                embed.add_field(
+                    name=f"",
+                    value = "**跳框了**",
+                    inline = False,
+                )
+                usedcubecount = 1
+            embed.set_footer(text=f'罕跳傳機率 : {UnitoLegchance*100}%')
         
         await interaction.response.edit_message(embed=embed, view=view)
 
