@@ -51,7 +51,7 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             await interaction.response.send_message(content=f"{interaction.user.mention} {bossname} 沒有這個難度")
             return
 
-        embed, num_subtitles = Create_Boss_Data_Embed(bossname, index)
+        embed = Create_Boss_Data_Embed(bossname, index)
         UseSlashCommand('easybossinfo', interaction)
         await interaction.response.send_message(embed=embed)
         

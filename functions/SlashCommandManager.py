@@ -1,17 +1,16 @@
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 import datetime
+import time
+import csv
 
 from wcwidth import wcswidth
 
 Slash_Command_Usage = {}
 Slash_Command_Usage_Guild = {}
-Today_Slash_Command_Usage = {}
-Today_Slash_Command_Usage_Guild = {}
 
-today = None
+savedmonth = ''
+firstfile = False
 
 def get_now_HMS():
     return datetime.datetime.now().strftime('%H:%M:%S')
@@ -19,13 +18,7 @@ def get_now_HMS():
 def get_day():
     return datetime.datetime.now().strftime('%Y-%m-%d')
 
-def UseSlashCommand(type, interaction: discord.Interaction):
-    
-    global today, Today_Slash_Command_Usage, Today_Slash_Command_Usage_Guild
-    
-    if today == None:
-        today = get_day()
-    
+def UseSlashCommand(type, interaction: discord.Interaction):    
     if type in Slash_Command_Usage:
         Slash_Command_Usage[type] += 1
     else:
@@ -36,76 +29,96 @@ def UseSlashCommand(type, interaction: discord.Interaction):
     else:
         Slash_Command_Usage_Guild[interaction.guild.name] = 1    
     
-    if get_day() == today :
-        if type in Today_Slash_Command_Usage:
-            Today_Slash_Command_Usage[type] += 1
-        else:
-            Today_Slash_Command_Usage[type] = 1
-               
-        if interaction.guild.name in Today_Slash_Command_Usage_Guild:
-            Today_Slash_Command_Usage_Guild[interaction.guild.name] += 1
-        else:
-            Today_Slash_Command_Usage_Guild[interaction.guild.name] = 1
-    else:
-        Today_Slash_Command_Usage = {}
-        Today_Slash_Command_Usage_Guild = {}
-        today = get_day()
-    
     print(f'{get_now_HMS()}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type} #{Slash_Command_Usage[type]}')
     print('-'*40)
+    slash_log_save(interaction.guild, interaction.user, type)
+ 
+def slash_log_save(guild, user, commandtype):    
+    global savedmonth
+    month = time.strftime('%m', time.localtime(time.time()))
+    if month != savedmonth :
+        savedmonth = month
+        firstfile = True
+    else:
+        firstfile = False
+
+    ChatLog_output_path = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\SlashLog'
+    timestamp = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
+
+    with open(f'{ChatLog_output_path}\\{month}_slashlog.csv', 'a', newline='', encoding='utf-8') as csvfile:
+
+        fieldnames = ['Time', 'Guild', 'User', 'CommandType']        
+        writer = csv.DictWriter(csvfile, fieldnames = fieldnames) # 將 dictionary 寫入 CSV 檔 
+        if firstfile == True :
+            firstfile = False
+            writer.writeheader()
+
+        # 寫入資料
+        writer.writerow(
+            {
+            'Time' : timestamp,
+            'Guild': guild,
+            'User': user,
+            'CommandType' : commandtype      
+            }
+        ) 
     
 def pad_string(s, width):
     pad_length = width - wcswidth(s)
     return ' ' * pad_length + s
+ 
+def get_slash_count():
+    command_count = {}
+    guildlist ={}
+    ChatLog_output_path = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\SlashLog'
+    month = time.strftime('%m', time.localtime(time.time()))
+    
+    try:
+        with open(f'{ChatLog_output_path}\\{month}_slashlog.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                
+                command_type = row[3]
+                if command_type in command_count:
+                    command_count[command_type] += 1
+                else:
+                    command_count[command_type] = 1
+                    
+                guild = row[1]
+                if guild in guildlist:
+                    guildlist[guild] += 1
+                else:
+                    guildlist[guild] = 1
+                
+                    
+    except FileNotFoundError:
+        print("Log file not found.")
+    return command_count, guildlist  
     
 def GetSlashCommandUsage():
     
-    global today, Today_Slash_Command_Usage, Today_Slash_Command_Usage_Guild
 
-    usage_message = ""
-    today_usage_message = ""
-    topguild_message = ""
-    today_topguild_message = ""
+    command_count, guildlist = get_slash_count() 
     
     # 設定對齊寬度
-    width = 7
-        
-    topusage = sorted(Slash_Command_Usage.items(), key=lambda item: item[1], reverse=True)[:5]
-    for command, count in topusage:
-        formatted_count = f"{count:,}"
-        usage_message += f'{pad_string(str(formatted_count), width)} : {command}\n'
-    if usage_message == "":
-        usage_message = "No commands have been used yet."   
-    print("Command Usage")
-    print(usage_message)    
-    
-    today_topusagge = sorted(Today_Slash_Command_Usage.items(), key=lambda item: item[1], reverse=True)[:5]
-    for command, count in today_topusagge:
-        formatted_count = f"{count:,}"
-        today_usage_message += f'{pad_string(str(formatted_count), width)} : {command}\n'
-    if today_usage_message == "":
-        today_usage_message = "No commands have been used yet." 
-    print("Command Usage(today)")
-    print(today_usage_message)   
-    
-    topguild = sorted(Slash_Command_Usage_Guild.items(), key=lambda item: item[1], reverse=True)[:5]
+    width = 7 
+      
+    topguild = sorted(guildlist.items(), key=lambda item: item[1], reverse=True)[:5]
+    topguild_message = ""    
     for command, count in topguild:
         formatted_count = f"{count:,}"
         topguild_message += f'{pad_string(str(formatted_count), width)} : {command}\n'
     if topguild_message == "":
         topguild_message = "No guild commands have been used yet." 
-    print("Top Guild")
-    print(topguild_message)        
-        
-    today_topguild = sorted(Today_Slash_Command_Usage_Guild.items(), key=lambda item: item[1], reverse=True)[:5]
-    for command, count in today_topguild:
-        formatted_count = f"{count:,}"
-        today_topguild_message += f'{pad_string(str(formatted_count), width)} : {command}\n'
-    if today_topguild_message == "":
-        today_topguild_message = "No guild commands have been used yet."
-    print("Top Guild(today)")
-    print(today_topguild_message)
-        
+    
+    
+    sorted_command_count = sorted(command_count.items(), key=lambda item: item[1], reverse=True)
+    command_count_message = ""
+    for command, count in sorted_command_count:
+        command_count_message += f'{pad_string(str(count), width)} : {command}\n'
+    if command_count_message == "":
+        command_count_message = "No commands have been logged yet."
+              
     embed = discord.Embed(
         title=f"**Command Dashboard**", 
         description = f'', 
@@ -113,29 +126,16 @@ def GetSlashCommandUsage():
         ) 
     
     embed.add_field(
-        name="**Command Used**", 
-        value=f'```autohotkey\n{usage_message}```', 
-        inline=False
-        )
-    embed.add_field(
-        name="**Command Used(today)**", 
-        value=f'```autohotkey\n{today_usage_message}```', 
-        inline=False
-        )    
-    
-    embed.add_field(
         name="**Top Guild**", 
         value=f'```autohotkey\n{topguild_message}```', 
         inline=False
-        )          
-        
+        )    
     embed.add_field(
-        name="**Top Guild(today)**", 
-        value=f'```autohotkey\n{today_topguild_message}```', 
+        name="**Command Used**", 
+        value=f'```autohotkey\n{command_count_message}```', 
         inline=False
-        )  
-    
-    
+        )              
+     
     return embed
     
     

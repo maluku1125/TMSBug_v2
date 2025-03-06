@@ -136,6 +136,9 @@ def Convert_cubeandtarget(cubetype, target):
     elif target == "2ndweapon":
         target = "weapon"
         targetname = "副武器"
+        if cubetype == "bonus_cube" or cubetype == "bonus_renew_cube" or cubetype == "shiney_bonus_cube" or cubetype == "abs_bonus_cube":
+            target = "2ndweapon"
+            targetname = "副武器"
     elif target == "3rdweapon":
         targetname = "能源"
     elif target == "hat":
@@ -185,32 +188,20 @@ def Convert_cubeandtarget(cubetype, target):
     elif cubetype == "bonus_cube":
         cubename = "珍貴附加方塊"
         cubecolor = 0xffC8E1      
-        cubeemoji = "<:cube16:1135615213413085234>"
-        if target == "2ndweapon":
-            target = "2ndweapon"
-            targetname = "副武器"
-            
+        cubeemoji = "<:cube16:1135615213413085234>"          
     elif cubetype == "bonus_renew_cube":
         cubename = "恢復附加方塊"
         cubecolor = 0xC2EB9F      
-        cubeemoji = "<:cube17:1135615229259153449>"
-        if target == "2ndweapon":
-            target = "2ndweapon"
-            targetname = "副武器"
+        cubeemoji = "<:cube17:1135615229259153449>"   
     elif cubetype == "shiney_bonus_cube":
         cubename = "閃亮附加方塊"
         cubecolor = 0xF6F9A2      
-        cubeemoji = "<:cube18:1300867791985053716>"
-        if target == "2ndweapon":
-            target = "2ndweapon"
-            targetname = "副武器"
+        cubeemoji = "<:cube18:1300867791985053716>"    
     elif cubetype == "abs_bonus_cube":
         cubename = "絕對附加方塊"
-        cubecolor = 0x9E9E9E      
+        cubecolor = 0x9CBCEF      
         cubeemoji = "<:cube13:1283030624080367701>"
-        if target == "2ndweapon":
-            target = "2ndweapon"
-            targetname = "副武器"
+        
     
         
     return target, targetname, cubename, cubecolor, cubeemoji
@@ -372,7 +363,7 @@ def roll_equipment_cube(cubetype, target):
                     inline = False,
                 )
                 usedcubecount = 1
-            embed.set_footer(text=f'罕跳傳機率 : {UnitoLegchance*100}%')
+            embed.set_footer(text=f'罕跳傳機率 : {UnitoLegchance*100:.3f}%')
         
         await interaction.response.edit_message(embed=embed, view=view)
 
