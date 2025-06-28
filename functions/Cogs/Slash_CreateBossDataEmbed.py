@@ -31,7 +31,7 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             Choice(name = "貝倫", value = "貝倫"),
             Choice(name = "凡雷恩", value = "凡雷恩"),
             Choice(name = "闇黑龍王", value = "闇黑龍王"),
-            Choice(name = "阿卡依農", value = "阿卡依農"),
+            Choice(name = "阿卡伊農", value = "阿卡伊農"),
             Choice(name = "皮卡啾", value = "皮卡啾"),
             Choice(name = "西格諾斯", value = "西格諾斯"),
             Choice(name = "培羅德", value = "培羅德"),
@@ -71,7 +71,8 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             Choice(name = "受選的賽蓮", value = "受選的賽蓮"),
             Choice(name = "監視者卡洛斯", value = "監視者卡洛斯"),
             Choice(name = "咖凌", value = "咖凌"),
-            Choice(name = "林波", value = "林波")
+            Choice(name = "林波", value = "林波"),
+            Choice(name = "巴德利斯", value = "巴德利斯"),
         ],
         difficulty = [
             Choice(name = "簡單", value = "easy"),

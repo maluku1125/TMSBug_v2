@@ -120,7 +120,7 @@ class Loop_ServerCheck(commands.Cog):
                             await channel.send("登入口已開啟。")
                             print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
                             
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(0.1)
                         channelsendcountsuccess += 1
                         
                     except Exception as e:
@@ -193,7 +193,7 @@ class Loop_ServerCheck(commands.Cog):
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
                                   
                     channelsendcountsuccess += 1
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(0.1)
                     
                 except Exception as e:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")

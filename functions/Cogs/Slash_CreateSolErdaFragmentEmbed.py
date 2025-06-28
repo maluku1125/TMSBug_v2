@@ -21,7 +21,7 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
     @app_commands.command(name="solerda碎片進度", description="碎碎進度")
     @app_commands.describe(
             skillnodes1 = "起源", 
-            masterynodes1 = "精通1", masterynodes2 = "精通2", 
+            masterynodes1 = "精通1", masterynodes2 = "精通2", masterynodes3 = "精通3", masterynodes4 = "精通4", 
             boostnode1 = "強化1", boostnode2 = "強化2", boostnode3 = "強化3", boostnode4 = "強化4", 
             commonnode1 = "共用1",
             extrafragment = "預留碎片"
@@ -29,14 +29,14 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
     async def calculatefragment(
         self, interaction: discord.Interaction, 
         skillnodes1: int, 
-        masterynodes1: int, masterynodes2: int, 
+        masterynodes1: int, masterynodes2: int, masterynodes3: int, masterynodes4: int, 
         boostnode1: int, boostnode2: int, boostnode3: int, boostnode4: int, 
         commonnode1: int,
         extrafragment: int=0
         ):
         embed = CreateSolErdaFragment(
             skillnodes1,
-            masterynodes1, masterynodes2, 
+            masterynodes1, masterynodes2, masterynodes3, masterynodes4, 
             boostnode1, boostnode2, boostnode3, boostnode4, 
             commonnode1,
             extrafragment
@@ -48,7 +48,7 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
 
 def Calculatefragment(
         SkillNodes1, 
-        MasteryNodes1, MasteryNodes2,
+        MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
         extrafragment
@@ -64,6 +64,12 @@ def Calculatefragment(
         maxtotal += 2252
     if MasteryNodes2 >= 0 :  
         totalcount += sum(HexaNodesCost["MasteryNodes"]["solerdafragment"][:MasteryNodes2])
+        maxtotal += 2252
+    if MasteryNodes3 >= 0 :
+        totalcount += sum(HexaNodesCost["MasteryNodes"]["solerdafragment"][:MasteryNodes3])
+        maxtotal += 2252
+    if MasteryNodes4 >= 0 :  
+        totalcount += sum(HexaNodesCost["MasteryNodes"]["solerdafragment"][:MasteryNodes4])
         maxtotal += 2252
     if BoostNode1 >= 0 :
         totalcount += sum(HexaNodesCost["BoostNodes"]["solerdafragment"][:BoostNode1])
@@ -88,7 +94,7 @@ def Calculatefragment(
 
 def CreateSolErdaFragment(
         SkillNodes1, 
-        MasteryNodes1, MasteryNodes2,
+        MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
         extrafragment
@@ -96,7 +102,7 @@ def CreateSolErdaFragment(
     global stolen_fragments
 
     # 確保所有節點等級都在有效範圍內
-    nodes = [SkillNodes1, MasteryNodes1, BoostNode1, BoostNode2, BoostNode3, BoostNode4]
+    nodes = [SkillNodes1, MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4, BoostNode1, BoostNode2, BoostNode3, BoostNode4, CommonNode1]
     for node in nodes:
         if node < -30 or node > 30:
             error_embed = discord.Embed(title="等級輸入錯誤", description="必須填入-30~30之間的數", color=0xff0000)
@@ -111,7 +117,7 @@ def CreateSolErdaFragment(
 
     totalcount, maxfragment = Calculatefragment(
         SkillNodes1, 
-        MasteryNodes1, MasteryNodes2,
+        MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
         extrafragment
@@ -156,7 +162,9 @@ def CreateSolErdaFragment(
             value=(
                 "```autohotkey\n"
                 f"精通核心1 : 0\n"
-                f"精通核心2 : 0\n```"
+                f"精通核心2 : 0\n"
+                f"精通核心3 : 0\n"
+                f"精通核心4 : 0\n```"
             ),
             inline=False,
         )
@@ -215,7 +223,9 @@ def CreateSolErdaFragment(
         value=(
             "```autohotkey\n"
             f"精通核心1 : {abs(MasteryNodes1)}{'🚫' if MasteryNodes1 < 0 else ''}\n"
-            f"精通核心2 : {abs(MasteryNodes2)}{'🚫' if MasteryNodes2 < 0 else ''}\n```"
+            f"精通核心2 : {abs(MasteryNodes2)}{'🚫' if MasteryNodes2 < 0 else ''}\n"
+            f"精通核心3 : {abs(MasteryNodes3)}{'🚫' if MasteryNodes3 < 0 else ''}\n"
+            f"精通核心4 : {abs(MasteryNodes4)}{'🚫' if MasteryNodes4 < 0 else ''}\n```"
         ),
         inline=False,
     )

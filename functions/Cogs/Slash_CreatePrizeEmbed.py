@@ -16,7 +16,6 @@ class Slash_CreatePrizeEmbed(commands.Cog):
     @app_commands.choices(
         type = [
             Choice(name = "蘋果", value = "GoldApple"),
-            Choice(name = "時尚", value = "FashionBox"),
             Choice(name = "輪迴", value = "FrenzyTotem"),
             Choice(name = "伴侶", value = "boyngirl"),
             ]
@@ -41,8 +40,7 @@ class Slash_CreatePrizeEmbed(commands.Cog):
     @app_commands.describe(type = "類別")
     @app_commands.choices(
         type = [
-            Choice(name = "蘋果", value = "GoldApple"),
-            Choice(name = "時尚", value = "FashionBox"),
+            Choice(name = "蘋果", value = "GoldApple")
             ]
     )
     async def getprizechance(self, interaction: discord.Interaction, type: str):
