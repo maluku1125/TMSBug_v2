@@ -17,6 +17,13 @@ HOST = [
 def get_now_HMS():
     return datetime.datetime.now().strftime('%H:%M:%S')
 
+def removeguild(Guild_Function ,guild_id):
+    Guild_Function.pop(guild_id, None)
+    with open('C:\\Users\\User\\Desktop\\DiscordBotlog\\Function\\Guild_Function.json', 'w', encoding='utf-8') as f:
+        json.dump(Guild_Function, f, ensure_ascii=False, indent=4)
+    print("remove guild from Guild_Function.json")
+    return Guild_Function
+
 class Loop_ServerCheck(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -89,23 +96,28 @@ class Loop_ServerCheck(commands.Cog):
                 channelsendcountfail = 0   
                 
                 Guild_Function = self.load_guild_function()
+                remove_list = []
                 
                 for guild_id, guild_config in Guild_Function.items():
                     
                     channel_id = guild_config['ServerCheck_Channel']
                     if not channel_id:
                         print(f"{get_now_HMS()}, Guild: {guild_id} dont have ServerCheck_Channel")
+                        remove_list.append(guild_id)
+                        channelsendcountfail += 1
                         continue
                     
                     channel = self.bot.get_channel(channel_id)
                     
                     if channel is None:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} message not sent")
+                        remove_list.append(guild_id)
                         channelsendcountfail += 1
                         continue
                     
                     if channel is None or not channel.permissions_for(channel.guild.me).send_messages:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} has no permission")
+                        remove_list.append(guild_id)
                         channelsendcountfail += 1
                         continue
                         
@@ -125,9 +137,13 @@ class Loop_ServerCheck(commands.Cog):
                         
                     except Exception as e:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")
+                        remove_list.append(guild_id)
                         channelsendcountfail += 1
                         continue
-                        
+                    
+                for gid in remove_list:
+                    Guild_Function = removeguild(Guild_Function, gid)
+                 
                         
             self.offline_count = 0    
             self.server_status = 'online'
@@ -152,6 +168,7 @@ class Loop_ServerCheck(commands.Cog):
             self.worker(h, self.ret)
 
         server_online = any(status == 'online' for status in self.ret.values())
+        remove_list = []
           
         if not server_online and self.server_status != 'offline':
         # if server_online and self.server_status != 'offline':
@@ -167,16 +184,20 @@ class Loop_ServerCheck(commands.Cog):
                 
                 if not channel_id:
                     print(f"{get_now_HMS()}, Guild: {guild_id} dont have ServerCheck_Channel")
+                    remove_list.append(guild_id)
+                    channelsendcountfail += 1
                     continue
                 
                 channel = self.bot.get_channel(channel_id)                
                 if channel is None:
                     print(f"{get_now_HMS()}, ChannelID: {channel_id} message not sent")
+                    remove_list.append(guild_id)
                     channelsendcountfail += 1
                     continue
                 
                 if channel is None or not channel.permissions_for(channel.guild.me).send_messages:
                     print(f"{get_now_HMS()}, ChannelID: {channel_id} has no permission")
+                    remove_list.append(guild_id)
                     channelsendcountfail += 1
                     continue
                                 
@@ -185,11 +206,9 @@ class Loop_ServerCheck(commands.Cog):
                 try:
                     if mention and mention != "None":
                         await channel.send(f"MapleStory 登入口已關閉。")
-                        # await channel.send(f"群發訊息測試中，打擾抱歉orz")
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
                     else:
                         await channel.send("MapleStory 登入口已關閉。")
-                        # await channel.send(f"群發訊息測試中，打擾抱歉orz")
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
                                   
                     channelsendcountsuccess += 1
@@ -197,9 +216,13 @@ class Loop_ServerCheck(commands.Cog):
                     
                 except Exception as e:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")
+                        remove_list.append(guild_id)
                         channelsendcountfail += 1
                         continue
-                    
+ 
+            for gid in remove_list:
+                Guild_Function = removeguild(Guild_Function, gid)
+                                       
             self.server_status = 'offline'
             self.server_up_check.start()
             self.server_down_check.cancel()
