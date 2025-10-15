@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-import datetime
+from functions.SlashCommandManager import UseSlashCommand 
 from functions.API_functions.CreateCharacterEmbed import create_character_basic_embed
 from functions.API_functions.CreateGuildEmbed import create_guild_basic_embed   
 from functions.API_functions.CreateCharacterEquipmentEmbed import create_character_equipment_embed
@@ -160,8 +160,10 @@ class Slash_API(commands.Cog):
 
     @app_commands.command(name="character角色查詢", description="API角色查詢")
     async def api_character_basic(self, interaction: discord.Interaction, playername: str):
-        
+
+             
         await interaction.response.defer()
+        UseSlashCommand('character', interaction)  
         
         try:
             # Create character data View
@@ -204,8 +206,9 @@ class Slash_API(commands.Cog):
     ])
     async def api_guild_basic(self, interaction: discord.Interaction, guild_name: str, world_name: str):
         
+          
         await interaction.response.defer()
-
+        UseSlashCommand('guild', interaction)  
         embed = create_guild_basic_embed(guild_name, world_name)
         
         await interaction.followup.send(embed=embed)

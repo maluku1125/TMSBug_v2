@@ -6,7 +6,7 @@ from functions.API_functions.API_DataBase_Guild import save_guildid_db, get_guil
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
-    config_path = rf'C:\Users\User\Desktop\DiscordBot\Config\TMSBug_v2_config.ini'
+    config_path = 'C:\\Users\\User\\Desktop\\DiscordBot\\Config\\TMSBug_v2_config.ini'
     _TMSBot_CONF.read(config_path, encoding="utf-8")
 
     api_key = _TMSBot_CONF["api"]["api_key"]

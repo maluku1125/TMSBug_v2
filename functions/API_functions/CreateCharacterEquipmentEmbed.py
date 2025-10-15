@@ -68,15 +68,28 @@ class EquipmentView(discord.ui.View):
             equipment_text = f"**{item_name}**"
             if int(starforce) > 0:
                 equipment_text += f" ⭐{starforce}"
+                
+                # 添加卷軸升級資訊
+                scroll_upgrade = equipment.get('scroll_upgrade', '0')
+                if int(scroll_upgrade) > 0:
+                    item_etc_option = equipment.get('item_etc_option', {})
+                    attack_power = int(item_etc_option.get('attack_power', 0))
+                    magic_power = int(item_etc_option.get('magic_power', 0))
+                    max_power = max(attack_power, magic_power)
+                    
+                    if max_power > 0:
+                        scroll_avg = max_power / int(scroll_upgrade)
+                        equipment_text += f" 📜{scroll_avg:.1f}"
+                        
             equipment_text += "\n"
             
             # 檢查是否為戒指並且有 special_ring_level
             special_ring_level = equipment.get('special_ring_level')
-            if item_slot in ['Ring1', 'Ring2', 'Ring3', 'Ring4'] and special_ring_level:
+            if item_slot in ['戒指1', '戒指2', '戒指3', '戒指4'] and special_ring_level:
                 try:
                     ring_level = int(special_ring_level)
                     if ring_level > 0:
-                        equipment_text += f"LV {ring_level}\n"
+                        equipment_text += f"```LV {ring_level}\n```"
                 except (ValueError, TypeError):
                     pass
             
@@ -95,7 +108,7 @@ class EquipmentView(discord.ui.View):
                     elif potential_grade == "特殊":
                         grade_icon = "🔵"  # 藍色
                     
-                    equipment_text += f"{grade_icon}{' / '.join(potentials)}\n"
+                    equipment_text += f"```{grade_icon}{' / '.join(potentials)}\n```"
             
             # 附加潛能資訊（詳細顯示）
             if add_potential_grade != 'None' and add_potential_1:
@@ -112,7 +125,7 @@ class EquipmentView(discord.ui.View):
                     elif add_potential_grade == "特殊":
                         add_grade_icon = "🔵"  # 藍色
                     
-                    equipment_text += f"{add_grade_icon}{' / '.join(add_potentials)}\n"
+                    equipment_text += f"```{add_grade_icon}{' / '.join(add_potentials)}\n```"
             
             equipment_text += "\n"  # 添加分隔空行
             
