@@ -2,7 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix
+from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix, request_character_symbolequipment
+from functions.API_functions.API_Request_union import request_user_union
 import datetime
 from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment
 
@@ -24,6 +25,9 @@ def create_character_basic_embed(character_name: str) -> discord.Embed:
     character_basic_data = request_character_basic(ocid)
     character_stat_data = request_character_stat(ocid)
     character_hexamatrix_data = request_character_hexamatrix(ocid)
+    character_symbolequipment_data = request_character_symbolequipment(ocid)
+
+    user_union_data = request_user_union(ocid) 
 
     if not character_basic_data or not character_stat_data:
         # 如果無法獲取基本角色資訊，返回錯誤 embed
@@ -40,10 +44,17 @@ def create_character_basic_embed(character_name: str) -> discord.Embed:
     guild_name = character_basic_data.get('character_guild_name')
 
     # info
-    character_info.append(f"**伺服器**： {character_basic_data.get('world_name', '未知')}")
-    character_info.append(f"**公會　**： {guild_name if guild_name else '-'}")  
-    character_info.append(f"**職業　**： {character_basic_data.get('character_class', '未知')}")
-    character_info.append(f"**等級　**： {character_basic_data.get('character_level', 0)}({character_basic_data.get('character_exp_rate', 0)}%)")
+    character_info.append(f"伺服器　： {character_basic_data.get('world_name', '未知')}")
+    character_info.append(f"公會　　： {guild_name if guild_name else '-'}")  
+    character_info.append(f"職業　　： {character_basic_data.get('character_class', '未知')}")
+    character_info.append(f"等級　　： {character_basic_data.get('character_level', 0)}({character_basic_data.get('character_exp_rate', 0)}%)")
+    
+    # 加入聯盟資訊
+    if user_union_data:
+        union_level = user_union_data.get('union_level', 0)
+        union_artifact_level = user_union_data.get('union_artifact_level', 0)
+        character_info.append(f"聯盟戰地： {union_level:,}")
+        character_info.append(f"神器等級： {union_artifact_level}")
 
 
     # final_stat to dict
@@ -100,19 +111,19 @@ def create_character_basic_embed(character_name: str) -> discord.Embed:
     cooldown_unaffected = safe_str(stat_dict.get('未套用冷卻時間', '0.0'))
 
 
-    stat_info.append(f"**戰鬥力　　**： {format_chinese_number(combat_power)}")
-    stat_info.append(f"**屬性攻擊力**： {int(maximumattstat):,}")
-    stat_info.append(f"**總傷害　　**： {damage}%")
-    stat_info.append(f"**ＢＯＳＳ傷**： {bossmonsterdamage}%")
-    stat_info.append(f"**最終傷害　**： {finaldamage}%")
-    stat_info.append(f"**暴擊傷害　**： {critdamage}%")
-    stat_info.append(f"**無視防禦　**： {ingroedefense}%")
-    stat_info.append(f"**冷卻減免　**： {cooldown_sec}秒")
-    stat_info.append(f"**冷卻縮減　**： {cooldown_percent}%")
-    stat_info.append(f"**無視冷卻　**： {cooldown_unaffected}%")    
-    stat_info.append(f"**星星之力　**： {int(starforce)}")
-    stat_info.append(f"**神秘力量　**： {int(arcaneforce):,}")    
-    stat_info.append(f"**真實力量　**： {int(authenticforce):,}")
+    stat_info.append(f"戰鬥力　　： {format_chinese_number(combat_power)}")
+    stat_info.append(f"屬性攻擊力： {int(maximumattstat):,}")
+    stat_info.append(f"總傷害　　： {damage}%")
+    stat_info.append(f"ＢＯＳＳ傷： {bossmonsterdamage}%")
+    stat_info.append(f"最終傷害　： {finaldamage}%")
+    stat_info.append(f"暴擊傷害　： {critdamage}%")
+    stat_info.append(f"無視防禦　： {ingroedefense}%")
+    stat_info.append(f"冷卻減免　： {cooldown_sec}秒")
+    stat_info.append(f"冷卻縮減　： {cooldown_percent}%")
+    stat_info.append(f"無視冷卻　： {cooldown_unaffected}%")    
+    stat_info.append(f"星星之力　： {int(starforce)}")
+    stat_info.append(f"神秘力量　： {int(arcaneforce):,}")    
+    stat_info.append(f"真實力量　： {int(authenticforce):,}")
 
 
     # hexa info INFO
@@ -191,13 +202,46 @@ def create_character_basic_embed(character_name: str) -> discord.Embed:
                 common_cores.append(str(level))
         
         if skill_cores:
-            hexa_info.append(f"**技能核心**：{' | '.join(skill_cores)}")
+            hexa_info.append(f"技能核心： {' | '.join(skill_cores)}")
         if mastery_cores:
-            hexa_info.append(f"**精通核心**：{' | '.join(mastery_cores)}")
+            hexa_info.append(f"精通核心： {' | '.join(mastery_cores)}")
         if enhance_cores:
-            hexa_info.append(f"**強化核心**：{' | '.join(enhance_cores)}")
+            hexa_info.append(f"強化核心： {' | '.join(enhance_cores)}")
         if common_cores:
-            hexa_info.append(f"**共用核心**：{' | '.join(common_cores)}")
+            hexa_info.append(f"共用核心： {' | '.join(common_cores)}")
+
+    # 添加符文裝備資訊欄位
+    symbol_info = []
+    if character_symbolequipment_data and character_symbolequipment_data.get('symbol'):
+        symbols = character_symbolequipment_data.get('symbol', [])
+        
+        # 分類符文：祕法符文和真實符文
+        arcane_symbols = []  # 祕法符文
+        sacred_symbols = []  # 真實符文
+        luxury_symbols = []  # 豪華真實符文
+        
+        for symbol in symbols:
+            symbol_name = symbol.get('symbol_name', '未知符文')
+            symbol_level = symbol.get('symbol_level', 0)
+            
+            # 只收集等級數字
+            if '祕法符文：' in symbol_name:
+                arcane_symbols.append(str(symbol_level))
+            elif '豪華真實符文：' in symbol_name:
+                luxury_symbols.append(str(symbol_level))    
+            elif '真實符文：' in symbol_name:
+                sacred_symbols.append(str(symbol_level))            
+            else:
+                # 其他類型的符文歸類到真實符文
+                sacred_symbols.append(str(symbol_level))
+        
+        if arcane_symbols:
+            symbol_info.append(f"ARC ：{' | '.join(arcane_symbols)}")
+        if sacred_symbols:
+            symbol_info.append(f"AUT ：{' | '.join(sacred_symbols)}")
+        if luxury_symbols:
+            symbol_info.append(f"GAUT：{' | '.join(luxury_symbols)}")
+
 
     # Create embed
     embed = discord.Embed(
@@ -212,20 +256,26 @@ def create_character_basic_embed(character_name: str) -> discord.Embed:
              
     embed.add_field(
         name="基本資訊",
-        value='\n'.join(character_info),
+        value=f"```autohotkey\n{'\n'.join(character_info)}```",
         inline=False
     )
     embed.add_field(
         name="機體資訊",
-        value='\n'.join(stat_info),
+        value=f"```autohotkey\n{'\n'.join(stat_info)}```",
         inline=False
     )
     
-    # 只有當有六階核心資料時才添加六階核心欄位
     if hexa_dict and hexa_info:
         embed.add_field(
             name=f"六階核心 ({percentage:.2f}%)",
-            value='\n'.join(hexa_info),
+            value=f"```autohotkey\n{'\n'.join(hexa_info)}```",
+            inline=False
+        )
+       
+    if symbol_info:
+        embed.add_field(
+            name="符文",
+            value=f"```autohotkey\n{'\n'.join(symbol_info)}```",
             inline=False
         )
 

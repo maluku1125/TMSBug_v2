@@ -2,25 +2,26 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment
+from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment
 import datetime
 
 
 class EquipmentView(discord.ui.View):
-    def __init__(self, character_name: str, character_equipment_data: dict, current_preset: str = "preset_1"):
-        super().__init__(timeout=300)  # 5分鐘超時
+    def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, current_preset: str = "preset_1"):
+        super().__init__(timeout=300)  # 5 minute timeout
         self.character_name = character_name
         self.character_equipment_data = character_equipment_data
+        self.character_cashitem_equipment_data = character_cashitem_equipment_data
         self.current_preset = current_preset
-        self.current_category = "weapon"  # 預設分類
+        self.current_category = "weapon"  # Default category
         
-        # 處理當前 preset 的裝備數據
+        # Process current preset equipment data
         self._process_equipment_data()
-        # 更新按鈕顏色
+        # Update button colors
         self._update_preset_button_styles()
     
     def _update_preset_button_styles(self):
-        """根據當前 preset 更新按鈕顏色"""
+        """Update button colors based on current preset"""
         for item in self.children:
             if isinstance(item, discord.ui.Button):
                 if item.label == "預設1":
@@ -31,17 +32,17 @@ class EquipmentView(discord.ui.View):
                     item.style = discord.ButtonStyle.primary if self.current_preset == "preset_3" else discord.ButtonStyle.success
     
     def _process_equipment_data(self):
-        """處理裝備數據並分類"""
+        """Process equipment data and categorize"""
         preset_key = f'item_equipment_{self.current_preset}'
         preset_equipment = self.character_equipment_data.get(preset_key, [])
         
-        # 裝備部位分類
+        # Equipment slot categorization
         weapon_slots = ['武器', '輔助武器', '徽章']
         armor_slots = ['帽子', '上衣', '褲/裙', '鞋子', '手套', '披風', '肩膀裝飾']
         accessory_slots = ['臉飾', '眼飾', '耳環', '墜飾', '墜飾2', '腰帶', '戒指1', '戒指2', '戒指3', '戒指4']
         other_slots = ['口袋道具', '胸章', '勳章', '機器人', '機器心臟']
         
-        # 重置分組
+        # Reset grouping
         self.weapon_info = []
         self.armor_info = []
         self.accessory_info = []
@@ -52,24 +53,24 @@ class EquipmentView(discord.ui.View):
             item_slot = equipment.get('item_equipment_slot', '未知部位')
             starforce = equipment.get('starforce', '0')
             
-            # 潛能選項
+            # Potential options
             potential_grade = equipment.get('potential_option_grade', 'None')
             potential_1 = equipment.get('potential_option_1')
             potential_2 = equipment.get('potential_option_2')
             potential_3 = equipment.get('potential_option_3')
             
-            # 附加潛能選項
+            # Additional potential options
             add_potential_grade = equipment.get('additional_potential_option_grade', 'None')
             add_potential_1 = equipment.get('additional_potential_option_1')
             add_potential_2 = equipment.get('additional_potential_option_2')
             add_potential_3 = equipment.get('additional_potential_option_3')
             
-            # 格式化裝備資訊 - 詳細顯示
+            # Format equipment information - detailed display
             equipment_text = f"**{item_name}**"
             if int(starforce) > 0:
                 equipment_text += f" ⭐{starforce}"
                 
-                # 添加卷軸升級資訊
+                # Add scroll upgrade information
                 scroll_upgrade = equipment.get('scroll_upgrade', '0')
                 if int(scroll_upgrade) > 0:
                     item_etc_option = equipment.get('item_etc_option', {})
@@ -83,7 +84,7 @@ class EquipmentView(discord.ui.View):
                         
             equipment_text += "\n"
             
-            # 檢查是否為戒指並且有 special_ring_level
+            # Check if it's a ring and has special_ring_level
             special_ring_level = equipment.get('special_ring_level')
             if item_slot in ['戒指1', '戒指2', '戒指3', '戒指4'] and special_ring_level:
                 try:
@@ -93,43 +94,43 @@ class EquipmentView(discord.ui.View):
                 except (ValueError, TypeError):
                     pass
             
-            # 潛能資訊（詳細顯示）
+            # Potential information (detailed display)
             if potential_grade != 'None' and potential_1:
                 potentials = [p for p in [potential_1, potential_2, potential_3] if p]
                 if potentials:
-                    # 根據潛能等級添加顏色圖標
+                    # Add color icon based on potential grade
                     grade_icon = ""
                     if potential_grade == "傳說":
-                        grade_icon = "🟢"  # 綠色
+                        grade_icon = "🟢"  # Green
                     elif potential_grade == "罕見":
-                        grade_icon = "🟡"  # 黃色
+                        grade_icon = "🟡"  # Yellow
                     elif potential_grade == "稀有":
-                        grade_icon = "🟣"  # 紫色
+                        grade_icon = "🟣"  # Purple
                     elif potential_grade == "特殊":
-                        grade_icon = "🔵"  # 藍色
+                        grade_icon = "🔵"  # Blue
                     
                     equipment_text += f"```{grade_icon}{' / '.join(potentials)}\n```"
             
-            # 附加潛能資訊（詳細顯示）
+            # Additional potential information (detailed display)
             if add_potential_grade != 'None' and add_potential_1:
                 add_potentials = [p for p in [add_potential_1, add_potential_2, add_potential_3] if p]
                 if add_potentials:
-                    # 根據附加潛能等級添加顏色圖標
+                    # Add color icon based on additional potential grade
                     add_grade_icon = ""
                     if add_potential_grade == "傳說":
-                        add_grade_icon = "🟢"  # 綠色
+                        add_grade_icon = "🟢"  # Green
                     elif add_potential_grade == "罕見":
-                        add_grade_icon = "🟡"  # 黃色
+                        add_grade_icon = "🟡"  # Yellow
                     elif add_potential_grade == "稀有":
-                        add_grade_icon = "🟣"  # 紫色
+                        add_grade_icon = "🟣"  # Purple
                     elif add_potential_grade == "特殊":
-                        add_grade_icon = "🔵"  # 藍色
+                        add_grade_icon = "🔵"  # Blue
                     
                     equipment_text += f"```{add_grade_icon}{' / '.join(add_potentials)}\n```"
             
-            equipment_text += "\n"  # 添加分隔空行
+            equipment_text += "\n"  # Add separator blank line
             
-            # 分類裝備（使用 item_equipment_slot）
+            # Categorize equipment (using item_equipment_slot)
             if item_slot in weapon_slots:
                 self.weapon_info.append(equipment_text)
             elif item_slot in armor_slots:
@@ -139,13 +140,43 @@ class EquipmentView(discord.ui.View):
             elif item_slot in other_slots:
                 self.other_info.append(equipment_text)
         
+        # Process cash item equipment info (Fashion Appearance - by preset configuration)
+        self.cashitem_info = []
+        if self.character_cashitem_equipment_data:
+            # Select corresponding preset configuration
+            preset_number = self.current_preset.split('_')[1]  # Extract 1 from preset_1
+            cashitem_preset_key = f'cash_item_equipment_preset_{preset_number}'
+            
+            preset_cashitem = self.character_cashitem_equipment_data.get(cashitem_preset_key, [])
+            
+            for cashitem in preset_cashitem:
+                item_name = cashitem.get('cash_item_name', '未知外觀')
+                item_slot = cashitem.get('cash_item_equipment_slot', '未知部位')
+                
+                cashitem_text = f"**{item_slot}**： {item_name}\n"
+                self.cashitem_info.append(cashitem_text)
+        
+        # Process base fashion info (Fashion - shared by all presets)
+        self.cashitem_base_info = []
+        if self.character_cashitem_equipment_data:
+            base_cashitem = self.character_cashitem_equipment_data.get('cash_item_equipment_base', [])
+            
+            for cashitem in base_cashitem:
+                item_name = cashitem.get('cash_item_name', '未知時裝')
+                item_slot = cashitem.get('cash_item_equipment_slot', '未知部位')
+                
+                cashitem_text = f"**{item_slot}**： {item_name}\n"
+                self.cashitem_base_info.append(cashitem_text)
+        
     def create_embed(self, category: str) -> discord.Embed:
-        """根據分類創建對應的 embed"""
+        """Create corresponding embed based on category"""
         category_names = {
             "weapon": "武器",
             "armor": "防具", 
             "accessory": "飾品",
-            "other": "其他"
+            "other": "其他",
+            "cashitem": "時裝外觀",
+            "cashitem_base": "時裝"
         }
         
         preset_names = {
@@ -162,11 +193,11 @@ class EquipmentView(discord.ui.View):
         )
         
         if category == "weapon":
-            # 僅武器
+            # Weapons only
             if self.weapon_info:
                 text = ''.join(self.weapon_info)
                 if len(text) > 1024:
-                    # 分割長文本
+                    # Split long text
                     chunks = []
                     current_chunk = ""
                     for item in self.weapon_info:
@@ -250,6 +281,50 @@ class EquipmentView(discord.ui.View):
                     embed.add_field(name="\u200b", value=text, inline=False)
             else:
                 embed.add_field(name="\u200b", value="無裝備資料", inline=False)
+                
+        elif category == "cashitem":
+            if self.cashitem_info:
+                text = ''.join(self.cashitem_info)
+                if len(text) > 1024:
+                    chunks = []
+                    current_chunk = ""
+                    for item in self.cashitem_info:
+                        if len(current_chunk + item) > 1000:
+                            chunks.append(current_chunk)
+                            current_chunk = item
+                        else:
+                            current_chunk += item
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                    
+                    for i, chunk in enumerate(chunks):
+                        embed.add_field(name="\u200b", value=chunk, inline=False)
+                else:
+                    embed.add_field(name="\u200b", value=text, inline=False)
+            else:
+                embed.add_field(name="\u200b", value="無時裝外觀資料", inline=False)
+                
+        elif category == "cashitem_base":
+            if self.cashitem_base_info:
+                text = ''.join(self.cashitem_base_info)
+                if len(text) > 1024:
+                    chunks = []
+                    current_chunk = ""
+                    for item in self.cashitem_base_info:
+                        if len(current_chunk + item) > 1000:
+                            chunks.append(current_chunk)
+                            current_chunk = item
+                        else:
+                            current_chunk += item
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                    
+                    for i, chunk in enumerate(chunks):
+                        embed.add_field(name="\u200b", value=chunk, inline=False)
+                else:
+                    embed.add_field(name="\u200b", value=text, inline=False)
+            else:
+                embed.add_field(name="\u200b", value="無時裝資料", inline=False)
         
         return embed
     
@@ -260,27 +335,39 @@ class EquipmentView(discord.ui.View):
         options=[
             discord.SelectOption(
                 label="武器",
-                description="主武器、副手武器",
+                description="",
                 emoji="⚔️",
                 value="weapon"
             ),
             discord.SelectOption(
                 label="防具",
-                description="帽子、上衣、下裝等",
+                description="",
                 emoji="🛡️",
                 value="armor"
             ),
             discord.SelectOption(
                 label="飾品",
-                description="戒指、項鍊、耳環等",
-                emoji="💎",
+                description="",
+                emoji="💍",
                 value="accessory"
             ),
             discord.SelectOption(
                 label="其他",
-                description="徽章、機械心臟、肩章等",
+                description="",
                 emoji="🎖️",
                 value="other"
+            ),
+            discord.SelectOption(
+                label="時裝",
+                description="",
+                emoji="💰",
+                value="cashitem_base"
+            ),
+            discord.SelectOption(
+                label="時裝外觀",
+                description="",
+                emoji="👗",
+                value="cashitem"
             )
         ]
     )
@@ -324,12 +411,12 @@ class EquipmentView(discord.ui.View):
     
     @discord.ui.button(label="返回角色資料", style=discord.ButtonStyle.secondary, emoji="🔙", row=2)
     async def back_to_character_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # 返回到角色基本資料
+        # Return to character basic information
         try:
             from functions.API_functions.CreateCharacterEmbed import create_character_basic_embed
             embed = create_character_basic_embed(self.character_name)
             
-            # 創建一個簡單的 view，只顯示按鈕讓用戶選擇返回裝備或重新查詢
+            # Create a simple view that only displays buttons for users to choose return to equipment or re-query
             class SimpleCharacterView(discord.ui.View):
                 def __init__(self, character_name: str):
                     super().__init__(timeout=300)
@@ -383,21 +470,13 @@ class EquipmentView(discord.ui.View):
             await interaction.response.edit_message(embed=error_embed)
     
     async def on_timeout(self):
-        # 超時後禁用所有組件
+        # Disable all components after timeout
         for item in self.children:
             item.disabled = True
 
 
 def create_character_equipment_embed(character_name: str) -> dict:
-    """
-    創建角色裝備資訊的 Discord embed 和 View
-    
-    Args:
-        character_name: 角色名稱
-    
-    Returns:
-        dict: 包含 'embed' 和 'view' 的字典
-    """
+ 
     ocid = get_character_ocid(character_name)
     
     if not ocid:
@@ -409,8 +488,9 @@ def create_character_equipment_embed(character_name: str) -> dict:
         )
         return {"embed": embed, "view": None}
     
-    # 獲取裝備資料
+    # Get equipment data
     character_equipment_data = request_character_itemequipment(ocid)
+    character_cashitem_equipment_data = request_character_cashitemequipment(ocid)
     
     if not character_equipment_data:
         embed = discord.Embed(
@@ -421,7 +501,7 @@ def create_character_equipment_embed(character_name: str) -> dict:
         )
         return {"embed": embed, "view": None}
     
-    # 檢查是否至少有一個 preset 的資料
+    # Check if at least one preset has data
     has_preset_data = False
     for preset_num in [1, 2, 3]:
         preset_key = f'item_equipment_preset_{preset_num}'
@@ -438,8 +518,8 @@ def create_character_equipment_embed(character_name: str) -> dict:
         )
         return {"embed": embed, "view": None}
     
-    # 創建 View 和初始 embed
-    view = EquipmentView(character_name, character_equipment_data)
-    initial_embed = view.create_embed("weapon")  # 預設顯示武器
+    # Create View and initial embed
+    view = EquipmentView(character_name, character_equipment_data, character_cashitem_equipment_data)
+    initial_embed = view.create_embed("weapon")  # Default display weapons
     
     return {"embed": initial_embed, "view": view}

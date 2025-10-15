@@ -107,116 +107,22 @@ def request_character_ocid(character_name: str) -> Optional[str]:
         return None
     
 
-def request_character_basic(ocid: str) -> Optional[dict]:
+def request_user_union(ocid: str) -> Optional[dict]:
     
     headers = {
         "x-nxopen-api-key": api_key
     }
     
-    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/basic?ocid={ocid}"
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/user/union?ocid={ocid}"
     
     try:
         response = requests.get(url_string, headers=headers)
         response.raise_for_status()
         
-        character_basic_data = response.json()
-        return character_basic_data
+        user_union_data = response.json()
+        return user_union_data
         
     except Exception as e:
-        print(f"error occurred while fetching character basic info: {e}")
+        print(f"error occurred while fetching user union info: {e}")
         return None
     
-def request_character_stat(ocid: str) -> Optional[dict]:
-    
-    headers = {
-        "x-nxopen-api-key": api_key
-    }
-
-    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/stat?ocid={ocid}"
-
-    try:
-        response = requests.get(url_string, headers=headers)
-        response.raise_for_status()
-
-        character_stat_data = response.json()
-        return character_stat_data
-
-    except Exception as e:
-        print(f"error occurred while fetching character stat info: {e}")
-        return None
-    
-def request_character_hexamatrix(ocid: str) -> Optional[dict]:
-    
-    headers = {
-        "x-nxopen-api-key": api_key
-    }
-
-    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/hexamatrix?ocid={ocid}"
-
-    try:
-        response = requests.get(url_string, headers=headers)
-        response.raise_for_status()
-
-        character_hexamatrix_data = response.json()
-        return character_hexamatrix_data
-
-    except Exception as e:
-        print(f"error occurred while fetching character hexamatrix info: {e}")
-        return None
-
-def request_character_itemequipment(ocid: str) -> Optional[dict]:
-    
-    headers = {
-        "x-nxopen-api-key": api_key
-    }
-
-    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/item-equipment?ocid={ocid}"
-
-    try:
-        response = requests.get(url_string, headers=headers)
-        response.raise_for_status()
-
-        character_itemequipment_data = response.json()
-        return character_itemequipment_data
-
-    except Exception as e:
-        print(f"error occurred while fetching character item equipment info: {e}")
-        return None
-
-def request_character_symbolequipment(ocid: str) -> Optional[dict]:
-    
-    headers = {
-        "x-nxopen-api-key": api_key
-    }
-
-    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/symbol-equipment?ocid={ocid}"
-
-    try:
-        response = requests.get(url_string, headers=headers)
-        response.raise_for_status()
-
-        character_symbolequipment_data = response.json()
-        return character_symbolequipment_data
-
-    except Exception as e:
-        print(f"error occurred while fetching character symbol equipment info: {e}")
-        return None
-    
-def request_character_cashitemequipment(ocid: str) -> Optional[dict]:
-    
-    headers = {
-        "x-nxopen-api-key": api_key
-    }
-
-    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/cashitem-equipment?ocid={ocid}"
-
-    try:
-        response = requests.get(url_string, headers=headers)
-        response.raise_for_status()
-
-        character_cashitemequipment_data = response.json()
-        return character_cashitemequipment_data
-
-    except Exception as e:
-        print(f"error occurred while fetching character cash item equipment info: {e}")
-        return None
