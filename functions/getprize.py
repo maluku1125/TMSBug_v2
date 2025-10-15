@@ -4,18 +4,18 @@ import discord
 
 from functions.tinyfunctions import probably
 
-with open(f'C:\\Users\\User\\Desktop\DiscordBot\\TMSBug_v2\\Data\\FashionBoxProbabilityTable.json', 'r', encoding='utf-8') as fashionfile:
+with open(rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\FashionBoxProbabilityTable.json', 'r', encoding='utf-8') as fashionfile:
     fashiondata = json.load(fashionfile)
 
-with open(f'C:\\Users\\User\\Desktop\DiscordBot\\TMSBug_v2\\Data\\GoldAppleProbabilityTable.json', 'r', encoding='utf-8') as applefile:
+with open(rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\GoldAppleProbabilityTable.json', 'r', encoding='utf-8') as applefile:
     appledata = json.load(applefile)
 
 def reloaddata():
     global fashiondata, appledata
-    with open(f'C:\\Users\\User\\Desktop\DiscordBot\\TMSBug_v2\\Data\\FashionBoxProbabilityTable.json', 'r', encoding='utf-8') as fashionfile:
+    with open(rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\FashionBoxProbabilityTable.json', 'r', encoding='utf-8') as fashionfile:
         fashiondata = json.load(fashionfile)
 
-    with open(f'C:\\Users\\User\\Desktop\DiscordBot\\TMSBug_v2\\Data\\GoldAppleProbabilityTable.json', 'r', encoding='utf-8') as applefile:
+    with open(rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\GoldAppleProbabilityTable.json', 'r', encoding='utf-8') as applefile:
         appledata = json.load(applefile)
 
 def use_apple(messageauthor):

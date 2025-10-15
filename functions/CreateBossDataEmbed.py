@@ -47,7 +47,7 @@ boss_aliases = {
     '巴德利斯':'巴德利斯',
     '蟲蟲':'蟲蟲'
 }
-with open(f'C:\\Users\\User\\Desktop\DiscordBot\\TMSBug_v2\\Data\\BossData.json', 'r', encoding='utf-8') as f:
+with open(rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\BossData.json', 'r', encoding='utf-8') as f:
     boss_data = json.load(f)
 
 def Create_Boss_Data_Embed(Content, Bossmode):

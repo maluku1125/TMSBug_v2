@@ -73,7 +73,7 @@ class Loop_ServerCheck(commands.Cog):
             self.server_status = 'online'
             self.check_server_status.cancel()
         else:
-            await self.bot.change_presence(activity=discord.CustomActivity(name="TMS Server Offline"))
+            await self.bot.change_presence(activity=discord.CustomActivity(name="TMS 登入口關閉中"))
             self.server_up_check.start()
             self.server_status = 'offline'
             self.check_server_status.cancel()
@@ -173,7 +173,7 @@ class Loop_ServerCheck(commands.Cog):
         if not server_online and self.server_status != 'offline':
         # if server_online and self.server_status != 'offline':
             
-            await self.bot.change_presence(activity=discord.CustomActivity(name="TMS Server Offline"))
+            await self.bot.change_presence(activity=discord.CustomActivity(name="TMS 登入口關閉中"))
             channelsendcountsuccess = 0
             channelsendcountfail = 0
             
@@ -230,9 +230,7 @@ class Loop_ServerCheck(commands.Cog):
             print(f"Successfully sent message to {channelsendcountsuccess} channel, {channelsendcountfail} channel failed")
             print("-"*30)
         else:
-
-            await self.bot.change_presence(activity=discord.Game(name="MapleStory"))       
-            
+ 
             print(f'Server is online')
             print("-"*30)
 

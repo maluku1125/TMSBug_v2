@@ -17,10 +17,11 @@ from functions.Cogs.Slash_Cubes import Slash_Cubes
 from functions.Cogs.Loop_ServerCheck import Loop_ServerCheck
 from functions.Cogs.Slash_GuildFunction import Slash_GuildFunctions
 from functions.Cogs.Slash_StarForce import Slash_StarForce
+from functions.Cogs.Slash_API import Slash_API
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
-    config_path = 'C:\\Users\\User\\Desktop\\DiscordBot\\Config\\TMSBug_v2_config.ini'
+    config_path = rf'C:\Users\User\Desktop\DiscordBot\Config\TMSBug_v2_config.ini'
     _TMSBot_CONF.read(config_path, encoding="utf-8")
 except FileNotFoundError:
     print("`config.ini` file missing.")
@@ -96,6 +97,9 @@ class TMSBot(commands.AutoShardedBot):
         print('Cogs:Slash_GuildFunctions loaded')
         await self.add_cog(Slash_StarForce(self))
         print('Cogs:Slash_StarForce loaded')
+        await self.add_cog(Slash_API(self))
+        print('Cogs:Slash_API loaded')
+
 
         dev_guild_id = self._config["bot"]["dev_guild"]
         print('slash command is now loading')

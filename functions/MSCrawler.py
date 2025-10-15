@@ -179,7 +179,7 @@ def Format_ApplePrizeData():
 def save_apple_json_file():
 
     formatted_data = Format_ApplePrizeData()
-    filename = f'C:\\Users\\User\\Desktop\DiscordBot\\TMSBug_v2\\Data\\GoldAppleProbabilityTable.json'
+    filename = rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\GoldAppleProbabilityTable.json'
     result = '未知錯誤'
 
     # 檢查文件是否存在
@@ -209,7 +209,7 @@ def save_apple_json_file():
 def save_fashionbox_json_file():
 
     formatted_data = Format_FashionBoxPrizeData()
-    filename = f'C:\\Users\\User\\Desktop\DiscordBot\\TMSBug_v2\\Data\\FashionBoxProbabilityTable.json'
+    filename = rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\FashionBoxProbabilityTable.json'
     result = '未知錯誤'
 
     # 檢查文件是否存在
