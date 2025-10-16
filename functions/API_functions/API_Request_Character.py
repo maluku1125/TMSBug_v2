@@ -163,6 +163,26 @@ def request_character_hexamatrix(ocid: str) -> Optional[dict]:
     except Exception as e:
         print(f"error occurred while fetching character hexamatrix info: {e}")
         return None
+    
+def request_character_hexamatrix_stat(ocid: str) -> Optional[dict]:
+    
+    headers = {
+        "x-nxopen-api-key": api_key
+    }
+
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/hexamatrix-stat?ocid={ocid}"
+
+    try:
+        response = requests.get(url_string, headers=headers)
+        response.raise_for_status()
+
+        character_hexamatrix_stat_data = response.json()
+        return character_hexamatrix_stat_data
+    
+
+    except Exception as e:
+        print(f"error occurred while fetching character hexamatrix stat info: {e}")
+        return None
 
 def request_character_itemequipment(ocid: str) -> Optional[dict]:
     

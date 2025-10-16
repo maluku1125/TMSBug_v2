@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix, request_character_symbolequipment
+from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix, request_character_symbolequipment, request_character_hexamatrix_stat
 from functions.API_functions.API_Request_union import request_user_union
 import datetime
 from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment
@@ -10,24 +10,41 @@ from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment
 
 def create_character_basic_embed(character_name: str, return_data: bool = False):
 
-    ocid = get_character_ocid(character_name)
-    
-    if not ocid:
+    try:
+        ocid = get_character_ocid(character_name)
         
+        if not ocid:
+            embed = discord.Embed(
+                title="錯誤",
+                description=f"無法找到角色 '{character_name}' 的資訊",
+                color=discord.Color.red(),
+                timestamp=datetime.datetime.now()
+            )
+            return embed
+    except Exception as e:
         embed = discord.Embed(
             title="錯誤",
-            description=f"無法找到角色 '{character_name}' 的資訊",
+            description=f"查詢角色時發生錯誤: {str(e)}",
             color=discord.Color.red(),
             timestamp=datetime.datetime.now()
         )
         return embed
     
-    character_basic_data = request_character_basic(ocid)
-    character_stat_data = request_character_stat(ocid)
-    character_hexamatrix_data = request_character_hexamatrix(ocid)
-    character_symbolequipment_data = request_character_symbolequipment(ocid)
-
-    user_union_data = request_user_union(ocid) 
+    try:
+        character_basic_data = request_character_basic(ocid)
+        character_stat_data = request_character_stat(ocid)
+        character_hexamatrix_data = request_character_hexamatrix(ocid)
+        character_hexamatrix_stat_data = request_character_hexamatrix_stat(ocid)
+        character_symbolequipment_data = request_character_symbolequipment(ocid)
+        user_union_data = request_user_union(ocid)
+    except Exception as e:
+        embed = discord.Embed(
+            title="錯誤",
+            description=f"獲取角色資料時發生錯誤: {str(e)}",
+            color=discord.Color.red(),
+            timestamp=datetime.datetime.now()
+        )
+        return embed 
 
     if not character_basic_data or not character_stat_data:
         # 如果無法獲取基本角色資訊，返回錯誤 embed
@@ -120,14 +137,14 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     stat_info.append(f"無視防禦　： {ingroedefense}%")
     stat_info.append(f"冷卻減免　： {cooldown_sec}秒｜{cooldown_percent}%")
     stat_info.append(f"無視冷卻　： {cooldown_unaffected}%")    
-    stat_info.append(f"星星＆符文： {int(starforce)}｜{int(arcaneforce):,}｜{int(authenticforce):,}")
+    stat_info.append(f"星力＆符文： {int(starforce)}｜{int(arcaneforce):,}｜{int(authenticforce):,}")
 
 
     # hexa info INFO
     hexa_dict = {}
     hexa_equipment = None
     
-    # 安全檢查六階核心資料
+    # 安全檢查六轉核心資料
     if (character_hexamatrix_data and 
         character_hexamatrix_data.get('character_hexa_core_equipment') is not None):
         hexa_equipment = character_hexamatrix_data['character_hexa_core_equipment']
@@ -170,7 +187,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     BoostNode4 = hexa_dict.get('EnhanceCore4', 0)
     CommonNode1 = hexa_dict.get('CommonCore1', 0)
 
-    # 計算六階核心完成度
+    # 計算六轉核心完成度
     totalcount, maxfragment = Calculatefragment(
         SkillNodes1, 
         MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
@@ -198,21 +215,103 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             elif key.startswith('CommonCore'):
                 common_cores.append(str(level))
         
+        # Helper function to format core levels with spacing for alignment
+        def format_core_level(level_str):
+            level = int(level_str)
+            return f"{level:2d}"
+        
         if skill_cores:
-            hexa_info.append(f"技能核心： {' | '.join(skill_cores)}")
+            formatted_skill_cores = [format_core_level(level) for level in skill_cores]
+            hexa_info.append(f"技能核心　： {' | '.join(formatted_skill_cores)}")
         if mastery_cores:
-            hexa_info.append(f"精通核心： {' | '.join(mastery_cores)}")
+            formatted_mastery_cores = [format_core_level(level) for level in mastery_cores]
+            hexa_info.append(f"精通核心　： {' | '.join(formatted_mastery_cores)}")
         if enhance_cores:
-            hexa_info.append(f"強化核心： {' | '.join(enhance_cores)}")
+            formatted_enhance_cores = [format_core_level(level) for level in enhance_cores]
+            hexa_info.append(f"強化核心　： {' | '.join(formatted_enhance_cores)}")
         if common_cores:
-            hexa_info.append(f"共用核心： {' | '.join(common_cores)}")
+            formatted_common_cores = [format_core_level(level) for level in common_cores]
+            hexa_info.append(f"共用核心　： {' | '.join(formatted_common_cores)}")
 
-    # 添加符文裝備資訊欄位
+    # Process hexa-stat information
+    hexa_stat_info = []
+    try:
+        if character_hexamatrix_stat_data:
+            # Process hexa-stat cores (preset 1, 2, 3)
+            for i in range(1, 4):
+                preset_key = f'preset_hexa_stat_core_{i}' if i > 1 else 'preset_hexa_stat_core'
+                core_array = character_hexamatrix_stat_data.get(preset_key, [])
+                
+                # Each preset contains an array of cores (slot_id 0 and 1)
+                slot_0_data = None
+                slot_1_data = None
+                
+                for core_data in core_array:
+                    if core_data.get('slot_id') == '0':
+                        slot_0_data = core_data
+                    elif core_data.get('slot_id') == '1':
+                        slot_1_data = core_data
+                
+                # Helper function to format numbers with spacing for alignment
+                def format_stat_with_spacing(main, sub1, sub2):
+                    main_str = f"{main:2d}"
+                    sub1_str = f"{sub1:2d}" 
+                    sub2_str = f"{sub2:2d}"
+                    
+                    return f"{main_str}/{sub1_str}/{sub2_str}"
+                
+                # Format slot 0 (left side)
+                if slot_0_data:
+                    main_0 = slot_0_data.get('main_stat_level', 0)
+                    sub1_0 = slot_0_data.get('sub_stat_level_1', 0)
+                    sub2_0 = slot_0_data.get('sub_stat_level_2', 0)
+                else:
+                    main_0, sub1_0, sub2_0 = 0, 0, 0
+                
+                format_0 = format_stat_with_spacing(main_0, sub1_0, sub2_0)
+                
+                # Format slot 1 (right side)  
+                if slot_1_data:
+                    main_1 = slot_1_data.get('main_stat_level', 0)
+                    sub1_1 = slot_1_data.get('sub_stat_level_1', 0)
+                    sub2_1 = slot_1_data.get('sub_stat_level_2', 0)
+                else:
+                    main_1, sub1_1, sub2_1 = 0, 0, 0
+                
+                format_1 = format_stat_with_spacing(main_1, sub1_1, sub2_1)
+                
+                equipped_preset_key = f'character_hexa_stat_core_{i}' if i > 1 else 'character_hexa_stat_core'
+                equipped_cores = character_hexamatrix_stat_data.get(equipped_preset_key, [])
+                
+                # Check which slot is currently equipped
+                equipped_slot_id = None
+                if equipped_cores:
+                    # Usually there's only one equipped core, get its slot_id
+                    equipped_slot_id = equipped_cores[0].get('slot_id')
+                
+                # Create display string with status indicators
+                if equipped_slot_id == '0':
+                    left_indicator = "✅"
+                    right_indicator = "❌"
+                elif equipped_slot_id == '1':
+                    left_indicator = "❌"
+                    right_indicator = "✅"
+                else:
+                    left_indicator = "❌"
+                    right_indicator = "❌"
+                
+                # Convert number to full-width for better alignment
+                full_width_number = {'1': '１', '2': '２', '3': '３'}.get(str(i), str(i))
+                hexa_stat_info.append(f"屬性核心{full_width_number}：{format_0}{left_indicator}|{right_indicator}{format_1}")
+    except Exception as e:
+        hexa_stat_info = []
+
+
+    # symbole
     symbol_info = []
     if character_symbolequipment_data and character_symbolequipment_data.get('symbol'):
         symbols = character_symbolequipment_data.get('symbol', [])
         
-        # 分類符文：祕法符文和真實符文
         arcane_symbols = []  # 祕法符文
         sacred_symbols = []  # 真實符文
         luxury_symbols = []  # 豪華真實符文
@@ -221,7 +320,6 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             symbol_name = symbol.get('symbol_name', '未知符文')
             symbol_level = symbol.get('symbol_level', 0)
             
-            # 只收集等級數字
             if '祕法符文：' in symbol_name:
                 arcane_symbols.append(str(symbol_level))
             elif '豪華真實符文：' in symbol_name:
@@ -229,7 +327,6 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             elif '真實符文：' in symbol_name:
                 sacred_symbols.append(str(symbol_level))            
             else:
-                # 其他類型的符文歸類到真實符文
                 sacred_symbols.append(str(symbol_level))
         
         if arcane_symbols:
@@ -264,8 +361,8 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     
     if hexa_dict and hexa_info:
         embed.add_field(
-            name=f"六階核心 ({percentage:.2f}%)",
-            value=f"```autohotkey\n{'\n'.join(hexa_info)}```",
+            name=f"六轉核心 ({percentage:.2f}%)",
+            value=f"```autohotkey\n{'\n'.join(hexa_info)}\n{'\n'.join(hexa_stat_info)}```",
             inline=False
         )
        

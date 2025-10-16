@@ -5,6 +5,7 @@ from discord.ext import commands
 from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment, request_character_pet_equipment
 import datetime
 
+from functions.Cogs.Slash_CalculateScrolls import scrolls_fitting
 
 class EquipmentView(discord.ui.View):
     def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, character_pet_equipment_data: dict = None, current_preset: str = "preset_1", character_basic_data: dict = None):
@@ -89,7 +90,22 @@ class EquipmentView(discord.ui.View):
                     
                     if max_power > 0:
                         scroll_avg = max_power / int(scroll_upgrade)
-                        equipment_text += f" 📜{scroll_upgrade} ({scroll_avg:.1f})"
+                        
+                        # Determine equipment category for scrolls_fitting
+                        if item_slot == '武器':
+                            equipment_type = "武器"
+                        elif item_slot == '手套':
+                            equipment_type = "手套"
+                        else:
+                            equipment_type = "其他"
+                        
+                        # Get scroll type from scrolls_fitting function
+                        scroll_type = scrolls_fitting(equipment_type, scroll_avg)
+                        
+                        if scroll_type is None:
+                            equipment_text += f" 📜{scroll_upgrade} ({scroll_avg:.1f})"
+                        else:
+                            equipment_text += f" 📜{scroll_upgrade} ({scroll_type})"
             
             # Add item_add_option information (non-zero values)
             item_add_option = equipment.get('item_add_option', {})

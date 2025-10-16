@@ -148,3 +148,86 @@ class Slash_CalculateScrolls(commands.Cog):
         UseSlashCommand('scrollsimulator', interaction)
         
         await interaction.response.send_message(embed=embed)
+
+def scrolls_fitting(type, avgvalue):
+    if type == "武器":
+        if avgvalue == 3:
+            ScrollType = "咒100"
+        elif avgvalue < 3:
+            ScrollType = "咒100+"
+        elif avgvalue == 5:
+            ScrollType = "咒70"
+        elif avgvalue == 7:
+            ScrollType = "咒30"
+        elif avgvalue == 9:
+            ScrollType = "咒15"
+        elif 10 > avgvalue > 9:
+            ScrollType = "咒15+"
+        elif avgvalue == 10:
+            ScrollType = "R"
+        elif 12 > avgvalue > 10:
+            ScrollType = "R+"
+        elif avgvalue == 12:
+            ScrollType = "X"
+        elif 13 > avgvalue > 12:
+            ScrollType = "X+"
+        elif avgvalue == 13:
+            ScrollType = "V"
+        elif 14 > avgvalue > 13:
+            ScrollType = "V+"
+        elif avgvalue == 14:
+            ScrollType = "B"
+        elif  avgvalue > 14:
+            ScrollType = None
+    elif type == "手套":
+        if avgvalue < 1:
+            ScrollType = "咒100"
+        elif avgvalue == 2:
+            ScrollType = "咒70"
+        elif avgvalue == 3:
+            ScrollType = "咒30"
+        elif avgvalue == 4:
+            ScrollType = "咒15"
+        elif 5 > avgvalue > 4:
+            ScrollType = "G+"
+        elif avgvalue == 5:
+            ScrollType = "R"
+        elif 7 > avgvalue > 5:
+            ScrollType = "R+"
+        elif avgvalue == 7:
+            ScrollType = "X"
+        elif 8 > avgvalue > 7:
+            ScrollType = "X+"
+        elif avgvalue == 8:
+            ScrollType = "V"
+        elif 9 > avgvalue > 8:
+            ScrollType = "V+"
+        elif avgvalue == 9:
+            ScrollType = "B"
+        elif avgvalue > 9:
+            ScrollType = None
+    else:
+        if avgvalue < 4:
+            ScrollType = "咒-"
+        elif avgvalue == 4:
+            ScrollType = "G"
+        elif 5 > avgvalue > 4:
+            ScrollType = "G+"
+        elif avgvalue == 5:
+            ScrollType = "R"
+        elif 7 > avgvalue > 5:
+            ScrollType = "R+"
+        elif avgvalue == 7:
+            ScrollType = "X"
+        elif 8 > avgvalue > 7:
+            ScrollType = "X+"
+        elif avgvalue == 8:
+            ScrollType = "V"
+        elif 9 > avgvalue > 8:
+            ScrollType = "V+"
+        elif avgvalue == 9:
+            ScrollType = "B"
+        elif avgvalue > 9:
+            ScrollType = None
+
+    return ScrollType
