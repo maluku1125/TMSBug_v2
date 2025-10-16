@@ -220,3 +220,22 @@ def request_character_cashitemequipment(ocid: str) -> Optional[dict]:
     except Exception as e:
         print(f"error occurred while fetching character cash item equipment info: {e}")
         return None
+
+def request_character_pet_equipment(ocid: str) -> Optional[dict]:
+    
+    headers = {
+        "x-nxopen-api-key": api_key
+    }
+
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/pet-equipment?ocid={ocid}"
+
+    try:
+        response = requests.get(url_string, headers=headers)
+        response.raise_for_status()
+
+        character_pet_equipment_data = response.json()
+        return character_pet_equipment_data
+
+    except Exception as e:
+        print(f"error occurred while fetching character pet equipment info: {e}")
+        return None

@@ -8,7 +8,7 @@ import datetime
 from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment
 
 
-def create_character_basic_embed(character_name: str) -> discord.Embed:
+def create_character_basic_embed(character_name: str, return_data: bool = False):
 
     ocid = get_character_ocid(character_name)
     
@@ -115,15 +115,12 @@ def create_character_basic_embed(character_name: str) -> discord.Embed:
     stat_info.append(f"屬性攻擊力： {int(maximumattstat):,}")
     stat_info.append(f"總傷害　　： {damage}%")
     stat_info.append(f"ＢＯＳＳ傷： {bossmonsterdamage}%")
+    stat_info.append(f"爆擊傷害　： {critdamage}%")
     stat_info.append(f"最終傷害　： {finaldamage}%")
-    stat_info.append(f"暴擊傷害　： {critdamage}%")
     stat_info.append(f"無視防禦　： {ingroedefense}%")
-    stat_info.append(f"冷卻減免　： {cooldown_sec}秒")
-    stat_info.append(f"冷卻縮減　： {cooldown_percent}%")
+    stat_info.append(f"冷卻減免　： {cooldown_sec}秒｜{cooldown_percent}%")
     stat_info.append(f"無視冷卻　： {cooldown_unaffected}%")    
-    stat_info.append(f"星星之力　： {int(starforce)}")
-    stat_info.append(f"神秘力量　： {int(arcaneforce):,}")    
-    stat_info.append(f"真實力量　： {int(authenticforce):,}")
+    stat_info.append(f"星星＆符文： {int(starforce)}｜{int(arcaneforce):,}｜{int(authenticforce):,}")
 
 
     # hexa info INFO
@@ -293,7 +290,13 @@ def create_character_basic_embed(character_name: str) -> discord.Embed:
         text=f"{character_create_date}"
     )
     
-    return embed
+    if return_data:
+        return {
+            "embed": embed,
+            "character_basic_data": character_basic_data
+        }
+    else:
+        return embed
 
 
 

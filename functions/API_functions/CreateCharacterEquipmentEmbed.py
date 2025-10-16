@@ -2,16 +2,18 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment
+from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment, request_character_pet_equipment
 import datetime
 
 
 class EquipmentView(discord.ui.View):
-    def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, current_preset: str = "preset_1"):
+    def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, character_pet_equipment_data: dict = None, current_preset: str = "preset_1", character_basic_data: dict = None):
         super().__init__(timeout=300)  # 5 minute timeout
         self.character_name = character_name
         self.character_equipment_data = character_equipment_data
         self.character_cashitem_equipment_data = character_cashitem_equipment_data
+        self.character_pet_equipment_data = character_pet_equipment_data
+        self.character_basic_data = character_basic_data
         self.current_preset = current_preset
         self.current_category = "weapon"  # Default category
         
@@ -67,6 +69,13 @@ class EquipmentView(discord.ui.View):
             
             # Format equipment information - detailed display
             equipment_text = f"**{item_name}**"
+            
+            # Add exceptional upgrade information
+            item_exceptional_option = equipment.get('item_exceptional_option', {})
+            exceptional_upgrade = int(item_exceptional_option.get('exceptional_upgrade', 0))
+            if exceptional_upgrade > 0:
+                equipment_text += f" 🔺{exceptional_upgrade}"
+            
             if int(starforce) > 0:
                 equipment_text += f" ⭐{starforce}"
                 
@@ -80,9 +89,97 @@ class EquipmentView(discord.ui.View):
                     
                     if max_power > 0:
                         scroll_avg = max_power / int(scroll_upgrade)
-                        equipment_text += f" 📜{scroll_avg:.1f}"
-                        
-            equipment_text += "\n"
+                        equipment_text += f" 📜{scroll_upgrade} ({scroll_avg:.1f})"
+            
+            # Add item_add_option information (non-zero values)
+            item_add_option = equipment.get('item_add_option', {})
+            etc_stats = []
+            
+            # Define main stat to class mapping
+            class_main_stat = {
+                "str": [
+                    "英雄", "黑騎士", "聖騎士", "拳霸", "重砲指揮官", 
+                    "米哈逸", "聖魂劍士", "閃雷悍將", "惡魔殺手", "爆拳槍神",
+                    "狂狼勇士", "隱月", "凱薩", "劍豪", "神之子", "阿戴爾", "亞克", "蓮"
+                ],
+                "dex": [
+                    "箭神", "神射手", "開拓者", "槍神", "墨玄", "破風使者", "狂豹獵人", 
+                    "機甲戰神", "精靈遊俠", "天使破壞者", "凱殷"
+                ],
+                "int": [
+                    "主教", "大魔導士(火、毒)", "大魔導士(冰、雷)", "烈焰巫師", 
+                    "煉獄巫師", "龍魔導士", "夜光", "陰陽師", "幻獸師", "凱內西斯", 
+                    "琳恩", "菈菈", "伊利恩"
+                ],
+                "luk": [
+                    "夜使者", "暗影神偷", "影武者", "暗夜行者", "幻影俠盜", "虎影", "卡蒂娜", "卡莉"
+                ],
+                "max_hp": ["惡魔復仇者"],
+            }
+            
+            # Xenon fuck u
+            special_exclude_stats = {
+                "傑諾": ["int"]  
+            }
+            
+            # Get character class from character_basic_data
+            character_class = ""
+            if self.character_basic_data:
+                character_class = self.character_basic_data.get('character_class', '')
+            
+            # Find the main stat for current character class
+            character_main_stat = ""
+            for stat_key, class_list in class_main_stat.items():
+                if character_class in class_list:
+                    character_main_stat = stat_key
+                    break
+            
+            # Define the stats we want to check and their abbreviations
+            stat_mapping = {
+                'str': 'S',
+                'dex': 'D', 
+                'int': 'I',
+                'luk': 'L',
+                'max_hp': 'HP',
+                'attack_power': '物',
+                'magic_power': '魔',
+                "boss_damage": "B",
+                "damage": "總",
+                "all_stat": "全",
+            }
+            
+            # Define stats that are always shown regardless of class
+            always_show_stats = ['attack_power', 'magic_power', 'boss_damage', 'damage', 'all_stat']
+            
+            # Process stats based on class and configuration
+            for stat_key, stat_abbr in stat_mapping.items():
+                stat_value = item_add_option.get(stat_key, '0')
+                try:
+                    if int(stat_value) > 0:
+                        # Always show certain stats regardless of class
+                        if stat_key in always_show_stats:
+                            etc_stats.append(f"{stat_abbr}{stat_value}")
+                        # For main stats (STR/DEX/INT/LUK/HP)
+                        elif stat_key in ['str', 'dex', 'int', 'luk', 'max_hp']:
+                            # Check if this stat should be excluded for special classes
+                            excluded_stats = special_exclude_stats.get(character_class, [])
+                            if stat_key in excluded_stats:
+                                continue
+                                
+                            # If character has a specific main stat, only show that one
+                            if character_main_stat:
+                                if stat_key == character_main_stat:
+                                    etc_stats.append(f"{stat_abbr}{stat_value}")
+                            # If character is not in class_main_stat, show all main stats
+                            else:
+                                etc_stats.append(f"{stat_abbr}{stat_value}")
+                except (ValueError, TypeError):
+                    pass
+            
+            if etc_stats:
+                equipment_text += f" 🔥{' '.join(etc_stats)}"
+            
+            equipment_text += "\n"  # Add separator blank line
             
             # Check if it's a ring and has special_ring_level
             special_ring_level = equipment.get('special_ring_level')
@@ -94,6 +191,13 @@ class EquipmentView(discord.ui.View):
                 except (ValueError, TypeError):
                     pass
             
+            # Soul information (for weapons only)
+            if item_slot in weapon_slots:
+                soul_name = equipment.get('soul_name')
+                soul_option = equipment.get('soul_option')
+                if soul_name and soul_option:
+                    equipment_text += f"```{soul_name}｜{soul_option}\n```"             
+
             # Potential information (detailed display)
             if potential_grade != 'None' and potential_1:
                 potentials = [p for p in [potential_1, potential_2, potential_3] if p]
@@ -127,8 +231,7 @@ class EquipmentView(discord.ui.View):
                         add_grade_icon = "🔵"  # Blue
                     
                     equipment_text += f"```{add_grade_icon}{' / '.join(add_potentials)}\n```"
-            
-            equipment_text += "\n"  # Add separator blank line
+                       
             
             # Categorize equipment (using item_equipment_slot)
             if item_slot in weapon_slots:
@@ -168,6 +271,28 @@ class EquipmentView(discord.ui.View):
                 cashitem_text = f"**{item_slot}**： {item_name}\n"
                 self.cashitem_base_info.append(cashitem_text)
         
+        # Process pet equipment info (shared by all presets)
+        self.pet_info = []
+        if self.character_pet_equipment_data:
+            for pet_num in [1, 2, 3]:
+                pet_name = self.character_pet_equipment_data.get(f'pet_{pet_num}_name')
+                pet_equipment = self.character_pet_equipment_data.get(f'pet_{pet_num}_equipment')
+                
+                if pet_name and pet_equipment:
+                    equipment_name = pet_equipment.get('item_name', '無裝備')
+                    pet_text = f"**{pet_name}** ({equipment_name})\n"
+                    
+                    # Add item options
+                    item_options = pet_equipment.get('item_option', [])
+                    for option in item_options:
+                        option_type = option.get('option_type', '')
+                        option_value = option.get('option_value', '')
+                        if option_type and option_value:
+                            pet_text += f"```{option_type} {option_value}```"
+                    
+                    pet_text += "\n"  # Add separator blank line
+                    self.pet_info.append(pet_text)
+        
     def create_embed(self, category: str) -> discord.Embed:
         """Create corresponding embed based on category"""
         category_names = {
@@ -176,7 +301,8 @@ class EquipmentView(discord.ui.View):
             "accessory": "飾品",
             "other": "其他",
             "cashitem": "時裝外觀",
-            "cashitem_base": "時裝"
+            "cashitem_base": "時裝",
+            "pet": "寵物"
         }
         
         preset_names = {
@@ -192,6 +318,10 @@ class EquipmentView(discord.ui.View):
             timestamp=datetime.datetime.now()
         )
         
+        # Add character image if available
+        if self.character_basic_data and self.character_basic_data.get('character_image'):
+            embed.set_thumbnail(url=self.character_basic_data['character_image'])
+        
         if category == "weapon":
             # Weapons only
             if self.weapon_info:
@@ -201,7 +331,7 @@ class EquipmentView(discord.ui.View):
                     chunks = []
                     current_chunk = ""
                     for item in self.weapon_info:
-                        if len(current_chunk + item) > 1000: 
+                        if len(current_chunk + item) > 800:  # Reduced threshold to prevent overflow
                             chunks.append(current_chunk)
                             current_chunk = item
                         else:
@@ -223,7 +353,7 @@ class EquipmentView(discord.ui.View):
                     chunks = []
                     current_chunk = ""
                     for item in self.armor_info:
-                        if len(current_chunk + item) > 1000:
+                        if len(current_chunk + item) > 800:  # Reduced threshold to prevent overflow
                             chunks.append(current_chunk)
                             current_chunk = item
                         else:
@@ -245,7 +375,7 @@ class EquipmentView(discord.ui.View):
                     chunks = []
                     current_chunk = ""
                     for item in self.accessory_info:
-                        if len(current_chunk + item) > 1000:
+                        if len(current_chunk + item) > 800:  # Reduced threshold to prevent overflow
                             chunks.append(current_chunk)
                             current_chunk = item
                         else:
@@ -267,7 +397,7 @@ class EquipmentView(discord.ui.View):
                     chunks = []
                     current_chunk = ""
                     for item in self.other_info:
-                        if len(current_chunk + item) > 1000:
+                        if len(current_chunk + item) > 800:  # Reduced threshold to prevent overflow
                             chunks.append(current_chunk)
                             current_chunk = item
                         else:
@@ -289,7 +419,7 @@ class EquipmentView(discord.ui.View):
                     chunks = []
                     current_chunk = ""
                     for item in self.cashitem_info:
-                        if len(current_chunk + item) > 1000:
+                        if len(current_chunk + item) > 800:  # Reduced threshold to prevent overflow
                             chunks.append(current_chunk)
                             current_chunk = item
                         else:
@@ -311,7 +441,7 @@ class EquipmentView(discord.ui.View):
                     chunks = []
                     current_chunk = ""
                     for item in self.cashitem_base_info:
-                        if len(current_chunk + item) > 1000:
+                        if len(current_chunk + item) > 800:  # Reduced threshold to prevent overflow
                             chunks.append(current_chunk)
                             current_chunk = item
                         else:
@@ -325,6 +455,28 @@ class EquipmentView(discord.ui.View):
                     embed.add_field(name="\u200b", value=text, inline=False)
             else:
                 embed.add_field(name="\u200b", value="無時裝資料", inline=False)
+                
+        elif category == "pet":
+            if self.pet_info:
+                text = ''.join(self.pet_info)
+                if len(text) > 1024:
+                    chunks = []
+                    current_chunk = ""
+                    for item in self.pet_info:
+                        if len(current_chunk + item) > 800:  # Reduced threshold to prevent overflow
+                            chunks.append(current_chunk)
+                            current_chunk = item
+                        else:
+                            current_chunk += item
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                    
+                    for i, chunk in enumerate(chunks):
+                        embed.add_field(name="\u200b", value=chunk, inline=False)
+                else:
+                    embed.add_field(name="\u200b", value=text, inline=False)
+            else:
+                embed.add_field(name="\u200b", value="無寵物資料", inline=False)
         
         return embed
     
@@ -368,6 +520,12 @@ class EquipmentView(discord.ui.View):
                 description="",
                 emoji="👗",
                 value="cashitem"
+            ),
+            discord.SelectOption(
+                label="寵物",
+                description="",
+                emoji="🐾",
+                value="pet"
             )
         ]
     )
@@ -418,9 +576,10 @@ class EquipmentView(discord.ui.View):
             
             # Create a simple view that only displays buttons for users to choose return to equipment or re-query
             class SimpleCharacterView(discord.ui.View):
-                def __init__(self, character_name: str):
+                def __init__(self, character_name: str, character_basic_data: dict = None):
                     super().__init__(timeout=300)
                     self.character_name = character_name
+                    self.character_basic_data = character_basic_data
                 
                 @discord.ui.button(label="角色", style=discord.ButtonStyle.primary, emoji="👤")
                 async def character_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -428,38 +587,41 @@ class EquipmentView(discord.ui.View):
                 
                 @discord.ui.button(label="預設1", style=discord.ButtonStyle.success)
                 async def preset_1_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    result = create_character_equipment_embed(self.character_name)
+                    result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                     embed = result["embed"]
                     view = result["view"]
                     if view and embed:
                         view.current_preset = "preset_1"
                         view._process_equipment_data()
+                        view._update_preset_button_styles()
                         embed = view.create_embed("weapon")
                         await interaction.response.edit_message(embed=embed, view=view)
                 
                 @discord.ui.button(label="預設2", style=discord.ButtonStyle.success)
                 async def preset_2_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    result = create_character_equipment_embed(self.character_name)
+                    result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                     embed = result["embed"]
                     view = result["view"]
                     if view and embed:
                         view.current_preset = "preset_2"
                         view._process_equipment_data()
+                        view._update_preset_button_styles()
                         embed = view.create_embed("weapon")
                         await interaction.response.edit_message(embed=embed, view=view)
                 
                 @discord.ui.button(label="預設3", style=discord.ButtonStyle.success)
                 async def preset_3_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    result = create_character_equipment_embed(self.character_name)
+                    result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                     embed = result["embed"]
                     view = result["view"]
                     if view and embed:
                         view.current_preset = "preset_3"
                         view._process_equipment_data()
+                        view._update_preset_button_styles()
                         embed = view.create_embed("weapon")
                         await interaction.response.edit_message(embed=embed, view=view)
             
-            view = SimpleCharacterView(self.character_name)
+            view = SimpleCharacterView(self.character_name, self.character_basic_data)
             await interaction.response.edit_message(embed=embed, view=view)
         except Exception as e:
             error_embed = discord.Embed(
@@ -475,7 +637,7 @@ class EquipmentView(discord.ui.View):
             item.disabled = True
 
 
-def create_character_equipment_embed(character_name: str) -> dict:
+def create_character_equipment_embed(character_name: str, character_basic_data: dict = None) -> dict:
  
     ocid = get_character_ocid(character_name)
     
@@ -491,6 +653,7 @@ def create_character_equipment_embed(character_name: str) -> dict:
     # Get equipment data
     character_equipment_data = request_character_itemequipment(ocid)
     character_cashitem_equipment_data = request_character_cashitemequipment(ocid)
+    character_pet_equipment_data = request_character_pet_equipment(ocid)
     
     if not character_equipment_data:
         embed = discord.Embed(
@@ -519,7 +682,7 @@ def create_character_equipment_embed(character_name: str) -> dict:
         return {"embed": embed, "view": None}
     
     # Create View and initial embed
-    view = EquipmentView(character_name, character_equipment_data, character_cashitem_equipment_data)
+    view = EquipmentView(character_name, character_equipment_data, character_cashitem_equipment_data, character_pet_equipment_data, character_basic_data=character_basic_data)
     initial_embed = view.create_embed("weapon")  # Default display weapons
     
     return {"embed": initial_embed, "view": view}

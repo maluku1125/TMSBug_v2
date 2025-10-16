@@ -1,0 +1,128 @@
+{
+  "date": null,
+  "pet_1_name": "熟透的櫻桃",
+  "pet_1_nickname": "熟透的櫻桃",
+  "pet_1_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KAPCJGLA",
+  "pet_1_description": "一看就知道是熟透的櫻桃。",
+  "pet_1_equipment": {
+    "item_name": "粉紅愛心",
+    "item_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KEHCJAKG",
+    "item_description": "能讓熟透的櫻桃心情變好的小愛心。",
+    "item_option": [
+      {
+        "option_type": "攻擊力",
+        "option_value": "5"
+      },
+      {
+        "option_type": "魔法攻擊力",
+        "option_value": "100"
+      }
+    ],
+    "scroll_upgrade": 10,
+    "scroll_upgradable": 0,
+    "item_shape": "粉紅愛心",
+    "item_shape_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KEHCJAKG"
+  },
+  "pet_1_auto_skill": {
+    "skill_1": "歐尼斯的祝福",
+    "skill_1_icon": "https://open.api.nexon.com/static/maplestorytw/skill/icon/KFNAKAPBLD",
+    "skill_2": "實用的會心之眼",
+    "skill_2_icon": "https://open.api.nexon.com/static/maplestorytw/skill/icon/KBPCLHPBMC"
+  },
+  "pet_1_pet_type": "月光夢幻",
+  "pet_1_skill": [
+    "撿取道具",
+    "擴大移動範圍",
+    "自動撿取",
+    "不撿特定道具",
+    "補充HP藥水",
+    "補充MP藥水",
+    "寵物巨人技能",
+    "寵物商店技能"
+  ],
+  "pet_1_date_expire": "2078-12-31T00:00+08:00",
+  "pet_1_appearance": "熟透的櫻桃",
+  "pet_1_appearance_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KAPCJGLA",
+  "pet_2_name": "未熟透的櫻桃",
+  "pet_2_nickname": "未熟透的櫻桃",
+  "pet_2_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KAPCJGLB",
+  "pet_2_description": "想要再更熟一點的未熟透的櫻桃。",
+  "pet_2_equipment": {
+    "item_name": "紅色愛心",
+    "item_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KEHCJAKH",
+    "item_description": "能讓未熟透的櫻桃心情變好的小愛心。",
+    "item_option": [
+      {
+        "option_type": "攻擊力",
+        "option_value": "5"
+      },
+      {
+        "option_type": "魔法攻擊力",
+        "option_value": "105"
+      }
+    ],
+    "scroll_upgrade": 10,
+    "scroll_upgradable": 0,
+    "item_shape": "紅色愛心",
+    "item_shape_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KEHCJAKH"
+  },
+  "pet_2_auto_skill": {
+    "skill_1": "自然力重置",
+    "skill_1_icon": "https://open.api.nexon.com/static/maplestorytw/skill/icon/KFNAKDPBNG",
+    "skill_2": "英雄歐尼斯",
+    "skill_2_icon": "https://open.api.nexon.com/static/maplestorytw/skill/icon/KFNAKAPBEC"
+  },
+  "pet_2_pet_type": "月光夢幻",
+  "pet_2_skill": [
+    "撿取道具",
+    "擴大移動範圍",
+    "自動撿取",
+    "不撿特定道具",
+    "補充HP藥水",
+    "補充MP藥水",
+    "寵物巨人技能",
+    "寵物商店技能"
+  ],
+  "pet_2_date_expire": "2078-12-31T00:00+08:00",
+  "pet_2_appearance": "未熟透的櫻桃",
+  "pet_2_appearance_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KAPCJGLB",
+  "pet_3_name": "熟過頭的櫻桃",
+  "pet_3_nickname": "熟過頭的櫻桃",
+  "pet_3_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KAPCJGLD",
+  "pet_3_description": "因□太貪心而熟過頭的櫻桃。",
+  "pet_3_equipment": {
+    "item_name": "紫色愛心",
+    "item_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KEHCJAKJ",
+    "item_description": "能讓熟過頭的櫻桃心情變好的小愛心。",
+    "item_option": [
+      {
+        "option_type": "魔法攻擊力",
+        "option_value": "102"
+      }
+    ],
+    "scroll_upgrade": 10,
+    "scroll_upgradable": 0,
+    "item_shape": "紫色愛心",
+    "item_shape_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KEHCJAKJ"
+  },
+  "pet_3_auto_skill": {
+    "skill_1": "實用的戰鬥命令",
+    "skill_1_icon": "https://open.api.nexon.com/static/maplestorytw/skill/icon/KBPCLHPBME",
+    "skill_2": "實用的祈禱",
+    "skill_2_icon": "https://open.api.nexon.com/static/maplestorytw/skill/icon/KBPCLHPBOA"
+  },
+  "pet_3_pet_type": "月光夢幻",
+  "pet_3_skill": [
+    "撿取道具",
+    "擴大移動範圍",
+    "自動撿取",
+    "不撿特定道具",
+    "補充HP藥水",
+    "補充MP藥水",
+    "寵物巨人技能",
+    "寵物商店技能"
+  ],
+  "pet_3_date_expire": "2078-12-31T00:00+08:00",
+  "pet_3_appearance": "熟過頭的櫻桃",
+  "pet_3_appearance_icon": "https://open.api.nexon.com/static/maplestorytw/item/icon/KAPCJGLD"
+}

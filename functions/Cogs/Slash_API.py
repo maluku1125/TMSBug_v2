@@ -7,11 +7,14 @@ from functions.API_functions.CreateCharacterEmbed import create_character_basic_
 from functions.API_functions.CreateGuildEmbed import create_guild_basic_embed   
 from functions.API_functions.CreateCharacterEquipmentEmbed import create_character_equipment_embed
 
+from functions.SlashCommandManager import UseSlashCommand
+
 
 class CharacterView(discord.ui.View):
-    def __init__(self, character_name: str):
+    def __init__(self, character_name: str, character_basic_data: dict = None):
         super().__init__(timeout=300)  # 5 minutes timeout
         self.character_name = character_name
+        self.character_basic_data = character_basic_data
         self.current_mode = "character"  # character, preset_1, preset_2, preset_3
         self._update_button_styles()
     
@@ -32,7 +35,12 @@ class CharacterView(discord.ui.View):
     def get_character_basic_embed(self):
         """Get character basic data embed"""
         try:
-            return create_character_basic_embed(self.character_name)
+            result = create_character_basic_embed(self.character_name, return_data=True)
+            if isinstance(result, dict):
+                self.character_basic_data = result["character_basic_data"]
+                return result["embed"]
+            else:
+                return result
         except Exception:
             return None
     
@@ -55,7 +63,7 @@ class CharacterView(discord.ui.View):
             self.current_mode = "preset_1"
             # Create complete equipment View
             try:
-                result = create_character_equipment_embed(self.character_name)
+                result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                 embed = result["embed"]
                 view = result["view"]
                 
@@ -63,6 +71,7 @@ class CharacterView(discord.ui.View):
                     # Set to preset 1
                     view.current_preset = "preset_1"
                     view._process_equipment_data()
+                    view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
                     await interaction.response.edit_message(embed=embed, view=view)
                 else:
@@ -88,7 +97,7 @@ class CharacterView(discord.ui.View):
             self.current_mode = "preset_2"
             # Create complete equipment View
             try:
-                result = create_character_equipment_embed(self.character_name)
+                result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                 embed = result["embed"]
                 view = result["view"]
                 
@@ -96,6 +105,7 @@ class CharacterView(discord.ui.View):
                     # Set to preset 2
                     view.current_preset = "preset_2"
                     view._process_equipment_data()
+                    view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
                     await interaction.response.edit_message(embed=embed, view=view)
                 else:
@@ -121,7 +131,7 @@ class CharacterView(discord.ui.View):
             self.current_mode = "preset_3"
             # Create complete equipment View
             try:
-                result = create_character_equipment_embed(self.character_name)
+                result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                 embed = result["embed"]
                 view = result["view"]
                 
@@ -129,6 +139,7 @@ class CharacterView(discord.ui.View):
                     # Set to preset 3
                     view.current_preset = "preset_3"
                     view._process_equipment_data()
+                    view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
                     await interaction.response.edit_message(embed=embed, view=view)
                 else:
@@ -162,6 +173,8 @@ class Slash_API(commands.Cog):
     async def api_character_basic(self, interaction: discord.Interaction, playername: str):
         
         await interaction.response.defer()
+
+        UseSlashCommand('api_character', interaction)
         
         try:
             # Create character data View
@@ -205,6 +218,7 @@ class Slash_API(commands.Cog):
     async def api_guild_basic(self, interaction: discord.Interaction, guild_name: str, world_name: str):
         
         await interaction.response.defer()
+        UseSlashCommand('api_guild', interaction)
 
         result = create_guild_basic_embed(guild_name, world_name, include_view=True)
         embed = result["embed"]
