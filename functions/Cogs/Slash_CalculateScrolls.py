@@ -150,6 +150,8 @@ class Slash_CalculateScrolls(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
 def scrolls_fitting(type, avgvalue):
+    ScrollType = None
+
     if type == "武器":
         if avgvalue == 3:
             ScrollType = "咒100"
@@ -177,7 +179,7 @@ def scrolls_fitting(type, avgvalue):
             ScrollType = "V+"
         elif avgvalue == 14:
             ScrollType = "B"
-        elif  avgvalue > 14:
+        else:  # avgvalue > 14 or other cases
             ScrollType = None
     elif type == "手套":
         if avgvalue < 1:
@@ -204,7 +206,7 @@ def scrolls_fitting(type, avgvalue):
             ScrollType = "V+"
         elif avgvalue == 9:
             ScrollType = "B"
-        elif avgvalue > 9:
+        else:  # avgvalue > 9
             ScrollType = None
     else:
         if avgvalue < 4:
@@ -227,7 +229,7 @@ def scrolls_fitting(type, avgvalue):
             ScrollType = "V+"
         elif avgvalue == 9:
             ScrollType = "B"
-        elif avgvalue > 9:
+        else:  # avgvalue > 9
             ScrollType = None
 
     return ScrollType
