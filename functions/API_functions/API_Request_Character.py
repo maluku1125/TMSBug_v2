@@ -2,7 +2,10 @@ import requests
 from typing import Optional
 import datetime
 import configparser
-from functions.API_functions.API_DataBase_Character import save_character_ocid_db, get_character_ocid_db
+from functions.API_functions.API_DataBase_Character import (
+    save_character_ocid_db, get_character_ocid_db, 
+    save_character_basic_info_db, get_character_basic_info_with_fallback
+)
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -47,7 +50,7 @@ def get_ocid_from_cache(character_name: str, cache_days: int = 7) -> Optional[st
         return None
 
 def get_character_ocid(character_name: str) -> Optional[str]:
-    print(f"OCID: '{character_name}'")
+    print(f"Searching OCID: '{character_name}'")
     
     # 1. 先嘗試從快取獲取
     cached_ocid = get_ocid_from_cache(character_name)
@@ -89,7 +92,7 @@ def request_character_ocid(character_name: str) -> Optional[str]:
             print(f"API request success: '{character_name}' -> {ocid}")
             
             # 將結果儲存到資料庫
-            print(f"save to database...")
+            print(f"save {character_name} ocid to database...")
             save_success = save_character_ocid_db(character_name, ocid)
             
             if save_success:
@@ -107,7 +110,28 @@ def request_character_ocid(character_name: str) -> Optional[str]:
         return None
     
 
-def request_character_basic(ocid: str) -> Optional[dict]:
+def request_character_basic(ocid: str, use_cache: bool = True) -> Optional[dict]:
+    """
+    獲取角色基本資訊
+    
+    Args:
+        ocid: 角色的 OCID
+        use_cache: 是否使用快取，預設為 True
+    
+    Returns:
+        角色基本資訊字典，如果失敗則返回 None
+    """
+    
+    # 1. 如果啟用快取，先嘗試從快取獲取
+    if use_cache:
+        cached_data = get_character_basic_info_with_fallback(ocid)
+        if cached_data:
+            # 移除 refresh_time 欄位，保持與 API 回應格式一致
+            api_format_data = {k: v for k, v in cached_data.items() if k != 'refresh_time'}
+            return api_format_data
+    
+    # 2. 快取無效或不使用快取，從 API 請求
+    print(f"從 API 請求角色基本資訊: OCID={ocid}")
     
     headers = {
         "x-nxopen-api-key": api_key
@@ -120,10 +144,35 @@ def request_character_basic(ocid: str) -> Optional[dict]:
         response.raise_for_status()
         
         character_basic_data = response.json()
+        
+        if character_basic_data:
+            # 將 OCID 加入資料中以便儲存
+            character_basic_data_with_ocid = character_basic_data.copy()
+            character_basic_data_with_ocid['ocid'] = ocid
+            
+            # 每次都儲存到資料庫（無論是否啟用快取）
+            save_success = save_character_basic_info_db(character_basic_data_with_ocid)
+            
+            if save_success:
+                print(f"{ocid} saved character_basic_info to db")
+            else:
+                print(f"{ocid} save character_basic_info to db failed")
+
         return character_basic_data
         
     except Exception as e:
-        print(f"error occurred while fetching character basic info: {e}")
+        print(f"API 請求角色基本資訊失敗: {e}")
+        
+        # 3. API 失敗且啟用快取，嘗試使用過期的快取資料作為備用
+        if use_cache:
+            print(f"API 失敗，嘗試使用備用快取資料...")
+            fallback_data = get_character_basic_info_with_fallback(ocid, cache_days=365)
+            if fallback_data:
+                print(f"使用備用快取資料")
+                # 移除 refresh_time 欄位，保持與 API 回應格式一致
+                api_format_data = {k: v for k, v in fallback_data.items() if k != 'refresh_time'}
+                return api_format_data
+        
         return None
     
 def request_character_stat(ocid: str) -> Optional[dict]:
@@ -258,4 +307,62 @@ def request_character_pet_equipment(ocid: str) -> Optional[dict]:
 
     except Exception as e:
         print(f"error occurred while fetching character pet equipment info: {e}")
+        return None
+    
+
+def request_character_beauty_equipment(ocid: str) -> Optional[dict]:
+    
+    headers = {
+        "x-nxopen-api-key": api_key
+    }
+
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/beauty-equipment?ocid={ocid}"
+
+    try:
+        response = requests.get(url_string, headers=headers)
+        response.raise_for_status()
+
+        character_beauty_equipment_data = response.json()
+        return character_beauty_equipment_data
+
+    except Exception as e:
+        print(f"error occurred while fetching character beauty equipment info: {e}")
+        return None
+    
+def request_character_ability(ocid: str) -> Optional[dict]:
+    
+    headers = {
+        "x-nxopen-api-key": api_key
+    }
+
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/ability?ocid={ocid}"
+
+    try:
+        response = requests.get(url_string, headers=headers)
+        response.raise_for_status()
+
+        character_ability_data = response.json()
+        return character_ability_data
+
+    except Exception as e:
+        print(f"error occurred while fetching character ability info: {e}")
+        return None
+
+def request_character_hyper_stat(ocid: str) -> Optional[dict]:
+    
+    headers = {
+        "x-nxopen-api-key": api_key
+    }
+
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/hyper-stat?ocid={ocid}"
+
+    try:
+        response = requests.get(url_string, headers=headers)
+        response.raise_for_status()
+
+        character_hyper_stat_data = response.json()
+        return character_hyper_stat_data
+
+    except Exception as e:
+        print(f"error occurred while fetching character hyper stat info: {e}")
         return None

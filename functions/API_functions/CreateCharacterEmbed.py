@@ -63,8 +63,19 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     # info
     character_info.append(f"伺服器　： {character_basic_data.get('world_name', '未知')}")
     character_info.append(f"公會　　： {guild_name if guild_name else '-'}")  
-    character_info.append(f"職業　　： {character_basic_data.get('character_class', '未知')}")
-    character_info.append(f"等級　　： {character_basic_data.get('character_level', 0)}({character_basic_data.get('character_exp_rate', 0)}%)")
+    
+    # Format character class (limit to 9 characters and fix bracket issues)
+    character_class = character_basic_data.get('character_class', '未知')
+    character_class = character_class.replace('大魔導士(冰、雷)', '大魔導士（冰、雷）')
+    character_class = character_class.replace('大魔導士(火、毒)', '大魔導士（火、毒）')
+    character_class = character_class[:9] if len(character_class) > 9 else character_class
+    
+    # Format experience rate as ab.c%
+    exp_rate = character_basic_data.get('character_exp_rate', 0)
+    exp_display = f"{exp_rate:.1f}%" if exp_rate > 0 else "0.0%"
+    
+    character_info.append(f"職業　　： {character_class}")
+    character_info.append(f"等級　　： {character_basic_data.get('character_level', 0)}({exp_display})")
     
     # 加入聯盟資訊
     if user_union_data:

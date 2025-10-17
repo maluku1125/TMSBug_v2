@@ -2,20 +2,24 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment, request_character_pet_equipment
+from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment, request_character_pet_equipment, request_character_beauty_equipment, request_character_ability, request_character_hyper_stat
 import datetime
 
 from functions.Cogs.Slash_CalculateScrolls import scrolls_fitting
 
 class EquipmentView(discord.ui.View):
-    def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, character_pet_equipment_data: dict = None, current_preset: str = "preset_1", character_basic_data: dict = None):
+    def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, character_pet_equipment_data: dict = None, character_beauty_equipment_data: dict = None, character_ability_data: dict = None, character_hyper_stat_data: dict = None, current_preset: str = "preset_1", character_basic_data: dict = None):
         super().__init__(timeout=300)  # 5 minute timeout
         self.character_name = character_name
         self.character_equipment_data = character_equipment_data
         self.character_cashitem_equipment_data = character_cashitem_equipment_data
         self.character_pet_equipment_data = character_pet_equipment_data
+        self.character_beauty_equipment_data = character_beauty_equipment_data
+        self.character_ability_data = character_ability_data
+        self.character_hyper_stat_data = character_hyper_stat_data
         self.character_basic_data = character_basic_data
         self.current_preset = current_preset
+    
         self.current_category = "weapon"  # Default category
         
         # Process current preset equipment data
@@ -123,7 +127,7 @@ class EquipmentView(discord.ui.View):
                     "機甲戰神", "精靈遊俠", "天使破壞者", "凱殷"
                 ],
                 "int": [
-                    "主教", "大魔導士(火、毒)", "大魔導士(冰、雷)", "烈焰巫師", 
+                    "主教", "大魔導士（火、毒）", "大魔導士（冰、雷）", "烈焰巫師", 
                     "煉獄巫師", "龍魔導士", "夜光", "陰陽師", "幻獸師", "凱內西斯", 
                     "琳恩", "菈菈", "伊利恩"
                 ],
@@ -261,6 +265,53 @@ class EquipmentView(discord.ui.View):
         
         # Process cash item equipment info (Fashion Appearance - by preset configuration)
         self.cashitem_info = []
+        
+        # Add beauty equipment info at the top
+        if self.character_beauty_equipment_data:
+            beauty_info = []
+            
+            # Hair information
+            hair_data = self.character_beauty_equipment_data.get('character_hair', {})
+            if hair_data:
+                hair_name = hair_data.get('hair_name', '未知髮型')
+                base_color = hair_data.get('base_color', '')
+                mix_color = hair_data.get('mix_color')
+                mix_rate = hair_data.get('mix_rate', '0')
+                
+                if mix_color and int(mix_rate) > 0:
+                    remaining_rate = 100 - int(mix_rate)
+                    hair_info = f"髮型：{hair_name} ({base_color}{remaining_rate}-{mix_color}{mix_rate})"
+                else:
+                    hair_info = f"髮型：{hair_name} ({base_color})"
+                beauty_info.append(hair_info)
+            
+            # Face information
+            face_data = self.character_beauty_equipment_data.get('character_face', {})
+            if face_data:
+                face_name = face_data.get('face_name', '未知臉型')
+                base_color = face_data.get('base_color', '')
+                mix_color = face_data.get('mix_color')
+                mix_rate = face_data.get('mix_rate', '0')
+                
+                if mix_color and int(mix_rate) > 0:
+                    remaining_rate = 100 - int(mix_rate)
+                    face_info = f"臉型：{face_name}({base_color}{remaining_rate}-{mix_color}{mix_rate})"
+                else:
+                    face_info = f"臉型：{face_name}({base_color})"
+                beauty_info.append(face_info)
+            
+            # Skin information
+            skin_data = self.character_beauty_equipment_data.get('character_skin', {})
+            if skin_data:
+                skin_name = skin_data.get('skin_name', '未知皮膚')
+                skin_info = f"皮膚：{skin_name}"
+                beauty_info.append(skin_info)
+            
+            # Add beauty info to cashitem_info
+            if beauty_info:
+                beauty_text = '\n'.join(beauty_info) + '\n\n'
+                self.cashitem_info.append(beauty_text)
+        
         if self.character_cashitem_equipment_data:
             # Select corresponding preset configuration
             preset_number = self.current_preset.split('_')[1]  # Extract 1 from preset_1
@@ -309,6 +360,91 @@ class EquipmentView(discord.ui.View):
                     pet_text += "\n"  # Add separator blank line
                     self.pet_info.append(pet_text)
         
+        # Process hyper stat data (極限屬性) - only current preset
+        self.hyper_stat_info = []
+        if self.character_hyper_stat_data:
+            # Get current preset number from current_preset (preset_1 -> 1)
+            current_preset_num = int(self.current_preset.split('_')[1])
+            preset_key = f"hyper_stat_preset_{current_preset_num}"
+            preset_data = self.character_hyper_stat_data.get(preset_key, [])
+            
+            if preset_data:
+                # Create mapping for stat types with padding to align colons
+                stat_type_mapping = {
+                    'STR': '　　ＳＴＲ　　　',
+                    'DEX': '　　ＤＥＸ　　　',
+                    'INT': '　　ＩＮＴ　　　',
+                    'LUK': '　　ＬＵＫ　　　',
+                    'HP': '　　ＨＰ　　　　',
+                    'MP': '　　ＭＰ　　　　',
+                    'DF/TF/PP': 'ＤＦ／ＴＦ／ＰＰ',
+                    '爆擊機率': '　　爆擊機率　　',
+                    '爆擊傷害': '　　爆擊傷害　　',
+                    '無視防禦率': '　　無視防禦率　',
+                    '傷害': '　　傷害　　　　',
+                    'Boss傷害': '　　Ｂｏｓｓ傷害',
+                    '異常狀態耐性': '　　異常狀態耐性',
+                    '攻擊力／魔力': '　　攻擊力／魔力',
+                    '獲得經驗值': '　　獲得經驗值　',
+                    '神秘力量': '　　神秘力量　　',
+                    '一般傷害': '　　一般傷害　　'
+                }
+                
+                hyper_stat_texts = []
+                for stat in preset_data:
+                    stat_type = stat.get('stat_type', '')
+                    stat_level = stat.get('stat_level', 0)
+                    
+                    # Only show stats with level > 0
+                    if stat_level and int(stat_level) > 0:
+                        # Get formatted stat type with padding
+                        formatted_stat_type = stat_type_mapping.get(stat_type, stat_type)
+                        hyper_stat_texts.append(f"{formatted_stat_type}：Lv {stat_level}")
+                
+                if hyper_stat_texts:
+                    hyper_stat_text = "```\n" + "\n".join(hyper_stat_texts) + "\n```"
+                    self.hyper_stat_info.append(hyper_stat_text)
+
+        # Process ability data (內在潛能) - only current preset
+        self.ability_info = []
+        if self.character_ability_data:
+            # Helper function to get grade emoji
+            def get_grade_emoji(grade):
+                if grade == "傳說":
+                    return "🟢"  # Green
+                elif grade == "罕見":
+                    return "🟡"  # Yellow
+                elif grade == "稀有":
+                    return "🟣"  # Purple
+                elif grade == "特殊":
+                    return "🔵"  # Blue
+                else:
+                    return ""
+            
+            # Get current preset number from current_preset (preset_1 -> 1)
+            current_preset_num = int(self.current_preset.split('_')[1])
+            preset_key = f"ability_preset_{current_preset_num}"
+            preset_data = self.character_ability_data.get(preset_key)
+            
+            if preset_data and preset_data.get('ability_info'):
+                ability_texts = []
+                for ability in preset_data['ability_info']:
+                    grade = ability.get('ability_grade', '')
+                    value = ability.get('ability_value', '')
+                    grade_emoji = get_grade_emoji(grade)
+                    ability_texts.append(f"{grade_emoji}{value}")
+                
+                if ability_texts:
+                    ability_text = "```\n" + "\n".join(ability_texts) + "\n```"
+                    
+                    # Add fame value
+                    remain_fame = self.character_ability_data.get('remain_fame', 0)
+                    if remain_fame:
+                        fame_text = f"名聲值：{remain_fame:,}"
+                        ability_text += f"\n{fame_text}"
+                    
+                    self.ability_info.append(ability_text)
+        
     def create_embed(self, category: str) -> discord.Embed:
         """Create corresponding embed based on category"""
         category_names = {
@@ -318,7 +454,8 @@ class EquipmentView(discord.ui.View):
             "other": "其他",
             "cashitem": "時裝外觀",
             "cashitem_base": "時裝",
-            "pet": "寵物"
+            "pet": "寵物",
+            "ability": "極限屬性/內在潛能"
         }
         
         preset_names = {
@@ -493,6 +630,37 @@ class EquipmentView(discord.ui.View):
                     embed.add_field(name="\u200b", value=text, inline=False)
             else:
                 embed.add_field(name="\u200b", value="無寵物資料", inline=False)
+                
+        elif category == "ability":
+            # Add hyper stat info first (極限屬性)
+            if self.hyper_stat_info:
+                hyper_stat_text = ''.join(self.hyper_stat_info)
+                embed.add_field(name="極限屬性", value=hyper_stat_text, inline=False)
+            
+            # Then add ability info
+            if self.ability_info:
+                text = ''.join(self.ability_info)
+                if len(text) > 1024:
+                    chunks = []
+                    current_chunk = ""
+                    for item in self.ability_info:
+                        if len(current_chunk + item) > 800:  # Reduced threshold to prevent overflow
+                            chunks.append(current_chunk)
+                            current_chunk = item
+                        else:
+                            current_chunk += item
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                    
+                    for i, chunk in enumerate(chunks):
+                        if i == 0:
+                            embed.add_field(name="內在潛能", value=chunk, inline=False)
+                        else:
+                            embed.add_field(name="\u200b", value=chunk, inline=False)
+                else:
+                    embed.add_field(name="內在潛能", value=text, inline=False)
+            else:
+                embed.add_field(name="內在潛能", value="無內在潛能資料", inline=False)
         
         return embed
     
@@ -520,7 +688,7 @@ class EquipmentView(discord.ui.View):
                 value="accessory"
             ),
             discord.SelectOption(
-                label="其他",
+                label="其他裝備",
                 description="",
                 emoji="🎖️",
                 value="other"
@@ -542,6 +710,12 @@ class EquipmentView(discord.ui.View):
                 description="",
                 emoji="🐾",
                 value="pet"
+            ),
+            discord.SelectOption(
+                label="極限屬性/內在潛能",
+                description="",
+                emoji="✨",
+                value="ability"
             )
         ]
     )
@@ -670,6 +844,9 @@ def create_character_equipment_embed(character_name: str, character_basic_data: 
     character_equipment_data = request_character_itemequipment(ocid)
     character_cashitem_equipment_data = request_character_cashitemequipment(ocid)
     character_pet_equipment_data = request_character_pet_equipment(ocid)
+    character_beauty_equipment_data = request_character_beauty_equipment(ocid)
+    character_ability_data = request_character_ability(ocid)
+    character_hyper_stat_data = request_character_hyper_stat(ocid)
     
     if not character_equipment_data:
         embed = discord.Embed(
@@ -698,7 +875,7 @@ def create_character_equipment_embed(character_name: str, character_basic_data: 
         return {"embed": embed, "view": None}
     
     # Create View and initial embed
-    view = EquipmentView(character_name, character_equipment_data, character_cashitem_equipment_data, character_pet_equipment_data, character_basic_data=character_basic_data)
+    view = EquipmentView(character_name, character_equipment_data, character_cashitem_equipment_data, character_pet_equipment_data, character_beauty_equipment_data, character_ability_data, character_hyper_stat_data, current_preset="preset_1", character_basic_data=character_basic_data)
     initial_embed = view.create_embed("weapon")  # Default display weapons
     
     return {"embed": initial_embed, "view": view}
