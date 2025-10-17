@@ -110,17 +110,7 @@ def request_character_ocid(character_name: str) -> Optional[str]:
         return None
     
 
-def request_character_basic(ocid: str, use_cache: bool = True) -> Optional[dict]:
-    """
-    獲取角色基本資訊
-    
-    Args:
-        ocid: 角色的 OCID
-        use_cache: 是否使用快取，預設為 True
-    
-    Returns:
-        角色基本資訊字典，如果失敗則返回 None
-    """
+def request_character_basic(ocid: str, use_cache: bool = False) -> Optional[dict]:
     
     # 1. 如果啟用快取，先嘗試從快取獲取
     if use_cache:
@@ -150,7 +140,7 @@ def request_character_basic(ocid: str, use_cache: bool = True) -> Optional[dict]
             character_basic_data_with_ocid = character_basic_data.copy()
             character_basic_data_with_ocid['ocid'] = ocid
             
-            # 每次都儲存到資料庫（無論是否啟用快取）
+            # 總是儲存到資料庫（為其他功能提供快取，如公會查詢）
             save_success = save_character_basic_info_db(character_basic_data_with_ocid)
             
             if save_success:
@@ -161,18 +151,7 @@ def request_character_basic(ocid: str, use_cache: bool = True) -> Optional[dict]
         return character_basic_data
         
     except Exception as e:
-        print(f"API 請求角色基本資訊失敗: {e}")
-        
-        # 3. API 失敗且啟用快取，嘗試使用過期的快取資料作為備用
-        if use_cache:
-            print(f"API 失敗，嘗試使用備用快取資料...")
-            fallback_data = get_character_basic_info_with_fallback(ocid, cache_days=365)
-            if fallback_data:
-                print(f"使用備用快取資料")
-                # 移除 refresh_time 欄位，保持與 API 回應格式一致
-                api_format_data = {k: v for k, v in fallback_data.items() if k != 'refresh_time'}
-                return api_format_data
-        
+        print(f"API 請求角色基本資訊失敗: {e}")               
         return None
     
 def request_character_stat(ocid: str) -> Optional[dict]:

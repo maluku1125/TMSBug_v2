@@ -31,7 +31,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         return embed
     
     try:
-        character_basic_data = request_character_basic(ocid)
+        character_basic_data = request_character_basic(ocid, use_cache=False)  # 不使用快取，直接從 API 獲取
         character_stat_data = request_character_stat(ocid)
         character_hexamatrix_data = request_character_hexamatrix(ocid)
         character_hexamatrix_stat_data = request_character_hexamatrix_stat(ocid)
@@ -54,8 +54,8 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             color=discord.Color.red(),
             timestamp=datetime.datetime.now()
         )
-        return embed
-    
+        return embed  
+
     # basic info
     character_info = []
     guild_name = character_basic_data.get('character_guild_name')
@@ -63,6 +63,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     # info
     character_info.append(f"伺服器　： {character_basic_data.get('world_name', '未知')}")
     character_info.append(f"公會　　： {guild_name if guild_name else '-'}")  
+
     
     # Format character class (limit to 9 characters and fix bracket issues)
     character_class = character_basic_data.get('character_class', '未知')
@@ -72,12 +73,22 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     
     # Format experience rate as ab.c%
     exp_rate = character_basic_data.get('character_exp_rate', 0)
+    
+    # 安全處理 exp_rate，確保它是數字
+    try:
+        if exp_rate is None:
+            exp_rate = 0.0
+        else:
+            exp_rate = float(exp_rate)
+    except (ValueError, TypeError):
+        exp_rate = 0.0
+    
     exp_display = f"{exp_rate:.1f}%" if exp_rate > 0 else "0.0%"
     
+
     character_info.append(f"職業　　： {character_class}")
     character_info.append(f"等級　　： {character_basic_data.get('character_level', 0)}({exp_display})")
-    
-    # 加入聯盟資訊
+
     if user_union_data:
         union_level = user_union_data.get('union_level', 0)
         union_artifact_level = user_union_data.get('union_artifact_level', 0)
@@ -94,6 +105,8 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             if stat_name and stat_value:
                 stat_dict[stat_name] = stat_value
     
+    print(222)
+
     def safe_str(value, default="0"):
         if value is None:
             return default
