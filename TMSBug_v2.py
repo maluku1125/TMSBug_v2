@@ -18,6 +18,7 @@ from functions.Cogs.Loop_ServerCheck import Loop_ServerCheck
 from functions.Cogs.Slash_GuildFunction import Slash_GuildFunctions
 from functions.Cogs.Slash_StarForce import Slash_StarForce
 from functions.Cogs.Slash_API import Slash_API
+from functions.Cogs.Loop_API_Data_Refresh import Loop_API_Data_Refresh
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -99,6 +100,8 @@ class TMSBot(commands.AutoShardedBot):
         print('Cogs:Slash_StarForce loaded')
         await self.add_cog(Slash_API(self))
         print('Cogs:Slash_API loaded')
+        await self.add_cog(Loop_API_Data_Refresh(self))
+        print('Cogs:Loop_API_Data_Refresh loaded')
 
 
         dev_guild_id = self._config["bot"]["dev_guild"]

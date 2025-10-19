@@ -37,6 +37,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         character_hexamatrix_stat_data = request_character_hexamatrix_stat(ocid)
         character_symbolequipment_data = request_character_symbolequipment(ocid)
         user_union_data = request_user_union(ocid)
+        
     except Exception as e:
         embed = discord.Embed(
             title="錯誤",
@@ -44,7 +45,16 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             color=discord.Color.red(),
             timestamp=datetime.datetime.now()
         )
-        return embed 
+        return embed
+    
+    # 單獨處理五天前的資料，失敗時不影響其他功能
+    character_basic_data_5days_ago = None
+    try:
+        five_days_ago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
+        character_basic_data_5days_ago = request_character_basic(ocid, use_cache=False, date=five_days_ago)
+    except Exception as e:
+        print(f"獲取五天前資料失敗: {e}")
+        character_basic_data_5days_ago = None 
 
     if not character_basic_data or not character_stat_data:
         # 如果無法獲取基本角色資訊，返回錯誤 embed
@@ -89,6 +99,56 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     character_info.append(f"職業　　： {character_class}")
     character_info.append(f"等級　　： {character_basic_data.get('character_level', 0)}({exp_display})")
 
+    # 計算五日成長率
+    def calculate_five_day_growth():
+        if not character_basic_data_5days_ago:
+            return "無資料"
+        
+        # 當前數據
+        current_level = character_basic_data.get('character_level', 0)
+        current_exp_rate = character_basic_data.get('character_exp_rate', 0)
+        
+        # 五天前數據
+        old_level = character_basic_data_5days_ago.get('character_level', 0)
+        old_exp_rate = character_basic_data_5days_ago.get('character_exp_rate', 0)
+        
+        # 安全處理經驗值
+        try:
+            current_exp_rate = float(current_exp_rate) if current_exp_rate is not None else 0.0
+            old_exp_rate = float(old_exp_rate) if old_exp_rate is not None else 0.0
+        except (ValueError, TypeError):
+            current_exp_rate = 0.0
+            old_exp_rate = 0.0
+        
+        # 計算總經驗成長百分比
+        if current_level == old_level:
+            # 同等級，只計算經驗差異
+            growth_exp = current_exp_rate - old_exp_rate
+        else:
+            # 不同等級，計算完整經驗成長
+            # 舊等級剩餘經驗 + 升級的100% + 當前經驗
+            remaining_old_exp = 100.0 - old_exp_rate
+            level_difference = current_level - old_level - 1  # 中間升級的等級數
+            growth_exp = remaining_old_exp + (level_difference * 100.0) + current_exp_rate
+        
+        # 格式化顯示成長率
+        if growth_exp >= 0:
+            if growth_exp > 100:
+                # 超過100%時，顯示為 X(XX.XX%) 格式
+                levels = int(growth_exp // 100)
+                remaining_percent = growth_exp % 100
+                growth_display = f"{levels}({remaining_percent:.2f}%)"
+            else:
+                # 100%以內直接顯示百分比
+                growth_display = f"{growth_exp:.2f}%"
+        else:
+            growth_display = "0.00%"
+        
+        return f"{growth_display}"
+    
+    five_day_growth = calculate_five_day_growth()
+    character_info.append(f"五日成長： {five_day_growth}")
+
     if user_union_data:
         union_level = user_union_data.get('union_level', 0)
         union_artifact_level = user_union_data.get('union_artifact_level', 0)
@@ -105,7 +165,6 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             if stat_name and stat_value:
                 stat_dict[stat_name] = stat_value
     
-    print(222)
 
     def safe_str(value, default="0"):
         if value is None:

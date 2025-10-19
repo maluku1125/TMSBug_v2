@@ -83,8 +83,6 @@ def save_character_ocid_db(character_id: str, ocid: str) -> bool:
         print(f"Failed to save character data: {e}")
         return False
 
-
-# Character basic info database functions
 def init_character_basic_info_database():
     """Initialize character basic info database"""
     try:
@@ -124,7 +122,6 @@ def init_character_basic_info_database():
     except Exception as e:
         print(f"Character basic info database initialization failed: {e}")
         return False
-
 
 def get_character_basic_info_db(ocid: str, cache_days: int = 7) -> Optional[dict]:
     """Get character basic info from database"""
@@ -178,7 +175,6 @@ def get_character_basic_info_db(ocid: str, cache_days: int = 7) -> Optional[dict
         print(f"Failed to query character basic info: {e}")
         return None
 
-
 def save_character_basic_info_db(character_basic_data: dict) -> bool:
     """Save character basic info to database"""
     try:
@@ -220,7 +216,6 @@ def save_character_basic_info_db(character_basic_data: dict) -> bool:
         print(f"Failed to save character basic info: {e}")
         return False
 
-
 def get_character_basic_info_with_fallback(ocid: str, cache_days: int = 7) -> Optional[dict]:
     """Get character basic info with fallback to expired cache"""
     # 1. Try to get valid cached data first
@@ -238,5 +233,95 @@ def get_character_basic_info_with_fallback(ocid: str, cache_days: int = 7) -> Op
     
     print(f"Cannot find any character basic info cache for OCID '{ocid}'")
     return None
+
+def get_all_expired_character_lists(refresh_days: int = 9999) -> dict:
+    result = {
+        'total_records': 0,
+        'fresh_records': 0,
+        'expired_records': 0,
+        'error_records': 0,
+        'expired_ocid_list': [],  # 過期的 OCID 清單
+        'fresh_ocid_list': [],    # 新鮮的 OCID 清單
+        'error_ocid_list': []     # 錯誤的 OCID 清單
+    }
+    
+    try:
+        with sqlite3.connect(character_basic_info_path) as conn:
+            cursor = conn.cursor()
+            
+            # 查詢所有角色基本資訊
+            cursor.execute('''
+                SELECT ocid, character_name, refresh_time
+                FROM character_basic_info
+                ORDER BY refresh_time ASC
+            ''')
+            
+            all_records = cursor.fetchall()
+            result['total_records'] = len(all_records)
+            
+            if not all_records:
+                print("No character data found in database")
+                return result
+            
+            print(f"Found {len(all_records)} character records, checking for expired data...")
+            
+            for ocid, character_name, refresh_time_str in all_records:
+                try:
+                    # 檢查刷新時間
+                    refresh_time = datetime.datetime.strptime(refresh_time_str, '%Y-%m-%d %H:%M:%S')
+                    current_time = datetime.datetime.now()
+                    time_diff = current_time - refresh_time
+                    
+                    if time_diff.days < refresh_days:
+                        print(f"✓ '{character_name}' is fresh ({time_diff.days} days old)")
+                        result['fresh_records'] += 1
+                        result['fresh_ocid_list'].append({
+                            'ocid': ocid,
+                            'character_name': character_name,
+                            'days_old': time_diff.days
+                        })
+                    else:
+                        # 資料過期
+                        print(f"⏰ '{character_name}' is expired ({time_diff.days} days old)")
+                        result['expired_records'] += 1
+                        result['expired_ocid_list'].append({
+                            'ocid': ocid,
+                            'character_name': character_name,
+                            'days_old': time_diff.days
+                        })
+                        
+                except ValueError:
+                    print(f"✗ Invalid time format for '{character_name}': {refresh_time_str}")
+                    result['error_records'] += 1
+                    result['error_ocid_list'].append({
+                        'ocid': ocid,
+                        'character_name': character_name,
+                        'error': 'Invalid time format'
+                    })
+                except Exception as e:
+                    print(f"✗ Error processing '{character_name}': {e}")
+                    result['error_records'] += 1
+                    result['error_ocid_list'].append({
+                        'ocid': ocid,
+                        'character_name': character_name,
+                        'error': str(e)
+                    })
+            
+            # 輸出統計結果
+            print("\n=== 過期資料檢查結果 ===")
+            print(f"總記錄數: {result['total_records']}")
+            print(f"新鮮記錄: {result['fresh_records']}")
+            print(f"過期記錄: {result['expired_records']}")
+            print(f"錯誤記錄: {result['error_records']}")
+            print("========================")
+            
+            return result
+                
+    except Exception as e:
+        print(f"Error during expired check: {e}")
+        result['error_records'] = result['total_records']
+        return result
+
+
 
 

@@ -6,6 +6,8 @@ import datetime
 from functions.API_functions.CreateCharacterEmbed import create_character_basic_embed
 from functions.API_functions.CreateGuildEmbed import create_guild_basic_embed   
 from functions.API_functions.CreateCharacterEquipmentEmbed import create_character_equipment_embed
+from functions.API_functions.API_Ranking import get_all_characters_level_exp_ranking
+from functions.API_functions.CreateRankingEmbed import create_ranking_embed
 
 from functions.SlashCommandManager import UseSlashCommand
 
@@ -194,6 +196,55 @@ class Slash_API(commands.Cog):
             error_embed = discord.Embed(
                 title="錯誤",
                 description=f"生成角色資訊時發生錯誤: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed)
+
+
+    @app_commands.command(name="rank排行", description="顯示角色等級經驗排行榜")
+    @app_commands.describe(character_class="職業")
+    async def api_character_ranking(self, interaction: discord.Interaction, character_class: str = None):
+        
+        await interaction.response.defer()
+        UseSlashCommand('api_ranking', interaction)
+        
+        try:
+            # 獲取排行榜資料 (全部資料，由 CreateRankingEmbed 來處理篩選)
+            ranking_data = get_all_characters_level_exp_ranking(sort_by='level', ascending=False)
+            
+            if not ranking_data:
+                error_embed = discord.Embed(
+                    title="❌ 錯誤",
+                    description="目前沒有任何角色資料可顯示",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=error_embed)
+                return
+            
+            # 如果指定了職業，則篩選特定職業的角色
+            if character_class:
+                ranking_data = [char for char in ranking_data if char['character_class'] == character_class]
+                if not ranking_data:
+                    error_embed = discord.Embed(
+                        title="❌ 錯誤",
+                        description=f"目前沒有找到職業為 '{character_class}' 的角色資料",
+                        color=discord.Color.red()
+                    )
+                    await interaction.followup.send(embed=error_embed)
+                    return
+            
+            # 使用 create_ranking_embed 函數 (全伺服器TOP100，各世界TOP50)
+            result = create_ranking_embed(ranking_data, include_view=True, character_class=character_class)
+            
+            if result["success"]:
+                await interaction.followup.send(embed=result["embed"], view=result["view"])
+            else:
+                await interaction.followup.send(embed=result["embed"])
+            
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ 錯誤",
+                description=f"獲取排行榜資料時發生錯誤: {str(e)}",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed)

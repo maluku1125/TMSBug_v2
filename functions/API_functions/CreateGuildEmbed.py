@@ -9,16 +9,9 @@ import datetime
 import math
 import asyncio
 
-worldlogo = {
-    "艾麗亞" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/ai_li_ya.png",
-    "普力特" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/pu_li_te.png",
-    "琉德" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/liu_de.png",
-    "優依娜" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/you_yi_na.png",
-    "愛麗西亞" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/ai_li_xi_ya.png",
-    "殺人鯨" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/sha_ren_jing.png",
-    "賽蓮" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/silien.png",
-    "米特拉" : "https://tw.hicdn.beanfun.com/beanfun/event/MapleStory/UnionWebRank/assets/img/reboot.png",
-}
+from Data.SmallData import worldlogo
+
+
 
 def create_guild_basic_embed(guild_name: str, world_name: str, include_view: bool = False):
     """
@@ -265,12 +258,12 @@ class GuildView(discord.ui.View):
                     
                     # 如果資料庫沒有7天內的資料，才使用API請求
                     if not character_data:
-                        print(f"資料庫無7天內資料，使用API請求: {member_name}")
+                        print(f"no data in 7days use api data: {member_name}")
                         api_data = request_character_basic(ocid)
                         if api_data:
                             character_data = api_data
                     else:
-                        print(f"使用資料庫資料: {member_name}")
+                        print(f"use database data: {member_name}")
                     
                     if character_data:
                         level = character_data.get('character_level', 0)
