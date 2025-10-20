@@ -28,12 +28,6 @@ class Loop_API_Data_Refresh(commands.Cog):
     async def API_AllData_Refresh(self):
         """Execute database refresh task every Monday at 2:00 AM"""
         print(f"{get_now_YMDHMS()}, 🚀 Starting API all character data refresh...")
-        weekday = datetime.datetime.now(timezone).weekday()
-        
-        if weekday != 6:  # If it's not Monday, skip the task
-            print(f"{get_now_YMDHMS()}, Today is not Monday, skipping API all data refresh task.")
-            print("-" * 50)
-            return
 
         try:
             # Execute refresh task, refresh data older than 7 days

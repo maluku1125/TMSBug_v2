@@ -8,11 +8,11 @@ class RankingView(discord.ui.View):
         super().__init__(timeout=300)  # 5 minutes timeout
         self.ranking_data = ranking_data or []
         self.current_page = 0
-        self.items_per_page = 20  # 每頁顯示20筆資料
-        self.current_world = "全部"  # 目前選擇的世界
-        self.character_class = character_class  # 指定的職業篩選
+        self.items_per_page = 20  # Display 20 items per page
+        self.current_world = "全部"  # Currently selected world
+        self.character_class = character_class  # Specified character class filter
         
-        # 初始化時設定為全伺服器前100名並計算並列排名
+        # Initialize with top 100 from all servers and calculate tied rankings
         if self.ranking_data:
             top_100 = self.ranking_data[:100]
             self.filtered_data = self._calculate_rankings(top_100)
@@ -23,7 +23,7 @@ class RankingView(discord.ui.View):
         self._update_button_states()
     
     def _calculate_rankings(self, data: list) -> list:
-        """計算並列排名"""
+        """Calculate tied rankings"""
         if not data:
             return []
         
@@ -31,15 +31,15 @@ class RankingView(discord.ui.View):
         current_rank = 1
         
         for i, character in enumerate(data):
-            # 如果不是第一筆資料，檢查是否與前一筆相同等級和經驗
+            # If not the first entry, check if level and experience differ from previous entry
             if i > 0:
                 prev_char = data[i-1]
                 if (character['character_level'] != prev_char['character_level'] or 
                     character['character_exp_rate'] != prev_char['character_exp_rate']):
-                    # 等級或經驗不同，更新排名
+                    # Level or experience differs, update ranking
                     current_rank = i + 1
             
-            # 添加排名資訊到角色資料
+            # Add ranking information to character data
             character_with_rank = character.copy()
             character_with_rank['display_rank'] = current_rank
             ranked_data.append(character_with_rank)
@@ -47,13 +47,13 @@ class RankingView(discord.ui.View):
         return ranked_data
     
     def _filter_by_world(self, world_name: str):
-        """根據世界名稱篩選資料"""
+        """Filter data by world name"""
         if world_name == "全部":
-            # 全伺服器取前100名，並計算並列排名
+            # All servers, take top 100 and calculate tied rankings
             top_100 = self.ranking_data[:100]
             self.filtered_data = self._calculate_rankings(top_100)
         else:
-            # 特定伺服器取前100名，並計算並列排名
+            # Specific server, take top 100 and calculate tied rankings
             world_characters = [char for char in self.ranking_data if char['world_name'] == world_name]
             top_100_world = world_characters[:100]
             self.filtered_data = self._calculate_rankings(top_100_world)
@@ -64,8 +64,8 @@ class RankingView(discord.ui.View):
         self._update_button_states()
     
     def _update_button_states(self):
-        """更新按鈕狀態"""
-        # 找到上一頁和下一頁按鈕
+        """Update button states"""
+        # Find previous and next page buttons
         for item in self.children:
             if isinstance(item, discord.ui.Button):
                 if item.label == "⬅️ 上一頁":
@@ -74,18 +74,18 @@ class RankingView(discord.ui.View):
                     item.disabled = self.current_page >= self.total_pages - 1
     
     def create_ranking_embed(self):
-        """創建排行榜 Embed"""
+        """Create ranking embed"""
         start_idx = self.current_page * self.items_per_page
         end_idx = min(start_idx + self.items_per_page, len(self.filtered_data))
         page_data = self.filtered_data[start_idx:end_idx]
         
-        # 創建 Embed
+        # Create Embed
         embed = discord.Embed(
             title='',
             color=discord.Color.gold()
         )
         
-        # 設定標題和描述
+        # Set title and description
         if self.current_world == "全部":
             if self.character_class:
                 embed_title = f"{self.character_class} 職業等級經驗排行榜 TOP 100"
@@ -97,7 +97,7 @@ class RankingView(discord.ui.View):
                 embed_title = f"{self.current_world} {self.character_class} 職業排行榜 TOP 100"
             else:
                 embed_title = f"{self.current_world} 排行榜 TOP 100"
-            # 如果是特定世界，在 Embed 中顯示世界圖標
+            # If it's a specific world, display world icon in Embed
             if self.current_world in worldlogo:
                 embed.set_author(name=embed_title, icon_url=worldlogo[self.current_world])
             else:
@@ -113,10 +113,10 @@ class RankingView(discord.ui.View):
             )
             return embed
         
-        # 添加排行榜資料 - 使用類似 CreateGuildEmbed 的格式
+        # Add ranking data - using format similar to CreateGuildEmbed
         formatted_characters = []
         for i, character in enumerate(page_data):
-            # 使用計算好的並列排名
+            # Use calculated tied ranking
             display_rank = character.get('display_rank', start_idx + i + 1)
             
             level = character['character_level']
@@ -125,7 +125,7 @@ class RankingView(discord.ui.View):
             character_name = character['character_name']
             world_name = character['world_name']
             
-            # Fix bracket issues for specific classes (類似 CreateGuildEmbed 的處理)
+            # Fix bracket issues for specific classes (similar to CreateGuildEmbed handling)
             character_class = character_class.replace('大魔導士(冰、雷)', '大魔導士（冰、雷）')
             character_class = character_class.replace('大魔導士(火、毒)', '大魔導士（火、毒）')
             
@@ -153,8 +153,8 @@ class RankingView(discord.ui.View):
                 # For specific world, no need to show world abbreviation since it's obvious
                 formatted_characters.append(f"{display_rank:3d}. Lv.{level:3d}{exp_display} {padded_class} {short_name}")
         
-        # Split into multiple fields if needed (20 characters per field, 分成兩欄)
-        characters_per_field = 10  # 每個欄位顯示10筆，總共2欄 = 20筆
+        # Split into multiple fields if needed (20 characters per field, split into two columns)
+        characters_per_field = 10  # Display 10 items per field, total 2 columns = 20 items
         total_characters = len(formatted_characters)
         total_fields = max(1, (total_characters + characters_per_field - 1) // characters_per_field)
         
@@ -164,7 +164,7 @@ class RankingView(discord.ui.View):
             
             characters_chunk = formatted_characters[start_field_idx:end_field_idx]
             
-            # 為每個欄位計算實際的排名範圍
+            # Calculate actual rank range for each field
             if characters_chunk:
                 first_rank = page_data[start_field_idx].get('display_rank', start_idx + start_field_idx + 1)
                 last_rank = page_data[end_field_idx - 1].get('display_rank', start_idx + end_field_idx)
@@ -181,19 +181,19 @@ class RankingView(discord.ui.View):
             embed.add_field(
                 name=field_name,
                 value=field_value,
-                inline=False  # 使用 inline=False 來並排顯示
+                inline=False  # Use inline=False for side-by-side display
             )
         
-        # 添加說明欄位
+        # Add description field
         embed.add_field(
             name="📝 說明",
             value="1. 等級資料誤差一周\n2. 搜尋該角色可刷新排行\n3. 僅記錄本Bot搜尋過之角色",
             inline=False
         )
         
-        # 設定時間戳
+        # Set timestamp
         embed.timestamp = datetime.datetime.now()
-        embed.set_footer(text="TMSBug API 資料查詢")
+        embed.set_footer(text=f"排行自{format(len(self.ranking_data), ',')}位玩家 | TMSBug API 資料查詢")
         
         return embed
     
@@ -254,7 +254,7 @@ def create_ranking_embed(ranking_data: list, include_view: bool = True, characte
                 "success": True
             }
         else:
-            # 創建簡單的 Embed（不含互動功能）
+            # Create simple Embed (without interactive features)
             if not ranking_data:
                 embed = discord.Embed(
                     title="❌ 錯誤",
@@ -267,7 +267,7 @@ def create_ranking_embed(ranking_data: list, include_view: bool = True, characte
                     "success": False
                 }
             
-            # 限制為前10名
+            # Limit to top 10
             top_10_data = ranking_data[:10]
             
             embed = discord.Embed(
@@ -280,7 +280,7 @@ def create_ranking_embed(ranking_data: list, include_view: bool = True, characte
                 embed.set_author(name="🏆 角色等級經驗排行榜 (前10名)")
             embed.description = "簡易排行榜模式"
             
-            # 使用與互動模式相同的格式
+            # Use same format as interactive mode
             formatted_characters = []
             for i, character in enumerate(top_10_data):
                 actual_rank = i + 1
@@ -318,7 +318,7 @@ def create_ranking_embed(ranking_data: list, include_view: bool = True, characte
                 inline=False
             )
             
-            # 添加說明欄位
+            # Add description field
             embed.add_field(
                 name="📝 說明",
                 value="1. 等級資料誤差一周\n2. 搜尋該角色可刷新\n3. 僅記錄本bot搜尋過之角色",
@@ -326,7 +326,7 @@ def create_ranking_embed(ranking_data: list, include_view: bool = True, characte
             )
             
             embed.timestamp = datetime.datetime.now()
-            embed.set_footer(text="TMSBug API 資料查詢")
+            embed.set_footer(text=f"排行自{format(len(ranking_data), ',')}位玩家 | TMSBug API 資料查詢")
             
             return {
                 "embed": embed,
@@ -335,7 +335,7 @@ def create_ranking_embed(ranking_data: list, include_view: bool = True, characte
             }
             
     except Exception as e:
-        print(f"創建排行榜 Embed 時發生錯誤: {e}")
+        print(f"Error occurred while creating ranking embed: {e}")
         error_embed = discord.Embed(
             title="❌ 錯誤",
             description=f"創建排行榜時發生錯誤: {str(e)}",

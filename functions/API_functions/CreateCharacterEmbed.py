@@ -244,7 +244,8 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             core_type = core.get('hexa_core_type')
             core_level = core.get('hexa_core_level', 0)
             
-            if core_type in type_counters:
+            # 只處理等級大於0的核心
+            if core_type in type_counters and core_level > 0:
                 type_counters[core_type] += 1
                 
                 if core_type == '技能核心':
@@ -283,38 +284,56 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     if hexa_dict:
         hexa_info = []
         
+        # 收集各類核心等級，只包含等級大於0的核心
         skill_cores = []
         mastery_cores = []
         enhance_cores = []
         common_cores = []
         
         for key, level in hexa_dict.items():
-            if key.startswith('SkillCore'):
-                skill_cores.append(str(level))
-            elif key.startswith('MasteryCore'):
-                mastery_cores.append(str(level))
-            elif key.startswith('EnhanceCore'):
-                enhance_cores.append(str(level))
-            elif key.startswith('CommonCore'):
-                common_cores.append(str(level))
+            if key.startswith('SkillCore') and level > 0:
+                skill_cores.append(level)
+            elif key.startswith('MasteryCore') and level > 0:
+                mastery_cores.append(level)
+            elif key.startswith('EnhanceCore') and level > 0:
+                enhance_cores.append(level)
+            elif key.startswith('CommonCore') and level > 0:
+                common_cores.append(level)
         
         # Helper function to format core levels with spacing for alignment
-        def format_core_level(level_str):
-            level = int(level_str)
+        def format_core_level(level):
             return f"{level:2d}"
         
-        if skill_cores:
-            formatted_skill_cores = [format_core_level(level) for level in skill_cores]
-            hexa_info.append(f"技能核心　： {' | '.join(formatted_skill_cores)}")
-        if mastery_cores:
-            formatted_mastery_cores = [format_core_level(level) for level in mastery_cores]
-            hexa_info.append(f"精通核心　： {' | '.join(formatted_mastery_cores)}")
-        if enhance_cores:
-            formatted_enhance_cores = [format_core_level(level) for level in enhance_cores]
-            hexa_info.append(f"強化核心　： {' | '.join(formatted_enhance_cores)}")
-        if common_cores:
-            formatted_common_cores = [format_core_level(level) for level in common_cores]
-            hexa_info.append(f"共用核心　： {' | '.join(formatted_common_cores)}")
+        # 按照標準格式顯示：技能核心1個，精通核心4個，強化核心4個，共用核心1個
+        # 不足時補0
+        
+        # 技能核心：確保顯示2個
+        while len(skill_cores) < 1:
+            skill_cores.append(0)
+        skill_cores = skill_cores[:1]  # 只取前1個
+        formatted_skill_cores = [format_core_level(level) for level in skill_cores]
+        hexa_info.append(f"技能核心　： {' | '.join(formatted_skill_cores)}")
+        
+        # 精通核心：確保顯示4個
+        while len(mastery_cores) < 4:
+            mastery_cores.append(0)
+        mastery_cores = mastery_cores[:4]  # 只取前4個
+        formatted_mastery_cores = [format_core_level(level) for level in mastery_cores]
+        hexa_info.append(f"精通核心　： {' | '.join(formatted_mastery_cores)}")
+        
+        # 強化核心：確保顯示4個
+        while len(enhance_cores) < 4:
+            enhance_cores.append(0)
+        enhance_cores = enhance_cores[:4]  # 只取前4個
+        formatted_enhance_cores = [format_core_level(level) for level in enhance_cores]
+        hexa_info.append(f"強化核心　： {' | '.join(formatted_enhance_cores)}")
+        
+        # 共用核心：確保顯示1個
+        while len(common_cores) < 1:
+            common_cores.append(0)
+        common_cores = common_cores[:1]  # 只取前1個
+        formatted_common_cores = [format_core_level(level) for level in common_cores]
+        hexa_info.append(f"共用核心　： {' | '.join(formatted_common_cores)}")
 
     # Process hexa-stat information
     hexa_stat_info = []
@@ -442,7 +461,16 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         inline=False
     )
     
-    if hexa_dict and hexa_info:
+    # 顯示六轉核心資訊，即使沒有有效核心也顯示標準格式
+    if hexa_equipment is not None:  # 只要有核心裝備資料就顯示
+        if not hexa_info:  # 如果沒有有效核心，創建預設格式
+            hexa_info = [
+                "技能核心　：  0 |  0",
+                "精通核心　：  0 |  0 |  0 |  0", 
+                "強化核心　：  0 |  0 |  0 |  0",
+                "共用核心　：  0"
+            ]
+        
         embed.add_field(
             name=f"六轉核心 ({percentage:.2f}%)",
             value=f"```autohotkey\n{'\n'.join(hexa_info)}\n{'\n'.join(hexa_stat_info)}```",
@@ -462,7 +490,15 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         try:
             date_obj = datetime.datetime.fromisoformat(create_date.replace('Z', '+00:00'))
             formatted_date = date_obj.strftime('%Y-%m-%d')
-            character_create_date = f"創建日期: {formatted_date}"
+            
+            # 計算與今日的天數差值
+            today = datetime.datetime.now()
+            # 只比較日期部分，不考慮時間
+            create_date_only = date_obj.date()
+            today_date_only = today.date()
+            days_diff = (today_date_only - create_date_only).days
+            
+            character_create_date = f"創建日期: {formatted_date} ({days_diff}天)"
         except:
             character_create_date = f"創建日期: {create_date}"
 
