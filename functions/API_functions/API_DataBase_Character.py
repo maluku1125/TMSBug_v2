@@ -115,7 +115,7 @@ def init_character_basic_info_database():
             ''')
             
             conn.commit()
-            print("Character basic info database initialized successfully")
+            
             return True
             
     except Exception as e:

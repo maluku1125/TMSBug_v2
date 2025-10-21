@@ -24,12 +24,15 @@ def UseSlashCommand(type, interaction: discord.Interaction):
     else:
         Slash_Command_Usage[type] = 1
         
-    if interaction.guild.name in Slash_Command_Usage_Guild:
-        Slash_Command_Usage_Guild[interaction.guild.name] += 1
-    else:
-        Slash_Command_Usage_Guild[interaction.guild.name] = 1    
+    # 安全處理 guild 資訊
+    guild_name = interaction.guild.name if interaction.guild else "Private Message"
     
-    print(f'{get_now_HMS()}, Guild：{interaction.guild}, User：{interaction.user} ,Slash：{type} #{Slash_Command_Usage[type]}')
+    if guild_name in Slash_Command_Usage_Guild:
+        Slash_Command_Usage_Guild[guild_name] += 1
+    else:
+        Slash_Command_Usage_Guild[guild_name] = 1    
+    
+    print(f'{get_now_HMS()}, Guild：{interaction.guild or "DM"}, User：{interaction.user} ,Slash：{type} #{Slash_Command_Usage[type]}')
     print('-'*40)
     slash_log_save(interaction.guild, interaction.user, type)
  
@@ -53,11 +56,14 @@ def slash_log_save(guild, user, commandtype):
             firstfile = False
             writer.writeheader()
 
+        # 安全處理 guild 資訊
+        guild_info = str(guild) if guild else "Private Message"
+        
         # 寫入資料
         writer.writerow(
             {
             'Time' : timestamp,
-            'Guild': guild,
+            'Guild': guild_info,
             'User': user,
             'CommandType' : commandtype      
             }

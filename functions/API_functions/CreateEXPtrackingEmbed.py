@@ -3,7 +3,17 @@ import datetime
 from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic
 from Data.SmallData import worldlogo, worldemoji
 
-#▓▓▓░░░░░░░░░░░░░░░░
+def get_adjusted_datetime():
+  
+    now = datetime.datetime.now()
+    
+    # If current time is before 02:05, use previous day
+    if now.hour < 2 or (now.hour == 2 and now.minute <= 5):
+        adjusted_datetime = now - datetime.timedelta(days=1)
+    else:
+        adjusted_datetime = now
+    
+    return adjusted_datetime
 
 def calculate_exp_growth(current_level, current_exp_rate, old_level, old_exp_rate):
     """Calculate experience growth between two points"""
@@ -80,9 +90,12 @@ def create_exp_tracking_embed(character_name: str) -> dict:
         historical_data = {}
         periods = [7, 30, 90]  # Days to track
         
+        # added function to get adjusted datetime
+        adjusted_datetime = get_adjusted_datetime()
+        
         for days in periods:
             try:
-                date_str = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
+                date_str = (adjusted_datetime - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
                 data = request_character_basic(ocid, use_cache=False, date=date_str)
                 if data:
                     historical_data[days] = data
@@ -96,8 +109,8 @@ def create_exp_tracking_embed(character_name: str) -> dict:
                 if i == 0:
                     # Today's data
                     daily_data[i] = current_data
-                else:
-                    date_str = (datetime.datetime.now() - datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+                else:              
+                    date_str = (adjusted_datetime - datetime.timedelta(days=i)).strftime('%Y-%m-%d')
                     data = request_character_basic(ocid, use_cache=False, date=date_str)
                     if data:
                         daily_data[i] = data
