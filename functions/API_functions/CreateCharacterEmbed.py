@@ -31,7 +31,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         return embed
     
     try:
-        character_basic_data = request_character_basic(ocid, use_cache=False)  # 不使用快取，直接從 API 獲取
+        character_basic_data = request_character_basic(ocid, use_cache=False)  # Do not use cache, get data directly from API
         character_stat_data = request_character_stat(ocid)
         character_hexamatrix_data = request_character_hexamatrix(ocid)
         character_hexamatrix_stat_data = request_character_hexamatrix_stat(ocid)
@@ -47,17 +47,17 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         )
         return embed
     
-    # 單獨處理五天前的資料，失敗時不影響其他功能
-    character_basic_data_5days_ago = None
+    # Handle seven days ago data separately, failure does not affect other functions
+    character_basic_data_7days_ago = None
     try:
-        five_days_ago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
-        character_basic_data_5days_ago = request_character_basic(ocid, use_cache=False, date=five_days_ago)
+        seven_days_ago = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
+        character_basic_data_7days_ago = request_character_basic(ocid, use_cache=False, date=seven_days_ago)
     except Exception as e:
-        print(f"獲取五天前資料失敗: {e}")
-        character_basic_data_5days_ago = None 
+        print(f"獲取七天前資料失敗: {e}")
+        character_basic_data_7days_ago = None 
 
     if not character_basic_data or not character_stat_data:
-        # 如果無法獲取基本角色資訊，返回錯誤 embed
+        # If unable to get basic character information, return error embed
         embed = discord.Embed(
             title="錯誤",
             description=f"無法獲取角色 '{character_name}' 的詳細資訊",
@@ -84,7 +84,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     # Format experience rate as ab.c%
     exp_rate = character_basic_data.get('character_exp_rate', 0)
     
-    # 安全處理 exp_rate，確保它是數字
+    # Safely handle exp_rate to ensure it's a number
     try:
         if exp_rate is None:
             exp_rate = 0.0
@@ -99,20 +99,20 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     character_info.append(f"職業　　： {character_class}")
     character_info.append(f"等級　　： {character_basic_data.get('character_level', 0)}({exp_display})")
 
-    # 計算五日成長率
-    def calculate_five_day_growth():
-        if not character_basic_data_5days_ago:
+    # Calculate seven-day growth rate
+    def calculate_seven_day_growth():
+        if not character_basic_data_7days_ago:
             return "無資料"
         
-        # 當前數據
+        # Current data
         current_level = character_basic_data.get('character_level', 0)
         current_exp_rate = character_basic_data.get('character_exp_rate', 0)
         
-        # 五天前數據
-        old_level = character_basic_data_5days_ago.get('character_level', 0)
-        old_exp_rate = character_basic_data_5days_ago.get('character_exp_rate', 0)
+        # Seven days ago data
+        old_level = character_basic_data_7days_ago.get('character_level', 0)
+        old_exp_rate = character_basic_data_7days_ago.get('character_exp_rate', 0)
         
-        # 安全處理經驗值
+        # Safely handle experience values
         try:
             current_exp_rate = float(current_exp_rate) if current_exp_rate is not None else 0.0
             old_exp_rate = float(old_exp_rate) if old_exp_rate is not None else 0.0
@@ -120,34 +120,34 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             current_exp_rate = 0.0
             old_exp_rate = 0.0
         
-        # 計算總經驗成長百分比
+        # Calculate total experience growth percentage
         if current_level == old_level:
-            # 同等級，只計算經驗差異
+            # Same level, only calculate experience difference
             growth_exp = current_exp_rate - old_exp_rate
         else:
-            # 不同等級，計算完整經驗成長
-            # 舊等級剩餘經驗 + 升級的100% + 當前經驗
+            # Different level, calculate complete experience growth
+            # Remaining experience from old level + 100% for level ups + current experience
             remaining_old_exp = 100.0 - old_exp_rate
-            level_difference = current_level - old_level - 1  # 中間升級的等級數
+            level_difference = current_level - old_level - 1  # Number of levels upgraded in between
             growth_exp = remaining_old_exp + (level_difference * 100.0) + current_exp_rate
         
-        # 格式化顯示成長率
+        # Format growth rate display
         if growth_exp >= 0:
             if growth_exp > 100:
-                # 超過100%時，顯示為 X(XX.XX%) 格式
+                # Over 100%, display as X(XX.XX%) format
                 levels = int(growth_exp // 100)
                 remaining_percent = growth_exp % 100
                 growth_display = f"{levels}({remaining_percent:.2f}%)"
             else:
-                # 100%以內直接顯示百分比
+                # Within 100%, directly display percentage
                 growth_display = f"{growth_exp:.2f}%"
         else:
             growth_display = "0.00%"
         
         return f"{growth_display}"
     
-    five_day_growth = calculate_five_day_growth()
-    character_info.append(f"五日成長： {five_day_growth}")
+    seven_day_growth = calculate_seven_day_growth()
+    character_info.append(f"七日成長： {seven_day_growth}")
 
     if user_union_data:
         union_level = user_union_data.get('union_level', 0)
@@ -173,20 +173,20 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             return value.strip()
         return str(value)
     
-    # 輔助函數：將數字轉換為中文億萬格式（省略最後4位數）
+    # Helper function: Convert numbers to Chinese yi-wan format (omit last 4 digits)
     def format_chinese_number(number_str):
         try:
             num = int(number_str)
             num = num // 10000
             
-            if num >= 10000:  # >=1億
+            if num >= 10000:  # >=100 million
                 yi = num // 10000
                 wan = (num % 10000)
                 if wan > 0:
                     return f"{yi}億{wan}萬"
                 else:
                     return f"{yi}億"
-            elif num > 0:  # >=0萬
+            elif num > 0:  # >=10 thousand
                 return f"{num}萬"
             else:
                 return "0"
@@ -227,7 +227,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     hexa_dict = {}
     hexa_equipment = None
     
-    # 安全檢查六轉核心資料
+    # Safely check hexa core data
     if (character_hexamatrix_data and 
         character_hexamatrix_data.get('character_hexa_core_equipment') is not None):
         hexa_equipment = character_hexamatrix_data['character_hexa_core_equipment']
@@ -244,7 +244,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             core_type = core.get('hexa_core_type')
             core_level = core.get('hexa_core_level', 0)
             
-            # 只處理等級大於0的核心
+            # Only process cores with level > 0
             if core_type in type_counters and core_level > 0:
                 type_counters[core_type] += 1
                 
@@ -259,7 +259,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
                 
                 hexa_dict[key] = core_level
 
-    # 從 hexa_dict 提取各核心等級用於計算
+    # Extract core levels from hexa_dict for calculation
     SkillNodes1 = hexa_dict.get('SkillCore1', 0)
     MasteryNodes1 = hexa_dict.get('MasteryCore1', 0)
     MasteryNodes2 = hexa_dict.get('MasteryCore2', 0)
@@ -271,7 +271,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     BoostNode4 = hexa_dict.get('EnhanceCore4', 0)
     CommonNode1 = hexa_dict.get('CommonCore1', 0)
 
-    # 計算六轉核心完成度
+    # Calculate hexa core completion rate
     totalcount, maxfragment = Calculatefragment(
         SkillNodes1, 
         MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
@@ -284,7 +284,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     if hexa_dict:
         hexa_info = []
         
-        # 收集各類核心等級，只包含等級大於0的核心
+        # Collect core levels by type, only include cores with level > 0
         skill_cores = []
         mastery_cores = []
         enhance_cores = []
@@ -304,34 +304,34 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         def format_core_level(level):
             return f"{level:2d}"
         
-        # 按照標準格式顯示：技能核心1個，精通核心4個，強化核心4個，共用核心1個
-        # 不足時補0
+        # Display in standard format: 2 skill cores, 4 mastery cores, 4 enhance cores, 1 common core
+        # Fill with 0 if insufficient
         
-        # 技能核心：確保顯示2個
-        while len(skill_cores) < 1:
+        # Skill cores: ensure 2 are displayed
+        while len(skill_cores) < 2:
             skill_cores.append(0)
-        skill_cores = skill_cores[:1]  # 只取前1個
+        skill_cores = skill_cores[:2]  # Only take first 2
         formatted_skill_cores = [format_core_level(level) for level in skill_cores]
         hexa_info.append(f"技能核心　： {' | '.join(formatted_skill_cores)}")
         
-        # 精通核心：確保顯示4個
+        # Mastery cores: ensure 4 are displayed
         while len(mastery_cores) < 4:
             mastery_cores.append(0)
-        mastery_cores = mastery_cores[:4]  # 只取前4個
+        mastery_cores = mastery_cores[:4]  # Only take first 4
         formatted_mastery_cores = [format_core_level(level) for level in mastery_cores]
         hexa_info.append(f"精通核心　： {' | '.join(formatted_mastery_cores)}")
         
-        # 強化核心：確保顯示4個
+        # Enhance cores: ensure 4 are displayed
         while len(enhance_cores) < 4:
             enhance_cores.append(0)
-        enhance_cores = enhance_cores[:4]  # 只取前4個
+        enhance_cores = enhance_cores[:4]  # Only take first 4
         formatted_enhance_cores = [format_core_level(level) for level in enhance_cores]
         hexa_info.append(f"強化核心　： {' | '.join(formatted_enhance_cores)}")
         
-        # 共用核心：確保顯示1個
+        # Common cores: ensure 1 is displayed
         while len(common_cores) < 1:
             common_cores.append(0)
-        common_cores = common_cores[:1]  # 只取前1個
+        common_cores = common_cores[:1]  # Only take first 1
         formatted_common_cores = [format_core_level(level) for level in common_cores]
         hexa_info.append(f"共用核心　： {' | '.join(formatted_common_cores)}")
 
@@ -414,9 +414,9 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     if character_symbolequipment_data and character_symbolequipment_data.get('symbol'):
         symbols = character_symbolequipment_data.get('symbol', [])
         
-        arcane_symbols = []  # 祕法符文
-        sacred_symbols = []  # 真實符文
-        luxury_symbols = []  # 豪華真實符文
+        arcane_symbols = []  # Arcane symbols
+        sacred_symbols = []  # Sacred symbols  
+        luxury_symbols = []  # Luxury sacred symbols
         
         for symbol in symbols:
             symbol_name = symbol.get('symbol_name', '未知符文')
@@ -461,9 +461,9 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         inline=False
     )
     
-    # 顯示六轉核心資訊，即使沒有有效核心也顯示標準格式
-    if hexa_equipment is not None:  # 只要有核心裝備資料就顯示
-        if not hexa_info:  # 如果沒有有效核心，創建預設格式
+    # Display hexa core information, show standard format even if no valid cores
+    if hexa_equipment is not None:  # Display as long as there is core equipment data
+        if not hexa_info:  # If no valid cores, create default format
             hexa_info = [
                 "技能核心　：  0 |  0",
                 "精通核心　：  0 |  0 |  0 |  0", 
@@ -491,9 +491,9 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             date_obj = datetime.datetime.fromisoformat(create_date.replace('Z', '+00:00'))
             formatted_date = date_obj.strftime('%Y-%m-%d')
             
-            # 計算與今日的天數差值
+            # Calculate day difference from today
             today = datetime.datetime.now()
-            # 只比較日期部分，不考慮時間
+            # Only compare date part, ignore time
             create_date_only = date_obj.date()
             today_date_only = today.date()
             days_diff = (today_date_only - create_date_only).days

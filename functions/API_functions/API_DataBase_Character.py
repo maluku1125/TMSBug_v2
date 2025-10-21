@@ -51,7 +51,6 @@ def get_character_ocid_db(character_id: str) -> Optional[tuple]:
             
             if result:
                 ocid, refresh_time = result
-                print(f"Found '{character_id}': OCID={ocid}, time={refresh_time}")
                 return (ocid, refresh_time)
             else:
                 print(f"Cannot find '{character_id}' data")
@@ -209,7 +208,7 @@ def save_character_basic_info_db(character_basic_data: dict) -> bool:
                   character_level, character_exp_rate, character_image, current_time))
             
             conn.commit()
-            print(f"Successfully saved character basic info: '{character_name}' (Lv.{character_level} {character_class}) -> OCID: {ocid}")
+            # print(f"Successfully saved character basic info: '{character_name}' (Lv.{character_level} {character_class}) -> OCID: {ocid}")
             return True
             
     except Exception as e:

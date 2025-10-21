@@ -7,6 +7,8 @@ import datetime
 
 from functions.Cogs.Slash_CalculateScrolls import scrolls_fitting
 
+from Data.SmallData import class_main_stat
+
 class EquipmentView(discord.ui.View):
     def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, character_pet_equipment_data: dict = None, character_beauty_equipment_data: dict = None, character_ability_data: dict = None, character_hyper_stat_data: dict = None, current_preset: str = "preset_1", character_basic_data: dict = None):
         super().__init__(timeout=300)  # 5 minute timeout
@@ -114,29 +116,7 @@ class EquipmentView(discord.ui.View):
             # Add item_add_option information (non-zero values)
             item_add_option = equipment.get('item_add_option', {})
             etc_stats = []
-            
-            # Define main stat to class mapping
-            class_main_stat = {
-                "str": [
-                    "英雄", "黑騎士", "聖騎士", "拳霸", "重砲指揮官", 
-                    "米哈逸", "聖魂劍士", "閃雷悍將", "惡魔殺手", "爆拳槍神",
-                    "狂狼勇士", "隱月", "凱薩", "劍豪", "神之子", "阿戴爾", "亞克", "蓮"
-                ],
-                "dex": [
-                    "箭神", "神射手", "開拓者", "槍神", "墨玄", "破風使者", "狂豹獵人", 
-                    "機甲戰神", "精靈遊俠", "天使破壞者", "凱殷"
-                ],
-                "int": [
-                    "主教", "大魔導士（火、毒）", "大魔導士（冰、雷）", "烈焰巫師", 
-                    "煉獄巫師", "龍魔導士", "夜光", "陰陽師", "幻獸師", "凱內西斯", 
-                    "琳恩", "菈菈", "伊利恩"
-                ],
-                "luk": [
-                    "夜使者", "暗影神偷", "影武者", "暗夜行者", "幻影俠盜", "虎影", "卡蒂娜", "卡莉"
-                ],
-                "max_hp": ["惡魔復仇者"],
-            }
-            
+                        
             # Xenon fuck u
             special_exclude_stats = {
                 "傑諾": ["int"]  

@@ -51,21 +51,20 @@ def get_ocid_from_cache(character_name: str, cache_days: int = 7) -> Optional[st
         return None
 
 def get_character_ocid(character_name: str) -> Optional[str]:
-    print(f"Searching OCID: '{character_name}'")
     
-    # 1. 先嘗試從快取獲取
+    # 1. First try to get from cache
     cached_ocid = get_ocid_from_cache(character_name)
     if cached_ocid:
         return cached_ocid
     
-    # 2. 快取無效，從 API 請求
+    # 2. Cache invalid, request from API
     api_ocid = request_character_ocid(character_name)
     if api_ocid:
         return api_ocid
     
-    # 3. API 失敗，嘗試使用過期的快取資料作為備用
+    # 3. API failed, try to use expired cache data as fallback
     print(f"API request failed, trying to use expired cache...")
-    fallback_ocid = get_ocid_from_cache(character_name, cache_days=365)  # 擴大快取範圍到一年
+    fallback_ocid = get_ocid_from_cache(character_name, cache_days=365)  # Extend cache range to one year
     
     if fallback_ocid:
         print(f"use expired cache: {fallback_ocid}")
@@ -92,13 +91,11 @@ def request_character_ocid(character_name: str) -> Optional[str]:
         if ocid:
             print(f"API request success: '{character_name}' -> {ocid}")
             
-            # 將結果儲存到資料庫
+            # Save result to database
             print(f"save {character_name} ocid to database...")
             save_success = save_character_ocid_db(character_name, ocid)
             
-            if save_success:
-                print(f"data has been saved to cache")
-            else:
+            if not save_success:
                 print(f"failed to save to cache")
 
             return ocid
@@ -113,25 +110,24 @@ def request_character_ocid(character_name: str) -> Optional[str]:
 
 def request_character_basic(ocid: str, use_cache: bool = False, date = None) -> Optional[dict]:
     
-    # 1. 如果啟用快取，先嘗試從快取獲取
+    # 1. If cache is enabled, try to get from cache first
     if use_cache:
         cached_data = get_character_basic_info_with_fallback(ocid)
         if cached_data:
-            # 移除 refresh_time 欄位，保持與 API 回應格式一致
+            # Remove refresh_time field to maintain consistency with API response format
             api_format_data = {k: v for k, v in cached_data.items() if k != 'refresh_time'}
             return api_format_data
     
-    # 2. 快取無效或不使用快取，從 API 請求
-    print(f"asking basic data from api: OCID={ocid}")
+    # 2. Cache invalid or not using cache, request from API
     
     headers = {
         "x-nxopen-api-key": api_key
     }
     
-    # 根據是否有指定日期來構建 URL
+    # Build URL based on whether date is specified
     if date:
         url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/basic?ocid={ocid}&date={date}"
-        print(f"requesting data for specific date: {date}")
+        # print(f"requesting data for specific date: {date}")
     else:
         url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/basic?ocid={ocid}"
     
@@ -142,26 +138,22 @@ def request_character_basic(ocid: str, use_cache: bool = False, date = None) -> 
         character_basic_data = response.json()
         
         if character_basic_data:
-            # 只有在沒有指定日期時才儲存到資料庫
+            # Only save to database when no specific date is specified
             if not date:
-                # 將 OCID 加入資料中以便儲存
+                # Add OCID to data for saving
                 character_basic_data_with_ocid = character_basic_data.copy()
                 character_basic_data_with_ocid['ocid'] = ocid
                 
-                # 儲存到資料庫（為其他功能提供快取，如公會查詢）
+                # Save to database (provides cache for other functions, like guild queries)
                 save_success = save_character_basic_info_db(character_basic_data_with_ocid)
                 
-                if save_success:
-                    print(f"{ocid} saved character_basic_info to db")
-                else:
+                if not save_success:
                     print(f"{ocid} save character_basic_info to db failed")
-            else:
-                print(f"skipping database save for historical data (date: {date})")
-
+            
         return character_basic_data
         
     except Exception as e:
-        print(f"API 請求角色基本資訊失敗: {e}")               
+        print(f"Failed to request character basic info from API: {e}")               
         return None
     
 def request_character_stat(ocid: str) -> Optional[dict]:
@@ -362,19 +354,19 @@ def request_character_hyper_stat(ocid: str) -> Optional[dict]:
 
 def refresh_all_expired_character_data(refresh_days: int = 9999) -> dict:
     """
-    批量刷新過期的角色資料
+    Batch refresh expired character data
     
     Args:
-        refresh_days: 資料過期的天數閾值，預設為 9999 天
+        refresh_days: Data expiration threshold in days, default is 9999 days
 
     Returns:
-        dict: 包含處理結果統計的字典
+        dict: Dictionary containing processing result statistics
     """
     
-    # 獲取過期的 OCID 清單
+    # Get expired OCID list
     expired_check_result = get_all_expired_character_lists(refresh_days)
     
-    # 準備結果統計
+    # Prepare result statistics
     result_stats = {
         'total_records': expired_check_result['total_records'],
         'fresh_records': expired_check_result['fresh_records'],
@@ -384,22 +376,22 @@ def refresh_all_expired_character_data(refresh_days: int = 9999) -> dict:
         'failed_refreshes': 0
     }
     
-    # 如果沒有過期資料，直接返回
+    # If no expired data, return directly
     if not expired_check_result['expired_ocid_list']:
-        print("沒有需要刷新的過期資料")
+        print("No expired data needs to be refreshed")
         return result_stats
     
-    print(f"\n開始刷新 {len(expired_check_result['expired_ocid_list'])} 筆過期資料...")
+    print(f"\nStarting to refresh {len(expired_check_result['expired_ocid_list'])} expired records...")
     
-    # 批量刷新過期的角色資料
+    # Batch refresh expired character data
     for item in expired_check_result['expired_ocid_list']:
         ocid = item['ocid']
         character_name = item['character_name']
         
         try:
-            print(f"⟳ 正在刷新 '{character_name}'...")
+            print(f"⟳ Refreshing '{character_name}'...")
             
-            # 使用 API 刷新數據（函數內部會自動儲存）
+            # Use API to refresh data (function will automatically save)
             fresh_data = request_character_basic(ocid, use_cache=False)
             
             if fresh_data:
@@ -413,15 +405,15 @@ def refresh_all_expired_character_data(refresh_days: int = 9999) -> dict:
             print(f"✗ Error refreshing '{character_name}': {e}")
             result_stats['failed_refreshes'] += 1
     
-    # 輸出統計結果
-    print("\n=== 批量刷新結果統計 ===")
-    print(f"總記錄數: {result_stats['total_records']}")
-    print(f"新鮮記錄: {result_stats['fresh_records']}")
-    print(f"過期記錄: {result_stats['expired_records']}")
-    print(f"成功刷新: {result_stats['successfully_refreshed']}")
-    print(f"刷新失敗: {result_stats['failed_refreshes']}")
-    print(f"錯誤記錄: {result_stats['error_records']}")
-    print("========================")
+    # Output statistics
+    print("\n=== Batch Refresh Results ===")
+    print(f"Total records: {result_stats['total_records']}")
+    print(f"Fresh records: {result_stats['fresh_records']}")
+    print(f"Expired records: {result_stats['expired_records']}")
+    print(f"Successfully refreshed: {result_stats['successfully_refreshed']}")
+    print(f"Failed refreshes: {result_stats['failed_refreshes']}")
+    print(f"Error records: {result_stats['error_records']}")
+    print("=============================")
     
     return result_stats
 

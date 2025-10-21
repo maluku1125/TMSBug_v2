@@ -2,7 +2,6 @@ import discord
 import datetime
 from Data.SmallData import worldlogo, worldemoji
 
-
 class RankingView(discord.ui.View):
     def __init__(self, ranking_data: list = None, character_class: str = None):
         super().__init__(timeout=300)  # 5 minutes timeout
