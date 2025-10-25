@@ -98,7 +98,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
 
     character_info.append(f"職業　　： {character_class}")
     character_info.append(f"等級　　： {character_basic_data.get('character_level', 0)}({exp_display})")
-
+    
     # Calculate seven-day growth rate
     def calculate_seven_day_growth():
         if not character_basic_data_7days_ago:
@@ -111,26 +111,33 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         # Seven days ago data
         old_level = character_basic_data_7days_ago.get('character_level', 0)
         old_exp_rate = character_basic_data_7days_ago.get('character_exp_rate', 0)
-        
-        # Safely handle experience values
+
+        # Check if old_level is None (no valid data from 7 days ago)
+        if old_level is None:
+            return "無資料"
+
+        # Safely handle level and experience values
         try:
+            current_level = int(current_level) if current_level is not None else 0
+            old_level = int(old_level) if old_level is not None else 0
             current_exp_rate = float(current_exp_rate) if current_exp_rate is not None else 0.0
             old_exp_rate = float(old_exp_rate) if old_exp_rate is not None else 0.0
         except (ValueError, TypeError):
+            current_level = 0
+            old_level = 0
             current_exp_rate = 0.0
             old_exp_rate = 0.0
-        
+  
         # Calculate total experience growth percentage
         if current_level == old_level:
             # Same level, only calculate experience difference
             growth_exp = current_exp_rate - old_exp_rate
-        else:
-            # Different level, calculate complete experience growth
-            # Remaining experience from old level + 100% for level ups + current experience
+    
+        else:           
             remaining_old_exp = 100.0 - old_exp_rate
-            level_difference = current_level - old_level - 1  # Number of levels upgraded in between
+            level_difference = current_level - old_level - 1  # Number of levels upgraded in between      
             growth_exp = remaining_old_exp + (level_difference * 100.0) + current_exp_rate
-        
+            
         # Format growth rate display
         if growth_exp >= 0:
             if growth_exp > 100:
@@ -148,7 +155,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     
     seven_day_growth = calculate_seven_day_growth()
     character_info.append(f"七日成長： {seven_day_growth}")
-
+    
     if user_union_data:
         union_level = user_union_data.get('union_level', 0)
         union_artifact_level = user_union_data.get('union_artifact_level', 0)
@@ -210,7 +217,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     cooldown_percent = safe_str(stat_dict.get('冷卻時間減少(％)', '0.0'))
     cooldown_unaffected = safe_str(stat_dict.get('未套用冷卻時間', '0.0'))
 
-
+    
     stat_info.append(f"戰鬥力　　： {format_chinese_number(combat_power)}")
     stat_info.append(f"屬性攻擊力： {int(maximumattstat):,}")
     stat_info.append(f"總傷害　　： {damage}%")
@@ -221,16 +228,18 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     stat_info.append(f"冷卻減免　： {cooldown_sec}秒｜{cooldown_percent}%")
     stat_info.append(f"無視冷卻　： {cooldown_unaffected}%")    
     stat_info.append(f"星力＆符文： {int(starforce)}｜{int(arcaneforce):,}｜{int(authenticforce):,}")
-
+    
 
     # hexa info INFO
     hexa_dict = {}
     hexa_equipment = None
     
     # Safely check hexa core data
+    
     if (character_hexamatrix_data and 
         character_hexamatrix_data.get('character_hexa_core_equipment') is not None):
         hexa_equipment = character_hexamatrix_data['character_hexa_core_equipment']
+    
     
     if hexa_equipment:
         type_counters = {
@@ -304,13 +313,13 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         def format_core_level(level):
             return f"{level:2d}"
         
-        # Display in standard format: 2 skill cores, 4 mastery cores, 4 enhance cores, 1 common core
+        # Display in standard format: 1 skill cores, 4 mastery cores, 4 enhance cores, 1 common core
         # Fill with 0 if insufficient
         
-        # Skill cores: ensure 2 are displayed
-        while len(skill_cores) < 2:
+        # Skill cores: ensure 1 are displayed
+        while len(skill_cores) < 1:
             skill_cores.append(0)
-        skill_cores = skill_cores[:2]  # Only take first 2
+        skill_cores = skill_cores[:1]  # Only take first 1
         formatted_skill_cores = [format_core_level(level) for level in skill_cores]
         hexa_info.append(f"技能核心　： {' | '.join(formatted_skill_cores)}")
         

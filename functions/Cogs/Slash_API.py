@@ -8,7 +8,8 @@ from functions.API_functions.CreateGuildEmbed import create_guild_basic_embed
 from functions.API_functions.CreateCharacterEquipmentEmbed import create_character_equipment_embed
 from functions.API_functions.API_Ranking import get_all_characters_level_exp_ranking
 from functions.API_functions.CreateRankingEmbed import create_ranking_embed
-from functions.API_functions.CreateEXPtrackingEmbed import create_exp_tracking_embed
+from functions.API_functions.CreateEXPTrackingEmbed import create_exp_tracking_embed
+from functions.API_functions.CreateUnionTrackingEmbed import create_union_tracking_embed
 
 from functions.SlashCommandManager import UseSlashCommand
 
@@ -271,6 +272,31 @@ class Slash_API(commands.Cog):
             error_embed = discord.Embed(
                 title="❌ 錯誤",
                 description=f"生成經驗追蹤資訊時發生錯誤: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed)
+
+
+    @app_commands.command(name="uniontracking戰地追蹤", description="戰地聯盟成長分析")
+    @app_commands.describe(character_name="角色名稱")
+    async def api_union_tracking(self, interaction: discord.Interaction, character_name: str):
+        
+        await interaction.response.defer()
+        UseSlashCommand('api_uniontracking', interaction)
+        
+        try:
+            # Create union tracking embed
+            result = create_union_tracking_embed(character_name)
+            
+            if result["success"]:
+                await interaction.followup.send(embed=result["embed"])
+            else:
+                await interaction.followup.send(embed=result["embed"])
+                
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ 錯誤",
+                description=f"生成戰地聯盟追蹤資訊時發生錯誤: {str(e)}",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed)

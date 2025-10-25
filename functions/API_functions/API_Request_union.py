@@ -107,13 +107,18 @@ def request_character_ocid(character_name: str) -> Optional[str]:
         return None
     
 
-def request_user_union(ocid: str) -> Optional[dict]:
+def request_user_union(ocid: str, date = None) -> Optional[dict]:
     
     headers = {
         "x-nxopen-api-key": api_key
     }
     
-    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/user/union?ocid={ocid}"
+    # Build URL based on whether date is specified
+    if date:
+        url_string = f"https://open.api.nexon.com/{serveraddress}/v1/user/union?ocid={ocid}&date={date}"
+        # print(f"requesting union data for specific date: {date}")
+    else:
+        url_string = f"https://open.api.nexon.com/{serveraddress}/v1/user/union?ocid={ocid}"
     
     try:
         response = requests.get(url_string, headers=headers)

@@ -140,11 +140,42 @@ class GuildView(discord.ui.View):
             )
             return embed
         
-        # Sort guild members by name
-        guild_members = sorted(guild_members)
+        # Custom sorting function: numbers → uppercase → lowercase → Chinese (Big5)
+        def custom_sort_key(name):
+            """
+            Create sort key for custom ordering:
+            1. Numbers (0-9)
+            2. English uppercase (A-Z)
+            3. English lowercase (a-z)
+            4. Chinese characters (Big5 encoding)
+            """
+            sort_key = []
+            for char in name:
+                if char.isdigit():
+                    # Numbers: priority 0, then the digit value
+                    sort_key.append((0, ord(char)))
+                elif char.isupper() and char.isascii():
+                    # Uppercase English: priority 1, then ASCII value
+                    sort_key.append((1, ord(char)))
+                elif char.islower() and char.isascii():
+                    # Lowercase English: priority 2, then ASCII value
+                    sort_key.append((2, ord(char)))
+                else:
+                    # Chinese and other characters: priority 3, then try Big5 encoding
+                    try:
+                        # Try to encode in Big5 and use the encoded bytes for sorting
+                        big5_bytes = char.encode('big5')
+                        sort_key.append((3, int.from_bytes(big5_bytes, byteorder='big')))
+                    except UnicodeEncodeError:
+                        # If can't encode in Big5, use Unicode code point
+                        sort_key.append((3, ord(char)))
+            return sort_key
         
-        # Group members for display, maximum 20 members per field
-        members_per_field = 20
+        # Sort guild members by custom key
+        guild_members = sorted(guild_members, key=custom_sort_key)
+
+        # Group members for display, maximum 17 members per field
+        members_per_field = 17
         total_members = len(guild_members)
         total_fields = math.ceil(total_members / members_per_field)
         

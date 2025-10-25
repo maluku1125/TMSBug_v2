@@ -4,10 +4,14 @@ from functions.API_functions.API_Request_Character import get_character_ocid, re
 from Data.SmallData import worldlogo, worldemoji
 
 def get_adjusted_datetime():
-  
+    """
+    取得調整後的日期時間
+    由於 API 兩點才會提供前一日的資料，所以 0:00~2:05 間會出現問題
+    在 2:05 之前使用前一天的日期
+    """
     now = datetime.datetime.now()
     
-    # If current time is before 02:05, use previous day
+    # 如果當前時間在凌晨 0:00 到 2:05 之間，使用前一天的日期
     if now.hour < 2 or (now.hour == 2 and now.minute <= 5):
         adjusted_datetime = now - datetime.timedelta(days=1)
     else:
@@ -90,7 +94,7 @@ def create_exp_tracking_embed(character_name: str) -> dict:
         historical_data = {}
         periods = [7, 30, 90]  # Days to track
         
-        # added function to get adjusted datetime
+        # 使用調整後的日期時間來計算歷史資料
         adjusted_datetime = get_adjusted_datetime()
         
         for days in periods:
@@ -109,7 +113,8 @@ def create_exp_tracking_embed(character_name: str) -> dict:
                 if i == 0:
                     # Today's data
                     daily_data[i] = current_data
-                else:              
+                else:
+                    # 使用調整後的日期時間來計算每日資料
                     date_str = (adjusted_datetime - datetime.timedelta(days=i)).strftime('%Y-%m-%d')
                     data = request_character_basic(ocid, use_cache=False, date=date_str)
                     if data:
@@ -225,13 +230,20 @@ def create_exp_tracking_embed(character_name: str) -> dict:
                 if next_level is not None and next_exp_rate is not None:
                     daily_growth = calculate_exp_growth(level, exp_rate, next_level, next_exp_rate)
                     daily_growth_display = format_growth_display(daily_growth)
-                    # Add star emoji if there's level up (growth >= 100%)
-                    star_emoji = "🌟" if daily_growth >= 100 else ""
-                    daily_breakdown.append(f"{day_labels[i]:3s}：Lv.{level} ({exp_rate:5.1f}%) [+{daily_growth_display}]{star_emoji}")
+                    # Add star emoji if there's level up (level changed)
+                    level_diff = level - int(next_level)
+                    if level_diff > 0:
+                        if level_diff == 1:
+                            star_emoji = "🌟"
+                        else:
+                            star_emoji = f"🌟x{level_diff}"
+                    else:
+                        star_emoji = ""
+                    daily_breakdown.append(f"{day_labels[i]:3s}：Lv.{level}({exp_rate:4.1f}%)[+{daily_growth_display}]{star_emoji}")
                 else:
-                    daily_breakdown.append(f"{day_labels[i]:3s}：Lv.{level} ({exp_rate:5.1f}%)")
+                    daily_breakdown.append(f"{day_labels[i]:3s}：Lv.{level}({exp_rate:4.1f}%)")
             else:
-                daily_breakdown.append(f"{day_labels[i]:3s}：Lv.{level} ({exp_rate:5.1f}%)")
+                daily_breakdown.append(f"{day_labels[i]:3s}：Lv.{level}({exp_rate:4.1f}%)")
         else:
             daily_breakdown.append(f"{day_labels[i]:3s}：無資料")
     

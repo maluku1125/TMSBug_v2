@@ -23,10 +23,10 @@ class Loop_API_Data_Refresh(commands.Cog):
         print(f"{get_now_YMDHMS()}, API Data Refresh Loop stopped")
     
     # Official use - Execute at specific time daily
-    @tasks.loop(time=datetime.time(hour=18, minute=30, tzinfo=timezone))  # Set to 2:00 for testing
+    @tasks.loop(time=datetime.time(hour=2, minute=15, tzinfo=timezone))  # Set to 2:00 for testing
 
     async def API_AllData_Refresh(self):
-        """Execute database refresh task every Monday at 2:00 AM"""
+        """Execute database refresh task every Monday at 2:15 AM"""
         print(f"{get_now_YMDHMS()}, 🚀 Starting API all character data refresh...")
 
         try:
