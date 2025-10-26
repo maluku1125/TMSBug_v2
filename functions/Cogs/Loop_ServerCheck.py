@@ -4,6 +4,7 @@ import discord
 import json
 import datetime
 import asyncio
+from functions.database_manager import GuildFunctionDB
 
 HOST = [
   "202.80.104.24",
@@ -17,12 +18,14 @@ HOST = [
 def get_now_HMS():
     return datetime.datetime.now().strftime('%H:%M:%S')
 
-def removeguild(Guild_Function ,guild_id):
-    Guild_Function.pop(guild_id, None)
-    with open('C:\\Users\\User\\Desktop\\DiscordBotlog\\Function\\Guild_Function.json', 'w', encoding='utf-8') as f:
-        json.dump(Guild_Function, f, ensure_ascii=False, indent=4)
-    print("remove guild from Guild_Function.json")
-    return Guild_Function
+def removeguild(db, guild_id):
+    """從資料庫移除 guild 設定"""
+    success = db.remove_guild(guild_id)
+    if success:
+        print(f"remove guild {guild_id} from database")
+    else:
+        print(f"guild {guild_id} not found in database")
+    return success
 
 class Loop_ServerCheck(commands.Cog):
     def __init__(self, bot):
@@ -31,6 +34,7 @@ class Loop_ServerCheck(commands.Cog):
         self.google = {}
         self.server_status = ''
         self.offline_count = 0
+        self.db = GuildFunctionDB()
         self.check_server_status.start()
 
     def cog_unload(self):
@@ -57,8 +61,8 @@ class Loop_ServerCheck(commands.Cog):
         return     
     
     def load_guild_function(self):
-        with open(f'C:\\Users\\User\\Desktop\\DiscordBotlog\\Function\\Guild_Function.json', 'r', encoding='utf-8') as f:
-            return json.load(f)  
+        """從資料庫載入所有 Guild 設定"""
+        return self.db.get_all_guild_configs()  
 
     @tasks.loop(minutes = 1)
     async def check_server_status(self):
@@ -137,12 +141,23 @@ class Loop_ServerCheck(commands.Cog):
                         
                     except Exception as e:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")
-                        remove_list.append(guild_id)
+                        
+                        # 檢查網路連線狀況，避免因網路問題而誤刪guild
+                        network_status = {}
+                        self.worker('www.google.com', network_status)
+                        
+                        # 只有在網路正常但仍然發送失敗時才刪除guild
+                        if network_status.get('www.google.com') == 'online':
+                            print(f"{get_now_HMS()}, Network is online but channel send failed, removing guild {guild_id}")
+                            remove_list.append(guild_id)
+                        else:
+                            print(f"{get_now_HMS()}, Network issue detected, skipping guild removal for {guild_id}")
+                        
                         channelsendcountfail += 1
                         continue
                     
                 for gid in remove_list:
-                    Guild_Function = removeguild(Guild_Function, gid)
+                    removeguild(self.db, gid)
                  
                         
             self.offline_count = 0    
@@ -216,12 +231,23 @@ class Loop_ServerCheck(commands.Cog):
                     
                 except Exception as e:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")
-                        remove_list.append(guild_id)
+                        
+                        # 檢查網路連線狀況，避免因網路問題而誤刪guild
+                        network_status = {}
+                        self.worker('www.google.com', network_status)
+                        
+                        # 只有在網路正常但仍然發送失敗時才刪除guild
+                        if network_status.get('www.google.com') == 'online':
+                            print(f"{get_now_HMS()}, Network is online but channel send failed, removing guild {guild_id}")
+                            remove_list.append(guild_id)
+                        else:
+                            print(f"{get_now_HMS()}, Network issue detected, skipping guild removal for {guild_id}")
+                        
                         channelsendcountfail += 1
                         continue
  
             for gid in remove_list:
-                Guild_Function = removeguild(Guild_Function, gid)
+                removeguild(self.db, gid)
                                        
             self.server_status = 'offline'
             self.server_up_check.start()
@@ -233,5 +259,63 @@ class Loop_ServerCheck(commands.Cog):
  
             print(f'Server is online')
             print("-"*30)
+    
+    @commands.command(name='db_backup')
+    @commands.is_owner()
+    async def backup_database(self, ctx):
+        """備份資料庫為 JSON 格式"""
+        try:
+            backup_filename = f'Guild_Function_backup_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            backup_path = f'C:\\Users\\User\\Desktop\\DiscordBotlog\\Function\\{backup_filename}'
+            
+            self.db.backup_to_json(backup_path)
+            await ctx.send(f"✅ 資料庫已備份至: `{backup_filename}`")
+            
+        except Exception as e:
+            await ctx.send(f"❌ 備份失敗: {e}")
+    
+    @commands.command(name='db_status')
+    @commands.is_owner()
+    async def database_status(self, ctx):
+        """顯示資料庫狀態"""
+        try:
+            guild_list = self.db.get_guild_list()
+            guild_count = len(guild_list)
+            
+            embed = discord.Embed(title="資料庫狀態", color=0x00ff00)
+            embed.add_field(name="Guild 數量", value=str(guild_count), inline=True)
+            embed.add_field(name="資料庫路徑", value=self.db.db_path, inline=False)
+            
+            if guild_count > 0:
+                recent_guilds = guild_list[:5]  # 顯示前5個
+                embed.add_field(
+                    name="最近的 Guild ID", 
+                    value="\n".join([f"`{gid}`" for gid in recent_guilds]), 
+                    inline=False
+                )
+                
+                if guild_count > 5:
+                    embed.add_field(name="其他", value=f"... 還有 {guild_count - 5} 個", inline=False)
+            
+            await ctx.send(embed=embed)
+            
+        except Exception as e:
+            await ctx.send(f"❌ 無法取得資料庫狀態: {e}")
+    
+    @commands.command(name='migrate_json')
+    @commands.is_owner()
+    async def migrate_from_json(self, ctx, json_filename: str = "Guild_Function.json"):
+        """從 JSON 檔案匯入資料"""
+        try:
+            json_path = f'C:\\Users\\User\\Desktop\\DiscordBotlog\\Function\\{json_filename}'
+            success = self.db.import_from_json(json_path)
+            
+            if success:
+                await ctx.send(f"✅ 成功從 `{json_filename}` 匯入資料！")
+            else:
+                await ctx.send(f"❌ 匯入失敗，請檢查檔案是否存在或格式是否正確")
+                
+        except Exception as e:
+            await ctx.send(f"❌ 匯入過程中發生錯誤: {e}")
 
        
