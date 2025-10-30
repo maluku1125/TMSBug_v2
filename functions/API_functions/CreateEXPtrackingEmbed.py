@@ -1,7 +1,7 @@
 import discord
 import datetime
 from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic
-from Data.SmallData import worldlogo, worldemoji
+from Data.BotEmojiList import EmojiList
 
 def get_adjusted_datetime():
     """
@@ -268,26 +268,26 @@ def create_exp_tracking_embed(character_name: str) -> dict:
     
     # Add individual period growth fields (inline)
     embed.add_field(
-        name="📈 7日成長",
+        name=f"{EmojiList.get('exp_coupon', '')} 7日成長",
         value=f"```autohotkey\n{period_data[7]}```",
         inline=True
     )
     
     embed.add_field(
-        name="📈 30日成長", 
+        name=f"{EmojiList.get('exp_coupon', '')} 30日成長",
         value=f"```autohotkey\n{period_data[30]}```",
         inline=True
     )
     
     embed.add_field(
-        name="📈 90日成長",
+        name=f"{EmojiList.get('exp_coupon', '')} 90日成長 ",
         value=f"```autohotkey\n{period_data[90]}```",
         inline=True
     )
     
     # Add daily breakdown (Second field)
     embed.add_field(
-        name="📅 近七日",
+        name=f"{EmojiList.get('upper_exp_coupon', '')} 近七日 {EmojiList.get('upper_exp_coupon', '')}",
         value=f"```autohotkey\n{chr(10).join(daily_breakdown)}```",
         inline=False
     )

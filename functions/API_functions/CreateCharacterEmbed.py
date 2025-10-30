@@ -6,6 +6,7 @@ from functions.API_functions.API_Request_Character import get_character_ocid, re
 from functions.API_functions.API_Request_union import request_user_union
 import datetime
 from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment
+from Data.BotEmojiList import EmojiList
 
 
 def create_character_basic_embed(character_name: str, return_data: bool = False):
@@ -481,14 +482,14 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             ]
         
         embed.add_field(
-            name=f"六轉核心 ({percentage:.2f}%)",
+            name=f"{EmojiList.get('hexamatrix', '')}六轉核心 ({percentage:.2f}%)",
             value=f"```autohotkey\n{'\n'.join(hexa_info)}\n{'\n'.join(hexa_stat_info)}```",
             inline=False
         )
        
     if symbol_info:
         embed.add_field(
-            name="符文",
+            name=f"{EmojiList.get('Aut0', '')}符文{EmojiList.get('Arc0', '')}",
             value=f"```autohotkey\n{'\n'.join(symbol_info)}```",
             inline=False
         )
@@ -507,7 +508,14 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
             today_date_only = today.date()
             days_diff = (today_date_only - create_date_only).days
             
-            character_create_date = f"創建日期: {formatted_date} ({days_diff}天)"
+            # Check if it's the character's birthday (same month and day)
+            is_birthday = (create_date_only.month == today_date_only.month and 
+                          create_date_only.day == today_date_only.day)
+            
+            if is_birthday:
+                character_create_date = f"創建日期: {formatted_date} ({days_diff}天) 🎉生日快樂！🎂"
+            else:
+                character_create_date = f"創建日期: {formatted_date} ({days_diff}天)"
         except:
             character_create_date = f"創建日期: {create_date}"
 

@@ -8,6 +8,7 @@ import datetime
 from functions.Cogs.Slash_CalculateScrolls import scrolls_fitting
 
 from Data.SmallData import class_main_stat
+from Data.BotEmojiList import EmojiList
 
 class EquipmentView(discord.ui.View):
     def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, character_pet_equipment_data: dict = None, character_beauty_equipment_data: dict = None, character_ability_data: dict = None, character_hyper_stat_data: dict = None, current_preset: str = "preset_1", character_basic_data: dict = None):
@@ -81,7 +82,7 @@ class EquipmentView(discord.ui.View):
             item_exceptional_option = equipment.get('item_exceptional_option', {})
             exceptional_upgrade = int(item_exceptional_option.get('exceptional_upgrade', 0))
             if exceptional_upgrade > 0:
-                equipment_text += f" 🔺{exceptional_upgrade}"
+                equipment_text += f" {EmojiList.get('Exceptional_Hammer', '')}{exceptional_upgrade}"
             
             if int(starforce) > 0:
                 equipment_text += f" ⭐{starforce}"
@@ -109,9 +110,9 @@ class EquipmentView(discord.ui.View):
                         scroll_type = scrolls_fitting(equipment_type, scroll_avg)
                         
                         if scroll_type is None:
-                            equipment_text += f" 📜{scroll_upgrade} ({scroll_avg:.1f})"
+                            equipment_text += f" {EmojiList.get('Scroll_60', '')}{scroll_upgrade} ({scroll_avg:.1f})"
                         else:
-                            equipment_text += f" 📜{scroll_upgrade} ({scroll_type})"
+                            equipment_text += f" {EmojiList.get('Scroll_60', '')}{scroll_upgrade} ({scroll_type})"
             
             # Add item_add_option information (non-zero values)
             item_add_option = equipment.get('item_add_option', {})
@@ -177,7 +178,7 @@ class EquipmentView(discord.ui.View):
                     pass
             
             if etc_stats:
-                equipment_text += f" 🔥{' '.join(etc_stats)}"
+                equipment_text += f" {EmojiList.get('flame_rainbow', '')}{' '.join(etc_stats)}"
             
             equipment_text += "\n"  # Add separator blank line
             

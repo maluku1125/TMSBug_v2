@@ -10,6 +10,8 @@ import math
 import asyncio
 
 from Data.SmallData import worldlogo
+from Data.BotEmojiList import EmojiList
+
 
 
 
@@ -534,10 +536,10 @@ def create_guild_basic_embed_without_view(guild_name: str, world_name: str) -> d
 
     # Add Noblesse skills
     skill_name_mapping = {
-        "殺BOSS機器": "Ｂ傷",
-        "防禦不過是數字": "無視", 
-        "以公會之名": "總傷",
-        "猛烈一擊": "爆傷"
+        f"殺BOSS機器": f"{EmojiList.get('Skill_Boss_Slayers', '')}Ｂ傷",
+        f"防禦不過是數字": f"{EmojiList.get('Skill_Undeterred', '')}無視", 
+        f"以公會之名": f"{EmojiList.get('Skill_For_the_Guild', '')}總傷",
+        f"猛烈一擊": f"{EmojiList.get('Skill_Hard_Hitter', '')}爆傷"
     }
     
     for skill in guild_basic_data.get('guild_noblesse_skill', []):
