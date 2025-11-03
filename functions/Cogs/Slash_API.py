@@ -10,6 +10,7 @@ from functions.API_functions.API_Ranking import get_all_characters_level_exp_ran
 from functions.API_functions.CreateRankingEmbed import create_ranking_embed
 from functions.API_functions.CreateEXPTrackingEmbed import create_exp_tracking_embed
 from functions.API_functions.CreateUnionTrackingEmbed import create_union_tracking_embed
+from functions.API_functions.CreateAPIAnalyseEmbed import create_api_analyse_embed
 
 from functions.SlashCommandManager import UseSlashCommand
 
@@ -277,7 +278,7 @@ class Slash_API(commands.Cog):
             await interaction.followup.send(embed=error_embed)
 
 
-    @app_commands.command(name="uniontracking戰地追蹤", description="戰地聯盟成長分析")
+    @app_commands.command(name="uniontracking戰地追蹤", description="顯示角色近7日戰地聯盟成長分析")
     @app_commands.describe(character_name="角色名稱")
     async def api_union_tracking(self, interaction: discord.Interaction, character_name: str):
         
@@ -297,6 +298,36 @@ class Slash_API(commands.Cog):
             error_embed = discord.Embed(
                 title="❌ 錯誤",
                 description=f"生成戰地聯盟追蹤資訊時發生錯誤: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed)
+
+
+    @app_commands.command(name="apianalyse楓谷分析", description="API資料分析")
+    @app_commands.describe(analysis_type="分析類型")
+    @app_commands.choices(analysis_type=[
+        app_commands.Choice(name="職業分析", value="class"),
+        app_commands.Choice(name="世界分析", value="world"),
+        app_commands.Choice(name="等級分析", value="level")
+    ])
+    async def api_analyse(self, interaction: discord.Interaction, analysis_type: str = "class"):
+        
+        await interaction.response.defer()
+        UseSlashCommand('api_analyse', interaction)
+        
+        try:
+            # 創建分析嵌入
+            result = create_api_analyse_embed(analysis_type, include_view=True)
+            
+            if result["success"]:
+                await interaction.followup.send(embed=result["embed"], view=result["view"])
+            else:
+                await interaction.followup.send(embed=result["embed"])
+                
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ 錯誤",
+                description=f"生成資料分析時發生錯誤: {str(e)}",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed)
