@@ -7,11 +7,60 @@ from functions.API_functions.API_Analyse import (
     get_level_distribution_analysis
 )
 
+class LevelFilterModal(discord.ui.Modal):
+    def __init__(self, view_instance):
+        super().__init__(title="等級篩選")
+        self.view_instance = view_instance
+        
+        self.add_item(discord.ui.TextInput(
+            label="最低等級 (1-300)",
+            placeholder="例如：200 (留空表示不篩選)",
+            style=discord.TextStyle.short,
+            max_length=3,
+            required=False
+        ))
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            min_level_input = self.children[0].value.strip()
+            
+            if min_level_input == "":
+                # 清除等級篩選
+                self.view_instance.min_level_filter = None
+                # 直接更新嵌入，不發送訊息
+                embed = self.view_instance.create_analysis_embed()
+                await interaction.response.edit_message(embed=embed, view=self.view_instance)
+            else:
+                min_level = int(min_level_input)
+                if min_level < 1 or min_level > 300:
+                    await interaction.response.send_message(
+                        "❌ 等級必須介於 1-300 之間", 
+                        ephemeral=True
+                    )
+                    return
+                
+                self.view_instance.min_level_filter = min_level
+                # 直接更新嵌入，不發送成功訊息
+                embed = self.view_instance.create_analysis_embed()
+                await interaction.response.edit_message(embed=embed, view=self.view_instance)
+            
+        except ValueError:
+            await interaction.response.send_message(
+                "❌ 請輸入有效的數字 (1-300)", 
+                ephemeral=True
+            )
+        except Exception as e:
+            await interaction.response.send_message(
+                f"❌ 發生錯誤：{str(e)}", 
+                ephemeral=True
+            )
+
 class APIAnalyseView(discord.ui.View):
     def __init__(self, analysis_type: str = "class"):
         super().__init__(timeout=300)  # 5 minutes timeout
         self.current_analysis_type = analysis_type  # "class", "world", "level"
         self.current_world = "全部"  # Currently selected world
+        self.min_level_filter = None  # Minimum level filter
         self._update_button_styles()
     
     def _update_button_styles(self):
@@ -40,7 +89,7 @@ class APIAnalyseView(discord.ui.View):
         """Create class analysis embed"""
         # Get class analysis data
         world_filter = None if self.current_world == "全部" else self.current_world
-        analysis_result = get_class_distribution_analysis(world_filter)
+        analysis_result = get_class_distribution_analysis(world_filter, self.min_level_filter)
         
         embed = discord.Embed(
             title='',
@@ -54,11 +103,12 @@ class APIAnalyseView(discord.ui.View):
             return embed
         
         # Set title
+        level_filter_text = f" (≥{self.min_level_filter}級)" if self.min_level_filter else ""
         if self.current_world == "全部":
-            embed_title = f"📊 全伺服器職業分析"
+            embed_title = f"📊 全伺服器職業分析{level_filter_text}"
             embed.set_author(name=embed_title)
         else:
-            embed_title = f"📊 {self.current_world} 職業分析"
+            embed_title = f"📊 {self.current_world} 職業分析{level_filter_text}"
             if self.current_world in worldlogo:
                 embed.set_author(name=embed_title, icon_url=worldlogo[self.current_world])
             else:
@@ -107,8 +157,8 @@ class APIAnalyseView(discord.ui.View):
                 value="```\n" + '\n'.join(first_half) + "\n```",
                 inline=True
             )
-
-            # Second column (31-60)
+            
+            # Second column (31-60)  
             second_half = formatted_stats[30:60]
             embed.add_field(
                 name="🏆 職業排名 (31-60名)",
@@ -139,7 +189,7 @@ class APIAnalyseView(discord.ui.View):
     def _create_world_analysis_embed(self):
         """Create world analysis embed"""
         # Get world analysis data
-        analysis_result = get_world_distribution_analysis()
+        analysis_result = get_world_distribution_analysis(self.min_level_filter)
         
         embed = discord.Embed(
             title='',
@@ -152,7 +202,8 @@ class APIAnalyseView(discord.ui.View):
             embed.color = discord.Color.red()
             return embed
         
-        embed.set_author(name="🌍 全伺服器世界分布分析")
+        level_filter_text = f" (≥{self.min_level_filter}級)" if self.min_level_filter else ""
+        embed.set_author(name=f"🌍 全伺服器世界分布分析{level_filter_text}")
         
         world_stats = analysis_result['data']
         total_characters = analysis_result['total_characters']
@@ -323,6 +374,18 @@ class APIAnalyseView(discord.ui.View):
             await interaction.response.edit_message(embed=embed, view=self)
         else:
             await interaction.response.defer()
+    
+    @discord.ui.button(label="🔢 等級篩選", style=discord.ButtonStyle.secondary, row=1)
+    async def level_filter_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # 只有職業分析和世界分析支援等級篩選
+        if self.current_analysis_type in ["class", "world"]:
+            modal = LevelFilterModal(self)
+            await interaction.response.send_modal(modal)
+        else:
+            await interaction.response.send_message(
+                "等級篩選僅支援職業分析和世界分析", 
+                ephemeral=True
+            )
     
     @discord.ui.select(
         placeholder="選擇世界篩選...",

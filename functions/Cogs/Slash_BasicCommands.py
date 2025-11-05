@@ -8,7 +8,7 @@ import time
 from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
 from functions.MSCrawler import Format_ApplePrizeData, Format_FashionBoxPrizeData, save_apple_json_file, save_fashionbox_json_file
 from functions.GetPrize import reloaddata
-from functions.SlashCommandManager import UseSlashCommand, GetSlashCommandUsage
+from ..SlashCommandManager import UseSlashCommand, GetSlashCommandUsage, SaveSystemStats
  
 process = psutil.Process()
 
@@ -26,7 +26,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v3.5.0'
+version = 'v3.6.2'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -47,22 +47,6 @@ class Slash_BasicCommands(commands.Cog):
     @app_commands.describe(dev_func = "dev_func")
 
     async def help(self, interaction: discord.Interaction, dev_func: str = None):
-
-        # 如果 dev_func 為 'load'，並且命令的發送者是作者
-        if dev_func == 'load_Slash_CreatePrizeEmbed' and str(interaction.user.id) == '310164490391912448':
-            try:
-                await self.client.add_cog('Slash_CreatePrizeEmbed')
-            except Exception as e:
-                print(f'Failed to load extension: {e}')
-            print('Load Slash_CreatePrizeEmbed')
-
-        # 如果 dev_func 為 'unload'，並且命令的發送者是作者
-        elif dev_func == 'unload_Slash_CreatePrizeEmbed' and str(interaction.user.id) == '310164490391912448':
-            try:
-                await self.client.remove_cog('Slash_CreatePrizeEmbed')
-            except Exception as e:
-                print(f'Failed to unload extension: {e}')
-            print('Unload Slash_CreatePrizeEmbed')
         
         if dev_func == 'getprizetable' and str(interaction.user.id) == '310164490391912448':
             print('getprizetable')
@@ -84,12 +68,38 @@ class Slash_BasicCommands(commands.Cog):
             reloaddata()
             await interaction.response.send_message(content=f'已重新加載抽獎機率表(黃金蘋果,時尚隨機箱)')
             
-        if dev_func == "usage" and str(interaction.user.id) == '310164490391912448':
-            print("slash_command_usage")
-            embed = GetSlashCommandUsage()
-            await interaction.response.send_message(embed=embed)
-            
+        # 開發者功能處理 - 合併的 usage/dashboard/stats 功能
+        if dev_func and str(interaction.user.id) == '310164490391912448':
+            if dev_func == "dashboard":
+                print(f"slash_command_{dev_func}")
+                dashboard_start_time = time.time()
+                await interaction.response.defer()  # 因為可能需要較長時間處理
+                
+                try:
+                    # 保存當前系統統計
+                    guild_count = len(self.client.guilds)
+                    user_count = sum([_.member_count or 0 for _ in self.client.guilds if not _.unavailable])
+                    SaveSystemStats(guild_count, user_count)
+                    
+                    # 創建詳細儀表板
+                    embed = GetSlashCommandUsage(30, self.client)
+                    
+                    response_time = time.time() - dashboard_start_time
+                    UseSlashCommand(f'help_{dev_func}', interaction, response_time)
+                    await interaction.edit_original_response(embed=embed)
+                    return
+                    
+                except Exception as e:
+                    error_embed = discord.Embed(
+                        title="❌ 儀表板載入失敗",
+                        description=f"錯誤: {str(e)}",
+                        color=discord.Color.red()
+                    )
+                    await interaction.edit_original_response(embed=error_embed)
+                    UseSlashCommand(f'help_{dev_func}', interaction, time.time() - dashboard_start_time, False)
+                    return
 
+        # 預設 help 模式 - 顯示基本幫助資訊
         embed = discord.Embed(
             title=f"**TMS新楓之谷BOT**", 
             description = f'', 

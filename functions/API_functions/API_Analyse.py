@@ -4,12 +4,13 @@ from typing import List, Dict, Optional
 
 character_basic_info_path = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\API\\Ocid_CharacterBasicInfo.db'
 
-def get_class_distribution_analysis(world_name: str = None) -> Dict:
+def get_class_distribution_analysis(world_name: str = None, min_level: int = None) -> Dict:
     """
     Analyze class distribution statistics
     
     Args:
         world_name (str, optional): Specified world name, if None analyze all worlds
+        min_level (int, optional): Minimum character level to include in analysis
         
     Returns:
         Dict: Dictionary containing class analysis statistics
@@ -18,39 +19,44 @@ def get_class_distribution_analysis(world_name: str = None) -> Dict:
         with sqlite3.connect(character_basic_info_path) as conn:
             cursor = conn.cursor()
             
+            # Build WHERE clauses based on filters
+            base_conditions = "character_class_level IN (4, 5, 6)"
+            if min_level:
+                base_conditions += f" AND character_level >= {min_level}"
+            
             # First get total character count (only count class levels 4/5/6)
             if world_name:
-                # Get total character count for this world (filter by class level)
-                cursor.execute('''
+                # Get total character count for this world (filter by class level and min level)
+                cursor.execute(f'''
                     SELECT COUNT(*) 
                     FROM character_basic_info 
-                    WHERE world_name = ? AND character_class_level IN (4, 5, 6)
+                    WHERE world_name = ? AND {base_conditions}
                 ''', (world_name,))
                 total_count_result = cursor.fetchone()
                 
-                # Get class statistics for this world (filter by class level)
-                cursor.execute('''
+                # Get class statistics for this world (filter by class level and min level)
+                cursor.execute(f'''
                     SELECT character_class, COUNT(*) as count
                     FROM character_basic_info
-                    WHERE world_name = ? AND character_class_level IN (4, 5, 6)
+                    WHERE world_name = ? AND {base_conditions}
                     GROUP BY character_class
                     ORDER BY count DESC
                 ''', (world_name,))
                 class_records = cursor.fetchall()
             else:
-                # Get total character count (filter by class level)
-                cursor.execute('''
+                # Get total character count (filter by class level and min level)
+                cursor.execute(f'''
                     SELECT COUNT(*) 
                     FROM character_basic_info
-                    WHERE character_class_level IN (4, 5, 6)
+                    WHERE {base_conditions}
                 ''')
                 total_count_result = cursor.fetchone()
                 
-                # Get class statistics for all worlds (filter by class level)
-                cursor.execute('''
+                # Get class statistics for all worlds (filter by class level and min level)
+                cursor.execute(f'''
                     SELECT character_class, COUNT(*) as count
                     FROM character_basic_info
-                    WHERE character_class_level IN (4, 5, 6)
+                    WHERE {base_conditions}
                     GROUP BY character_class
                     ORDER BY count DESC
                 ''')
@@ -115,9 +121,12 @@ def get_class_distribution_analysis(world_name: str = None) -> Dict:
             'world_name': world_name
         }
 
-def get_world_distribution_analysis() -> Dict:
+def get_world_distribution_analysis(min_level: int = None) -> Dict:
     """
     Analyze world distribution statistics
+    
+    Args:
+        min_level (int, optional): Minimum character level to include in analysis
     
     Returns:
         Dict: Dictionary containing world analysis statistics
@@ -126,10 +135,16 @@ def get_world_distribution_analysis() -> Dict:
         with sqlite3.connect(character_basic_info_path) as conn:
             cursor = conn.cursor()
             
+            # Build WHERE clause based on filters
+            where_clause = ""
+            if min_level:
+                where_clause = f"WHERE character_level >= {min_level}"
+            
             # Query character count by world
-            cursor.execute('''
+            cursor.execute(f'''
                 SELECT world_name, COUNT(*) as count
                 FROM character_basic_info
+                {where_clause}
                 GROUP BY world_name
                 ORDER BY count DESC
             ''')
@@ -137,9 +152,10 @@ def get_world_distribution_analysis() -> Dict:
             world_records = cursor.fetchall()
             
             # Get total character count
-            cursor.execute('''
+            cursor.execute(f'''
                 SELECT COUNT(*) 
                 FROM character_basic_info
+                {where_clause}
             ''')
             
             total_count_result = cursor.fetchone()

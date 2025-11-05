@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import datetime
+import time
 from functions.API_functions.CreateCharacterEmbed import create_character_basic_embed
 from functions.API_functions.CreateGuildEmbed import create_guild_basic_embed   
 from functions.API_functions.CreateCharacterEquipmentEmbed import create_character_equipment_embed
@@ -177,10 +178,10 @@ class Slash_API(commands.Cog):
     @app_commands.command(name="character角色查詢", description="API角色查詢")
     async def api_character_basic(self, interaction: discord.Interaction, playername: str):
         
+        start_time = time.time()
+        
         await interaction.response.defer()
 
-        UseSlashCommand('api_character', interaction)
-        
         try:
             # Create character data View
             view = CharacterView(playername)
@@ -188,6 +189,8 @@ class Slash_API(commands.Cog):
             
             if embed:
                 await interaction.followup.send(embed=embed, view=view)
+                response_time = time.time() - start_time
+                UseSlashCommand('api_character', interaction, response_time, True)
             else:
                 error_embed = discord.Embed(
                     title="錯誤",
@@ -195,6 +198,8 @@ class Slash_API(commands.Cog):
                     color=discord.Color.red()
                 )
                 await interaction.followup.send(embed=error_embed)
+                response_time = time.time() - start_time
+                UseSlashCommand('api_character', interaction, response_time, False)
         except Exception as e:
             error_embed = discord.Embed(
                 title="錯誤",
@@ -202,14 +207,17 @@ class Slash_API(commands.Cog):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed)
+            response_time = time.time() - start_time
+            UseSlashCommand('api_character', interaction, response_time, False)
 
 
     @app_commands.command(name="rank排行", description="顯示角色等級經驗排行榜")
     @app_commands.describe(character_class="職業")
     async def api_character_ranking(self, interaction: discord.Interaction, character_class: str = None):
         
+        start_time = time.time()
+        
         await interaction.response.defer()
-        UseSlashCommand('api_ranking', interaction)
         
         try:
             # 獲取排行榜資料 (全部資料，由 CreateRankingEmbed 來處理篩選)
@@ -222,6 +230,8 @@ class Slash_API(commands.Cog):
                     color=discord.Color.red()
                 )
                 await interaction.followup.send(embed=error_embed)
+                response_time = time.time() - start_time
+                UseSlashCommand('api_ranking', interaction, response_time, False)
                 return
             
             # 如果指定了職業，則篩選特定職業的角色
@@ -234,6 +244,8 @@ class Slash_API(commands.Cog):
                         color=discord.Color.red()
                     )
                     await interaction.followup.send(embed=error_embed)
+                    response_time = time.time() - start_time
+                    UseSlashCommand('api_ranking', interaction, response_time, False)
                     return
             
             # 使用 create_ranking_embed 函數 (全伺服器TOP100，各世界TOP50)
@@ -241,8 +253,12 @@ class Slash_API(commands.Cog):
             
             if result["success"]:
                 await interaction.followup.send(embed=result["embed"], view=result["view"])
+                response_time = time.time() - start_time
+                UseSlashCommand('api_ranking', interaction, response_time, True)
             else:
                 await interaction.followup.send(embed=result["embed"])
+                response_time = time.time() - start_time
+                UseSlashCommand('api_ranking', interaction, response_time, False)
             
         except Exception as e:
             error_embed = discord.Embed(
@@ -251,14 +267,17 @@ class Slash_API(commands.Cog):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed)
+            response_time = time.time() - start_time
+            UseSlashCommand('api_ranking', interaction, response_time, False)
 
 
     @app_commands.command(name="exptracking經驗追蹤", description="顯示角色近7日經驗成長分析")
     @app_commands.describe(character_name="角色名稱")
     async def api_exp_tracking(self, interaction: discord.Interaction, character_name: str):
         
+        start_time = time.time()
+        
         await interaction.response.defer()
-        UseSlashCommand('api_exptracking', interaction)
         
         try:
             # Create experience tracking embed
@@ -266,8 +285,12 @@ class Slash_API(commands.Cog):
             
             if result["success"]:
                 await interaction.followup.send(embed=result["embed"])
+                response_time = time.time() - start_time
+                UseSlashCommand('api_exptracking', interaction, response_time, True)
             else:
                 await interaction.followup.send(embed=result["embed"])
+                response_time = time.time() - start_time
+                UseSlashCommand('api_exptracking', interaction, response_time, False)
                 
         except Exception as e:
             error_embed = discord.Embed(
@@ -276,14 +299,17 @@ class Slash_API(commands.Cog):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed)
+            response_time = time.time() - start_time
+            UseSlashCommand('api_exptracking', interaction, response_time, False)
 
 
     @app_commands.command(name="uniontracking戰地追蹤", description="顯示角色近7日戰地聯盟成長分析")
     @app_commands.describe(character_name="角色名稱")
     async def api_union_tracking(self, interaction: discord.Interaction, character_name: str):
         
+        start_time = time.time()
+        
         await interaction.response.defer()
-        UseSlashCommand('api_uniontracking', interaction)
         
         try:
             # Create union tracking embed
@@ -291,8 +317,12 @@ class Slash_API(commands.Cog):
             
             if result["success"]:
                 await interaction.followup.send(embed=result["embed"])
+                response_time = time.time() - start_time
+                UseSlashCommand('api_uniontracking', interaction, response_time, True)
             else:
                 await interaction.followup.send(embed=result["embed"])
+                response_time = time.time() - start_time
+                UseSlashCommand('api_uniontracking', interaction, response_time, False)
                 
         except Exception as e:
             error_embed = discord.Embed(
@@ -301,6 +331,8 @@ class Slash_API(commands.Cog):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed)
+            response_time = time.time() - start_time
+            UseSlashCommand('api_uniontracking', interaction, response_time, False)
 
 
     @app_commands.command(name="apianalyse楓谷分析", description="API資料分析")
@@ -312,8 +344,9 @@ class Slash_API(commands.Cog):
     ])
     async def api_analyse(self, interaction: discord.Interaction, analysis_type: str = "class"):
         
+        start_time = time.time()
+        
         await interaction.response.defer()
-        UseSlashCommand('api_analyse', interaction)
         
         try:
             # 創建分析嵌入
@@ -321,8 +354,12 @@ class Slash_API(commands.Cog):
             
             if result["success"]:
                 await interaction.followup.send(embed=result["embed"], view=result["view"])
+                response_time = time.time() - start_time
+                UseSlashCommand('api_analyse', interaction, response_time, True)
             else:
                 await interaction.followup.send(embed=result["embed"])
+                response_time = time.time() - start_time
+                UseSlashCommand('api_analyse', interaction, response_time, False)
                 
         except Exception as e:
             error_embed = discord.Embed(
@@ -331,6 +368,8 @@ class Slash_API(commands.Cog):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed)
+            response_time = time.time() - start_time
+            UseSlashCommand('api_analyse', interaction, response_time, False)
 
 
     @app_commands.command(name="guild公會查詢", description="API公會查詢")
@@ -351,11 +390,25 @@ class Slash_API(commands.Cog):
     ])
     async def api_guild_basic(self, interaction: discord.Interaction, guild_name: str, world_name: str):
         
-        await interaction.response.defer()
-        UseSlashCommand('api_guild', interaction)
-
-        result = create_guild_basic_embed(guild_name, world_name, include_view=True)
-        embed = result["embed"]
-        view = result["view"]
+        start_time = time.time()
         
-        await interaction.followup.send(embed=embed, view=view)
+        await interaction.response.defer()
+        
+        try:
+            result = create_guild_basic_embed(guild_name, world_name, include_view=True)
+            embed = result["embed"]
+            view = result["view"]
+            
+            await interaction.followup.send(embed=embed, view=view)
+            response_time = time.time() - start_time
+            UseSlashCommand('api_guild', interaction, response_time, True)
+            
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ 錯誤",
+                description=f"查詢公會資訊時發生錯誤: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed)
+            response_time = time.time() - start_time
+            UseSlashCommand('api_guild', interaction, response_time, False)
