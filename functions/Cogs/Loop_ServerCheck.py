@@ -5,6 +5,7 @@ import json
 import datetime
 import asyncio
 from functions.database_manager import GuildFunctionDB
+from concurrent.futures import ThreadPoolExecutor
 
 HOST = [
   "202.80.104.24",
@@ -35,18 +36,21 @@ class Loop_ServerCheck(commands.Cog):
         self.server_status = ''
         self.offline_count = 0
         self.db = GuildFunctionDB()
+        self.executor = ThreadPoolExecutor(max_workers=10)
         self.check_server_status.start()
 
     def cog_unload(self):
         self.server_up_check.cancel()
         self.server_down_check.cancel()
+        self.executor.shutdown(wait=False)
 
     def worker(self, host, ret):
+        """同步socket連接（在線程中執行）"""
         port = 8484
         if host == 'www.google.com':
             port = 80
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
+        s.settimeout(3)  # 增加timeout到3秒，避免因網路延遲誤判
         try:
             s.connect((host, port))
             s.shutdown(socket.SHUT_RD)
@@ -58,7 +62,22 @@ class Loop_ServerCheck(commands.Cog):
             ret[host] = "unknown error"
         else:
             ret[host] = "online"
-        return     
+        finally:
+            try:
+                s.close()
+            except:
+                pass
+        return
+
+    async def async_worker(self, host):
+        """異步執行socket連接，使用線程池避免阻塞事件循環"""
+        loop = asyncio.get_event_loop()
+        try:
+            ret = {}
+            await loop.run_in_executor(self.executor, self.worker, host, ret)
+            return ret
+        except Exception as e:
+            return {host: "error"}     
     
     def load_guild_function(self):
         """從資料庫載入所有 Guild 設定"""
@@ -67,8 +86,13 @@ class Loop_ServerCheck(commands.Cog):
     @tasks.loop(minutes = 1)
     async def check_server_status(self):
         print("check_server_status...")
-        for h in HOST:    
-            self.worker(h, self.ret)
+        tasks = [self.async_worker(h) for h in HOST]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for result in results:
+            if isinstance(result, dict):
+                self.ret.update(result)
+        
         server_online = any(status == 'online' for status in self.ret.values())    
 
         if server_online:
@@ -86,8 +110,12 @@ class Loop_ServerCheck(commands.Cog):
     async def server_up_check(self):
         print(f"{get_now_HMS()}, server_up_check...")
 
-        for h in HOST:    
-            self.worker(h, self.ret)
+        tasks = [self.async_worker(h) for h in HOST]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for result in results:
+            if isinstance(result, dict):
+                self.ret.update(result)
 
         server_online = any(status == 'online' for status in self.ret.values())
  
@@ -95,7 +123,16 @@ class Loop_ServerCheck(commands.Cog):
 
             await self.bot.change_presence(activity=discord.Game(name="MapleStory")) 
 
-            if self.offline_count >= 30: 
+            if self.offline_count >= 30:
+                # 發送通知前先確認Bot網路狀態正常
+                network_check = {}
+                self.worker('www.google.com', network_check)
+                
+                if network_check.get('www.google.com') != 'online':
+                    print(f"{get_now_HMS()}, Bot network issue detected, skipping notifications")
+                    # 不重置offline_count，等下次網路正常時再發送
+                    return
+                
                 channelsendcountsuccess = 0
                 channelsendcountfail = 0   
                 
@@ -136,24 +173,36 @@ class Loop_ServerCheck(commands.Cog):
                             await channel.send("登入口已開啟。")
                             print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
                             
-                        await asyncio.sleep(0.1)
+                        await asyncio.sleep(0.02)
                         channelsendcountsuccess += 1
                         
                     except Exception as e:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")
                         
-                        # 檢查網路連線狀況，避免因網路問題而誤刪guild
-                        network_status = {}
-                        self.worker('www.google.com', network_status)
-                        
-                        # 只有在網路正常但仍然發送失敗時才刪除guild
-                        if network_status.get('www.google.com') == 'online':
-                            print(f"{get_now_HMS()}, Network is online but channel send failed, removing guild {guild_id}")
-                            remove_list.append(guild_id)
-                        else:
-                            print(f"{get_now_HMS()}, Network issue detected, skipping guild removal for {guild_id}")
-                        
-                        channelsendcountfail += 1
+                        # 延遲後重試一次，避免因短暫問題誤判
+                        await asyncio.sleep(2)
+                        try:
+                            if mention and mention != "None":
+                                await channel.send(f"<@&{mention}> 登入口已開啟。")
+                            else:
+                                await channel.send("登入口已開啟。")
+                            print(f"{get_now_HMS()}, ChannelID: {channel_id} retry successful")
+                            channelsendcountsuccess += 1
+                        except Exception as retry_error:
+                            print(f"{get_now_HMS()}, ChannelID: {channel_id} retry failed: {retry_error}")
+                            
+                            # 重試失敗後檢查網路狀況
+                            network_status = {}
+                            self.worker('www.google.com', network_status)
+                            
+                            # 只有在網路正常但持續發送失敗時才刪除guild
+                            if network_status.get('www.google.com') == 'online':
+                                print(f"{get_now_HMS()}, Network is online but send failed twice, removing guild {guild_id}")
+                                remove_list.append(guild_id)
+                            else:
+                                print(f"{get_now_HMS()}, Network issue detected, skipping guild removal for {guild_id}")
+                            
+                            channelsendcountfail += 1
                         continue
                     
                 for gid in remove_list:
@@ -168,8 +217,10 @@ class Loop_ServerCheck(commands.Cog):
             print(f"Successfully sent message to {channelsendcountsuccess} channel, {channelsendcountfail} channel failed")
             print("-"*30)
         else:              
-            self.worker('www.google.com', self.google)
-            if self.google['www.google.com'] == 'online':
+            network_check = {}
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(self.executor, self.worker, 'www.google.com', network_check)
+            if network_check.get('www.google.com') == 'online':
                 self.offline_count += 1
                 
                 print(f'Server is offline {self.offline_count}')
@@ -178,11 +229,49 @@ class Loop_ServerCheck(commands.Cog):
     @tasks.loop(minutes = 5)
     async def server_down_check(self):
         print(f"{get_now_HMS()}, server_down_check...")
-            
-        for h in HOST:    
-            self.worker(h, self.ret)
+        
+        # 先檢查Bot網路狀態，避免因Bot網路問題誤判伺服器離線
+        network_check = {}
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(self.executor, self.worker, 'www.google.com', network_check)
+        
+        if network_check.get('www.google.com') != 'online':
+            print(f"{get_now_HMS()}, Bot network issue detected, skipping server check")
+            return
+        
+        tasks = [self.async_worker(h) for h in HOST]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for result in results:
+            if isinstance(result, dict):
+                self.ret.update(result)
 
         server_online = any(status == 'online' for status in self.ret.values())
+        
+        # 如果判定離線，進行二次確認避免誤報
+        if not server_online:
+            print(f"{get_now_HMS()}, First check shows offline, verifying after 10 seconds...")
+            await asyncio.sleep(10)
+            
+            # 再次檢查網路狀態
+            network_recheck = {}
+            await loop.run_in_executor(self.executor, self.worker, 'www.google.com', network_recheck)
+            if network_recheck.get('www.google.com') != 'online':
+                print(f"{get_now_HMS()}, Bot network unstable, aborting check")
+                return
+            
+            # 二次確認伺服器狀態
+            verify_tasks = [self.async_worker(h) for h in HOST]
+            verify_results = await asyncio.gather(*verify_tasks, return_exceptions=True)
+            verify_ret = {}
+            for result in verify_results:
+                if isinstance(result, dict):
+                    verify_ret.update(result)
+            server_online = any(status == 'online' for status in verify_ret.values())
+            
+            if server_online:
+                print(f"{get_now_HMS()}, Second check shows online, false alarm avoided")
+        
         remove_list = []
           
         if not server_online and self.server_status != 'offline':
@@ -227,23 +316,35 @@ class Loop_ServerCheck(commands.Cog):
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
                                   
                     channelsendcountsuccess += 1
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.02)
                     
                 except Exception as e:
                         print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")
                         
-                        # 檢查網路連線狀況，避免因網路問題而誤刪guild
-                        network_status = {}
-                        self.worker('www.google.com', network_status)
-                        
-                        # 只有在網路正常但仍然發送失敗時才刪除guild
-                        if network_status.get('www.google.com') == 'online':
-                            print(f"{get_now_HMS()}, Network is online but channel send failed, removing guild {guild_id}")
-                            remove_list.append(guild_id)
-                        else:
-                            print(f"{get_now_HMS()}, Network issue detected, skipping guild removal for {guild_id}")
-                        
-                        channelsendcountfail += 1
+                        # 延遲後重試一次
+                        await asyncio.sleep(2)
+                        try:
+                            if mention and mention != "None":
+                                await channel.send(f"MapleStory 登入口已關閉。")
+                            else:
+                                await channel.send("MapleStory 登入口已關閉。")
+                            print(f"{get_now_HMS()}, ChannelID: {channel_id} retry successful")
+                            channelsendcountsuccess += 1
+                        except Exception as retry_error:
+                            print(f"{get_now_HMS()}, ChannelID: {channel_id} retry failed: {retry_error}")
+                            
+                            # 重試失敗後檢查網路狀況
+                            network_status = {}
+                            self.worker('www.google.com', network_status)
+                            
+                            # 只有在網路正常但持續發送失敗時才刪除guild
+                            if network_status.get('www.google.com') == 'online':
+                                print(f"{get_now_HMS()}, Network is online but send failed twice, removing guild {guild_id}")
+                                remove_list.append(guild_id)
+                            else:
+                                print(f"{get_now_HMS()}, Network issue detected, skipping guild removal for {guild_id}")
+                            
+                            channelsendcountfail += 1
                         continue
  
             for gid in remove_list:

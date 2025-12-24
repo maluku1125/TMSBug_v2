@@ -458,7 +458,7 @@ class SlashCommandManager:
                 for cmd in top_commands:
                     success_icon = "🟢" if cmd['success_rate'] > 95 else "🟡" if cmd['success_rate'] > 90 else "🔴"
                     response_time = f"{cmd['avg_response_time']:.2f}s" if cmd['avg_response_time'] > 0 else "N/A"
-                    command_text += f"{success_icon} {cmd['command']:15s} | {cmd['count']:>6,} 次 | {response_time:>6s}\n"
+                    command_text += f"{success_icon} {cmd['command']:17s}| {cmd['count']:>6,} 次 | {response_time:>6s}\n"
                 
                 embed.add_field(
                     name="最熱門命令 (成功率|使用次數|平均響應)",

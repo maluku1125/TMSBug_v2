@@ -158,10 +158,12 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
     character_info.append(f"七日成長： {seven_day_growth}")
     
     if user_union_data:
-        union_level = user_union_data.get('union_level', 0)
-        union_artifact_level = user_union_data.get('union_artifact_level', 0)
-        character_info.append(f"聯盟戰地： {union_level:,}")
-        character_info.append(f"神器等級： {union_artifact_level}")
+        union_level = user_union_data.get('union_level') or 0
+        union_artifact_level = user_union_data.get('union_artifact_level') or 0
+        # Only add union info if there's valid data
+        if union_level and union_level > 0:
+            character_info.append(f"聯盟戰地： {union_level:,}")
+            character_info.append(f"神器等級： {union_artifact_level}")
 
 
     # final_stat to dict
@@ -271,6 +273,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
 
     # Extract core levels from hexa_dict for calculation
     SkillNodes1 = hexa_dict.get('SkillCore1', 0)
+    SkillNodes2 = hexa_dict.get('SkillCore2', 0)
     MasteryNodes1 = hexa_dict.get('MasteryCore1', 0)
     MasteryNodes2 = hexa_dict.get('MasteryCore2', 0)
     MasteryNodes3 = hexa_dict.get('MasteryCore3', 0)
@@ -283,7 +286,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
 
     # Calculate hexa core completion rate
     totalcount, maxfragment = Calculatefragment(
-        SkillNodes1, 
+        SkillNodes1, SkillNodes2,
         MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
@@ -318,9 +321,9 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         # Fill with 0 if insufficient
         
         # Skill cores: ensure 1 are displayed
-        while len(skill_cores) < 1:
+        while len(skill_cores) < 2:
             skill_cores.append(0)
-        skill_cores = skill_cores[:1]  # Only take first 1
+        skill_cores = skill_cores[:2]  # Only take first 2
         formatted_skill_cores = [format_core_level(level) for level in skill_cores]
         hexa_info.append(f"技能核心　： {' | '.join(formatted_skill_cores)}")
         

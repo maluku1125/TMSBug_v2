@@ -408,5 +408,40 @@ def get_all_expired_character_lists(refresh_days: int = 9999) -> dict:
         result['error_records'] = result['total_records']
         return result
 
+def delete_character_data_by_ocid(ocid: str) -> bool:
+    """Delete character data by OCID from both databases
+    
+    Args:
+        ocid: The OCID to delete
+        
+    Returns:
+        bool: True if deletion was successful, False otherwise
+    """
+    try:
+        # Delete from character_basic_info database
+        with sqlite3.connect(character_basic_info_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM character_basic_info WHERE ocid = ?', (ocid,))
+            conn.commit()
+            basic_info_deleted = cursor.rowcount > 0
+        
+        # Delete from character_ocid database
+        with sqlite3.connect(file_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM character_ocid WHERE ocid = ?', (ocid,))
+            conn.commit()
+            ocid_deleted = cursor.rowcount > 0
+        
+        if basic_info_deleted or ocid_deleted:
+            print(f"✓ Successfully deleted OCID '{ocid}' from database")
+            return True
+        else:
+            print(f"⚠ OCID '{ocid}' not found in database")
+            return False
+            
+    except Exception as e:
+        print(f"✗ Failed to delete OCID '{ocid}': {e}")
+        return False
+
 
 

@@ -399,6 +399,7 @@ class APIAnalyseView(discord.ui.View):
             discord.SelectOption(label="米特拉", value="米特拉", emoji=worldemoji.get("米特拉", "⚔️")),
             discord.SelectOption(label="殺人鯨", value="殺人鯨", emoji=worldemoji.get("殺人鯨", "⚔️")),
             discord.SelectOption(label="賽蓮", value="賽蓮", emoji=worldemoji.get("賽蓮", "⚔️")),
+            discord.SelectOption(label="挑戰者", value="挑戰者", emoji=worldemoji.get("挑戰者", "⚔️")),
         ]
     )
     async def world_select(self, interaction: discord.Interaction, select: discord.ui.Select):

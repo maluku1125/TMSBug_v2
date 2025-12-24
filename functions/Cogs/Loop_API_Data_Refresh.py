@@ -23,15 +23,15 @@ class Loop_API_Data_Refresh(commands.Cog):
         print(f"{get_now_YMDHMS()}, API Data Refresh Loop stopped")
     
     # Official use - Execute at specific time daily
-    @tasks.loop(time=datetime.time(hour=2, minute=15, tzinfo=timezone))  # Set to 2:00 for testing
+    @tasks.loop(time=datetime.time(hour=2, minute=15, tzinfo=timezone))  # Set to 2:15 for testing
 
     async def API_AllData_Refresh(self):
         """Execute database refresh task every Monday at 2:15 AM"""
         print(f"{get_now_YMDHMS()}, 🚀 Starting API all character data refresh...")
 
         try:
-            # Execute refresh task, refresh data older than 7 days
-            stats = refresh_all_expired_character_data(refresh_days=7)
+            # Execute refresh task in a separate thread to avoid blocking the event loop
+            stats = await asyncio.to_thread(refresh_all_expired_character_data, refresh_days=7)
             
             # Output statistics
             print(f"{get_now_YMDHMS()}, 🎉 API all data refresh completed!")
@@ -40,6 +40,7 @@ class Loop_API_Data_Refresh(commands.Cog):
             print(f"Expired records: {stats['expired_records']}")
             print(f"Successfully refreshed: {stats['successfully_refreshed']}")
             print(f"Failed refreshes: {stats['failed_refreshes']}")
+            print(f"Deleted invalid records: {stats['deleted_invalid_records']}")
             print(f"Error records: {stats['error_records']}")
             print("-" * 50)
             

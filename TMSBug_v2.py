@@ -67,12 +67,18 @@ class TMSBot(commands.AutoShardedBot):
         self.session = None
         self.uptime = None
         self.time_date = ''
+        self._ready_once = False  # 添加標記確保只執行一次
         
         print('-'*25)
         print('TMSBot_v2 is Loading')
         print('-'*25)
 
-    async def on_ready(self):       
+    async def setup_hook(self):
+        """
+        setup_hook 只會在 bot 啟動時執行一次
+        適合用來載入 Cogs 和同步命令
+        """
+        print('\n🔧 Loading Cogs...')
         
         await self.add_cog(Slash_BasicCommands(self))
         print('Cogs:Slash_BasicCommands loaded')
@@ -103,25 +109,45 @@ class TMSBot(commands.AutoShardedBot):
         await self.add_cog(Loop_API_Data_Refresh(self))
         print('Cogs:Loop_API_Data_Refresh loaded')
 
+        # 列出所有已註冊的命令
+        all_commands = self.tree.get_commands()
+        print(f"\n📋 已註冊的命令 ({len(all_commands)} 個):")
+        for cmd in all_commands:
+            print(f"  - {cmd.name}")
 
         dev_guild_id = self._config["bot"]["dev_guild"]
-        print('slash command is now loading')
-        print(f'devguild : {dev_guild_id}')
+        print('\n🔄 Syncing slash commands...')
+        print(f'Dev guild: {dev_guild_id}')
         
         if dev_guild_id:
-            dev_guild = self.get_guild(int(dev_guild_id))
+            dev_guild = discord.Object(id=int(dev_guild_id))
             self.tree.copy_global_to(guild=dev_guild)
             slash = await self.tree.sync(guild=dev_guild)
-            print(f"Loaded slash command to dev guild")
+            print(f"✅ Loaded {len(slash)} slash commands to dev guild")
         else:
             slash = await self.tree.sync()
-            print(f"Loaded slash command to global guild")
+            print(f"✅ Loaded {len(slash)} slash commands globally")
 
-        print(f"Total Slash Command Loaded:{len(slash)}")
+        print(f"\n📊 Total Slash Commands Synced: {len(slash)}")
+        for cmd in slash:
+            print(f"  - {cmd.name}")
 
-        print('-'*25)
-        print('TMSBot_v2 is Online')
-        print('-'*25)
+    async def on_ready(self):
+        """
+        on_ready 會在每個 shard 連接時觸發
+        只用來顯示狀態訊息
+        """
+        if not self._ready_once:
+            self._ready_once = True
+            print('\n' + '-'*25)
+            print('TMSBot_v2 is Online')
+            print(f'Bot: {self.user.name}#{self.user.discriminator}')
+            print(f'Bot ID: {self.user.id}')
+            print(f'Guilds: {len(self.guilds)}')
+            print(f'Shards: {self.shard_count}')
+            print('-'*25)
+        else:
+            print(f'Shard {self.shard_id} is ready')
 
     async def on_guild_join(self, guild):
         

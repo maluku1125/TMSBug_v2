@@ -20,7 +20,7 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
     #-----------------碎碎-----------------
     @app_commands.command(name="solerda碎片進度", description="碎碎進度")
     @app_commands.describe(
-            skillnodes1 = "起源", 
+            skillnodes1 = "起源", skillnodes2 = "上升",
             masterynodes1 = "精通1", masterynodes2 = "精通2", masterynodes3 = "精通3", masterynodes4 = "精通4", 
             boostnode1 = "強化1", boostnode2 = "強化2", boostnode3 = "強化3", boostnode4 = "強化4", 
             commonnode1 = "共用1",
@@ -28,14 +28,14 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
         )
     async def calculatefragment(
         self, interaction: discord.Interaction, 
-        skillnodes1: int, 
+        skillnodes1: int, skillnodes2: int, 
         masterynodes1: int, masterynodes2: int, masterynodes3: int, masterynodes4: int, 
         boostnode1: int, boostnode2: int, boostnode3: int, boostnode4: int, 
         commonnode1: int,
         extrafragment: int=0
         ):
         embed = CreateSolErdaFragment(
-            skillnodes1,
+            skillnodes1, skillnodes2,
             masterynodes1, masterynodes2, masterynodes3, masterynodes4, 
             boostnode1, boostnode2, boostnode3, boostnode4, 
             commonnode1,
@@ -47,7 +47,7 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
 
 
 def Calculatefragment(
-        SkillNodes1, 
+        SkillNodes1, SkillNodes2,
         MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
@@ -59,6 +59,9 @@ def Calculatefragment(
     if SkillNodes1 >= 0 :
         maxtotal += 4400
         totalcount += sum(HexaNodesCost["SkillNodes"]["solerdafragment"][:SkillNodes1])
+    if SkillNodes2 >= 0 :
+        maxtotal += 4400
+        totalcount += sum(HexaNodesCost["SkillNodes"]["solerdafragment"][:SkillNodes2])
     if MasteryNodes1 >= 0 :
         totalcount += sum(HexaNodesCost["MasteryNodes"]["solerdafragment"][:MasteryNodes1])
         maxtotal += 2252
@@ -93,7 +96,7 @@ def Calculatefragment(
 
 
 def CreateSolErdaFragment(
-        SkillNodes1, 
+        SkillNodes1, SkillNodes2,
         MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
@@ -102,7 +105,7 @@ def CreateSolErdaFragment(
     global stolen_fragments
 
     # 確保所有節點等級都在有效範圍內
-    nodes = [SkillNodes1, MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4, BoostNode1, BoostNode2, BoostNode3, BoostNode4, CommonNode1]
+    nodes = [SkillNodes1, SkillNodes2, MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4, BoostNode1, BoostNode2, BoostNode3, BoostNode4, CommonNode1]
     for node in nodes:
         if node < -30 or node > 30:
             error_embed = discord.Embed(title="等級輸入錯誤", description="必須填入-30~30之間的數", color=0xff0000)
@@ -116,7 +119,7 @@ def CreateSolErdaFragment(
         probability = 0.01
 
     totalcount, maxfragment = Calculatefragment(
-        SkillNodes1, 
+        SkillNodes1, SkillNodes2,
         MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
@@ -153,7 +156,8 @@ def CreateSolErdaFragment(
             name="技能核心",
             value=(
                 "```autohotkey\n"
-                f"技能核心1 : 0\n```"
+                f"技能核心1 : 0\n"
+                f"技能核心2 : 0\n```"
             ),
             inline=False,
         )
@@ -214,7 +218,8 @@ def CreateSolErdaFragment(
         name="技能核心",
         value=(
             "```autohotkey\n"
-            f"技能核心1 : {max(0, SkillNodes1)}{'🚫' if SkillNodes1 < 0 else ''}\n```"
+            f"技能核心1 : {max(0, SkillNodes1)}{'🚫' if SkillNodes1 < 0 else ''}\n"
+            f"技能核心2 : {max(0, SkillNodes2)}{'🚫' if SkillNodes2 < 0 else ''}\n```"
         ),
         inline=False,
     )
