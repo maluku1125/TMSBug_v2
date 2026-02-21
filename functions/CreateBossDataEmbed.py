@@ -45,6 +45,9 @@ boss_aliases = {
     '咖凌':'咖凌',
     '林波':'林波',
     '巴德利斯':'巴德利斯',
+    '最初的敵對者':'最初的敵對者',
+    "瑪麗西亞": "瑪麗西亞",
+    "璀璨的凶星": "璀璨的凶星",
     '蟲蟲':'蟲蟲'
 }
 with open(rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\BossData.json', 'r', encoding='utf-8') as f:

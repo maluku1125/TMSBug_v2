@@ -2522,6 +2522,299 @@
             "GlowingSoulCrystal": 1443300000
         }
     },
+    "最初的敵對者": {
+        "簡單": {
+            "EntryLevel": 270,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "1000分",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "Authentic",
+            "Arcane": 0,
+            "Authentic": "220",
+            "1stStage": {
+                "270 最初的敵對者": "171兆"
+            },
+            "2ndStage": {
+                "270 最初的敵對者": "171兆"
+            },
+            "3rdStage": {
+                "270 最初的敵對者": "228兆"
+            },
+            "MainDrop": [
+                "世代傳承的遠古決心",
+                "生命研磨石"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:200"
+            ],
+            "CubeDrop": "可疑附加方塊:11",
+            "GlowingSoulCrystal": 252700000
+        },
+        "普通": {
+            "EntryLevel": 270,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "1000分",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "Authentic",
+            "Arcane": 0,
+            "Authentic": "320",
+            "1stStage": {
+                "280 最初的敵對者": "495兆"
+            },
+            "2ndStage": {
+                "280 最初的敵對者": "495兆"
+            },
+            "3rdStage": {
+                "280 最初的敵對者": "660兆"
+            },
+            "MainDrop": [
+                "世代傳承的遠古決心",
+                "最初的敵對者機器人",
+                "生命研磨石",
+                "生命戒指箱"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:250"
+            ],
+            "CubeDrop": "可疑附加方塊:11",
+            "GlowingSoulCrystal": 371000000
+        },
+        "困難": {
+            "EntryLevel": 270,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "1000分",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "Authentic",
+            "Arcane": 0,
+            "Authentic": "340",
+            "1stStage": {
+                "285 最初的敵對者": "3135兆"
+            },
+            "2ndStage": {
+                "285 最初的敵對者": "3135兆"
+            },
+            "3rdStage": {
+                "285 最初的敵對者": "4180兆"
+            },
+            "MainDrop": [
+                "世代傳承的遠古決心",
+                "遠古永恆防具相",
+                "最初的敵對者機器人",
+                "生命研磨石",
+                "生命戒指箱",
+                "不朽的遺產"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:400"
+            ],
+            "CubeDrop": "可疑附加方塊:11",
+            "GlowingSoulCrystal": 682000000
+        },
+        "極限": {
+            "EntryLevel": 275,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "1000分",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "Authentic",
+            "Arcane": 0,
+            "Authentic": "480",
+            "1stStage": {
+                "290 最初的敵對者": "9655兆"
+            },
+            "2ndStage": {
+                "290 最初的敵對者": "9655兆"
+            },
+            "3rdStage": {
+                "290 最初的敵對者": "1.287京"
+            },
+            "MainDrop": [
+                "世代傳承的遠古決心",
+                "遠古永恆防具相",
+                "最初的敵對者機器人",
+                "生命研磨石",
+                "生命戒指箱",
+                "不朽的遺產",
+                "卓越鐵鎚"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:700"
+            ],
+            "CubeDrop": "可疑附加方塊:11",
+            "GlowingSoulCrystal": 1344000000
+        }
+    },
+    "璀璨的凶星": {
+        "普通": {
+            "EntryLevel": 280,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "-",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "Authentic",
+            "Arcane": 0,
+            "Authentic": "400",
+            "1stStage": {
+                "270 璀璨的凶星": "4698兆"
+            },
+            "MainDrop": [
+                "?"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:?"
+            ],
+            "CubeDrop": "可疑附加方塊:11",
+            "GlowingSoulCrystal": 0
+        },
+        "困難": {
+            "EntryLevel": 280,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "1000分",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "Authentic",
+            "Arcane": 0,
+            "Authentic": "550",
+            "1stStage": {
+                "280 璀璨的凶星": "1.474京"
+            },
+            "MainDrop": [
+               "?"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:?"
+            ],
+            "CubeDrop": "可疑附加方塊:11",
+            "GlowingSoulCrystal": 0
+        },
+        "極限": {
+            "EntryLevel": 275,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "1000分",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "Authentic",
+            "Arcane": 0,
+            "Authentic": "480",
+            "1stStage": {
+                "290 最初的敵對者": "9655兆"
+            },
+            "2ndStage": {
+                "290 最初的敵對者": "9655兆"
+            },
+            "3rdStage": {
+                "290 最初的敵對者": "1.287京"
+            },
+            "MainDrop": [
+                "世代傳承的遠古決心",
+                "遠古永恆防具相",
+                "最初的敵對者機器人",
+                "生命研磨石",
+                "生命戒指箱",
+                "不朽的遺產",
+                "卓越鐵鎚"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:700"
+            ],
+            "CubeDrop": "可疑附加方塊:11",
+            "GlowingSoulCrystal": 1344000000
+        }
+    },
+    "瑪麗西亞": {
+        "普通": {
+            "EntryLevel": 250,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "1000分",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "none",
+            "Arcane": 0,
+            "Authentic": 0,
+            "1stStage": {
+                "250 瑪麗西亞": "70兆"
+            },
+            "2ndStage": {
+                "250 瑪麗西亞": "56兆"
+            },
+            "3rdStage": {
+                "250 瑪麗西亞": "24兆"
+            },
+            "4thStage": {
+                "250 瑪麗西亞": "28兆"
+            },
+            "MainDrop": [
+                "月之淚",
+                "神聖月亮精華",
+                "閃耀的龍鱗片",
+                "黑玉戒指箱"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:120"
+            ],
+            "CubeDrop": "可疑附加方塊:11",
+            "GlowingSoulCrystal": 150000000
+        },
+        "極限": {
+            "EntryLevel": 250,
+            "Timelimit": 30,
+            "PotionCoolDown": 10,
+            "DeathCount": "1000分",
+            "SpecialKill": true,
+            "CompleteCount": "不分難度 每週1次",
+            "Defense": "380%",
+            "UseArcorAUT": "none",
+            "Arcane": 0,
+            "Authentic": 0,
+            "1stStage": {
+                "250 瑪麗西亞": "?"
+            },
+            "2ndStage": {
+                "250 瑪麗西亞": "?"
+            },
+            "3rdStage": {
+                "250 瑪麗西亞": "?"
+            },
+            "4thStage": {
+                "250 瑪麗西亞": "?"
+            },
+            "MainDrop": [
+                "月之淚",
+                "月亮的意志",
+                "神聖月亮精華",
+                "閃耀的龍鱗片",
+                "生命戒指箱",
+                "瑪麗西亞靈魂寶珠",
+                "瑪麗西亞機器人",
+                "惡意永恆防具箱",
+                "信念的研磨石"
+            ],
+            "SubDrop": [
+                "艾爾達氣息:?"
+            ],
+            "CubeDrop": "可疑附加方塊",
+            "GlowingSoulCrystal": 1500000000
+        }
+    },
     "林波": {
         "普通": {
             "EntryLevel": 285,

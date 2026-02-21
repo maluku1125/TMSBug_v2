@@ -4,6 +4,8 @@ from discord.ext import commands
 
 import datetime
 import time
+import logging
+from discord.errors import NotFound
 from functions.API_functions.CreateCharacterEmbed import create_character_basic_embed
 from functions.API_functions.CreateGuildEmbed import create_guild_basic_embed   
 from functions.API_functions.CreateCharacterEquipmentEmbed import create_character_equipment_embed
@@ -52,118 +54,141 @@ class CharacterView(discord.ui.View):
     
     @discord.ui.button(label="角色", style=discord.ButtonStyle.primary)
     async def character_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.current_mode != "character":
-            self.current_mode = "character"
-            self._update_button_styles()
-            embed = self.get_character_basic_embed()
-            if embed:
-                await interaction.response.edit_message(embed=embed, view=self)
+        try:
+            if self.current_mode != "character":
+                self.current_mode = "character"
+                self._update_button_styles()
+                await interaction.response.defer()
+                embed = self.get_character_basic_embed()
+                if embed:
+                    await interaction.edit_original_response(embed=embed, view=self)
             else:
                 await interaction.response.defer()
-        else:
-            await interaction.response.defer()
+        except NotFound:
+            logging.warning("character_button: Interaction expired (Unknown interaction)")
     
     @discord.ui.button(label="預設1", style=discord.ButtonStyle.success)
     async def preset_1_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("preset_1_button: Interaction expired (Unknown interaction)")
+            return
+        
         if self.current_mode != "preset_1":
             self.current_mode = "preset_1"
-            # Create complete equipment View
             try:
                 result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                 embed = result["embed"]
                 view = result["view"]
                 
                 if view and embed:
-                    # Set to preset 1
                     view.current_preset = "preset_1"
                     view._process_equipment_data()
                     view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
-                    await interaction.response.edit_message(embed=embed, view=view)
+                    await interaction.edit_original_response(embed=embed, view=view)
                 else:
                     error_embed = discord.Embed(
                         title="錯誤",
                         description="無法獲取預設1的裝備資訊",
                         color=discord.Color.red()
                     )
-                    await interaction.response.edit_message(embed=error_embed, view=self)
+                    await interaction.edit_original_response(embed=error_embed, view=self)
+            except NotFound:
+                logging.warning("preset_1_button: Message edit failed (Unknown interaction)")
             except Exception as e:
                 error_embed = discord.Embed(
                     title="錯誤",
                     description=f"載入裝備資訊時發生錯誤: {str(e)}",
                     color=discord.Color.red()
                 )
-                await interaction.response.edit_message(embed=error_embed, view=self)
-        else:
-            await interaction.response.defer()
+                try:
+                    await interaction.edit_original_response(embed=error_embed, view=self)
+                except NotFound:
+                    pass
     
     @discord.ui.button(label="預設2", style=discord.ButtonStyle.success)
     async def preset_2_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("preset_2_button: Interaction expired (Unknown interaction)")
+            return
+        
         if self.current_mode != "preset_2":
             self.current_mode = "preset_2"
-            # Create complete equipment View
             try:
                 result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                 embed = result["embed"]
                 view = result["view"]
                 
                 if view and embed:
-                    # Set to preset 2
                     view.current_preset = "preset_2"
                     view._process_equipment_data()
                     view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
-                    await interaction.response.edit_message(embed=embed, view=view)
+                    await interaction.edit_original_response(embed=embed, view=view)
                 else:
                     error_embed = discord.Embed(
                         title="錯誤",
                         description="無法獲取預設2的裝備資訊",
                         color=discord.Color.red()
                     )
-                    await interaction.response.edit_message(embed=error_embed, view=self)
+                    await interaction.edit_original_response(embed=error_embed, view=self)
+            except NotFound:
+                logging.warning("preset_2_button: Message edit failed (Unknown interaction)")
             except Exception as e:
                 error_embed = discord.Embed(
                     title="錯誤",
                     description=f"載入裝備資訊時發生錯誤: {str(e)}",
                     color=discord.Color.red()
                 )
-                await interaction.response.edit_message(embed=error_embed, view=self)
-        else:
-            await interaction.response.defer()
+                try:
+                    await interaction.edit_original_response(embed=error_embed, view=self)
+                except NotFound:
+                    pass
     
     @discord.ui.button(label="預設3", style=discord.ButtonStyle.success)
     async def preset_3_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("preset_3_button: Interaction expired (Unknown interaction)")
+            return
+        
         if self.current_mode != "preset_3":
             self.current_mode = "preset_3"
-            # Create complete equipment View
             try:
                 result = create_character_equipment_embed(self.character_name, self.character_basic_data)
                 embed = result["embed"]
                 view = result["view"]
                 
                 if view and embed:
-                    # Set to preset 3
                     view.current_preset = "preset_3"
                     view._process_equipment_data()
                     view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
-                    await interaction.response.edit_message(embed=embed, view=view)
+                    await interaction.edit_original_response(embed=embed, view=view)
                 else:
                     error_embed = discord.Embed(
                         title="錯誤",
                         description="無法獲取預設3的裝備資訊",
                         color=discord.Color.red()
                     )
-                    await interaction.response.edit_message(embed=error_embed, view=self)
+                    await interaction.edit_original_response(embed=error_embed, view=self)
+            except NotFound:
+                logging.warning("preset_3_button: Message edit failed (Unknown interaction)")
             except Exception as e:
                 error_embed = discord.Embed(
                     title="錯誤",
                     description=f"載入裝備資訊時發生錯誤: {str(e)}",
                     color=discord.Color.red()
                 )
-                await interaction.response.edit_message(embed=error_embed, view=self)
-        else:
-            await interaction.response.defer()
+                try:
+                    await interaction.edit_original_response(embed=error_embed, view=self)
+                except NotFound:
+                    pass
     
     async def on_timeout(self):
         # Disable all components after timeout
@@ -180,7 +205,11 @@ class Slash_API(commands.Cog):
         
         start_time = time.time()
         
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("api_character_basic: Interaction expired before defer")
+            return
 
         try:
             # Create character data View
@@ -217,7 +246,11 @@ class Slash_API(commands.Cog):
         
         start_time = time.time()
         
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("api_character_ranking: Interaction expired before defer")
+            return
         
         try:
             # 獲取排行榜資料 (全部資料，由 CreateRankingEmbed 來處理篩選)
@@ -277,7 +310,11 @@ class Slash_API(commands.Cog):
         
         start_time = time.time()
         
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("api_exp_tracking: Interaction expired before defer")
+            return
         
         try:
             # Create experience tracking embed
@@ -309,7 +346,11 @@ class Slash_API(commands.Cog):
         
         start_time = time.time()
         
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("api_union_tracking: Interaction expired before defer")
+            return
         
         try:
             # Create union tracking embed
@@ -346,7 +387,11 @@ class Slash_API(commands.Cog):
         
         start_time = time.time()
         
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("api_analyse: Interaction expired before defer")
+            return
         
         try:
             # 創建分析嵌入
@@ -392,7 +437,11 @@ class Slash_API(commands.Cog):
         
         start_time = time.time()
         
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("api_guild_basic: Interaction expired before defer")
+            return
         
         try:
             result = create_guild_basic_embed(guild_name, world_name, include_view=True)

@@ -18,22 +18,13 @@ class Slash_CreatePrizeEmbed(commands.Cog):
     @app_commands.describe(type = "類別")
     @app_commands.choices(
         type = [
-            Choice(name = "蘋果", value = "GoldApple"),
-            Choice(name = "時尚", value = "FashionBox"),
             Choice(name = "輪迴", value = "FrenzyTotem"),
-            Choice(name = "伴侶", value = "boyngirl"),
             ]
     )
     @app_commands.command(name="getprize抽", description="抽獎")
     async def getprize(self, interaction: discord.Interaction, type: str):
-        if type == "GoldApple":
-            Message = use_apple(interaction.user.mention)
-        elif type == "FashionBox":
-            Message = use_fashionbox(interaction.user.mention)
-        elif type == "FrenzyTotem":
+        if type == "FrenzyTotem":
             Message = use_apple_FrenzyTotem(interaction.user.mention)
-        elif type == "boyngirl":
-            Message = "抽不到"
 
         
         UseSlashCommand('getprize', interaction)

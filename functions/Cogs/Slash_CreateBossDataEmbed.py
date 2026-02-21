@@ -55,24 +55,20 @@ class Slash_CreateBossDataEmbed(commands.Cog):
         UseSlashCommand('easybossinfo', interaction)
         await interaction.response.send_message(embed=embed)
         
-    @app_commands.command(name="boss困王", description="BOSS資料")
+    @app_commands.command(name="bossarc困王", description="BOSS資料")
     @app_commands.describe(bossname = "哪一隻", difficulty = "難度")
     @app_commands.choices(
         bossname = [
             Choice(name = "史烏", value = "史烏"),
-            Choice(name = "戴米安", value = "戴米安"),
-            Choice(name = "守護天使綠水靈", value = "守護天使綠水靈"),
+            Choice(name = "戴米安", value = "戴米安"),            
             Choice(name = "露希妲", value = "露希妲"),
             Choice(name = "威爾", value = "威爾"),
             Choice(name = "戴斯克", value = "戴斯克"),
             Choice(name = "真希拉", value = "真希拉"),
             Choice(name = "頓凱爾", value = "頓凱爾"),
             Choice(name = "黑魔法師", value = "黑魔法師"),
-            Choice(name = "受選的賽蓮", value = "受選的賽蓮"),
-            Choice(name = "監視者卡洛斯", value = "監視者卡洛斯"),
-            Choice(name = "咖凌", value = "咖凌"),
-            Choice(name = "林波", value = "林波"),
-            Choice(name = "巴德利斯", value = "巴德利斯"),
+            Choice(name = "守護天使綠水靈", value = "守護天使綠水靈"),
+            Choice(name = "瑪麗西亞", value = "瑪麗西亞"),
         ],
         difficulty = [
             Choice(name = "簡單", value = "easy"),
@@ -81,7 +77,7 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             Choice(name = "極限", value = "extreme"),
         ] 
     )
-    async def bossinfo(self, interaction: discord.Interaction, bossname: str, difficulty: str):
+    async def arcbossinfo(self, interaction: discord.Interaction, bossname: str, difficulty: str):
         
 
         index, indexerror = get_difficulty_value(bossname, difficulty)
@@ -94,7 +90,44 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             embed = Create_Boss_Data_Embed("蟲蟲", 0)
         else:
             embed = Create_Boss_Data_Embed(bossname, index)
-        UseSlashCommand('bossinfo', interaction)
+        UseSlashCommand('arcbossinfo', interaction)
+        
+        
+        await interaction.response.send_message(embed=embed)
+    
+    @app_commands.command(name="bossaut困王", description="BOSS資料")
+    @app_commands.describe(bossname = "哪一隻", difficulty = "難度")
+    @app_commands.choices(
+        bossname = [
+            Choice(name = "受選的賽蓮", value = "受選的賽蓮"),
+            Choice(name = "監視者卡洛斯", value = "監視者卡洛斯"),
+            Choice(name = "咖凌", value = "咖凌"),
+            Choice(name = "林波", value = "林波"),
+            Choice(name = "巴德利斯", value = "巴德利斯"),
+            Choice(name = "最初的敵對者", value = "最初的敵對者"),
+            Choice(name = "璀璨的凶星", value = "璀璨的凶星"),
+        ],
+        difficulty = [
+            Choice(name = "簡單", value = "easy"),
+            Choice(name = "普通", value = "normal"),
+            Choice(name = "困難/混沌", value = "hard"),
+            Choice(name = "極限", value = "extreme"),
+        ] 
+    )
+    async def autbossinfo(self, interaction: discord.Interaction, bossname: str, difficulty: str):
+        
+
+        index, indexerror = get_difficulty_value(bossname, difficulty)
+        
+        if indexerror == "True":
+            await interaction.response.send_message(content=f"{interaction.user.mention} {bossname} 沒有這個難度")
+            return
+
+        if probably(0.001):
+            embed = Create_Boss_Data_Embed("蟲蟲", 0)
+        else:
+            embed = Create_Boss_Data_Embed(bossname, index)
+        UseSlashCommand('autbossinfo', interaction)
         
         
         await interaction.response.send_message(embed=embed)

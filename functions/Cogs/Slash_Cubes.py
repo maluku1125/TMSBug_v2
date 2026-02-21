@@ -43,6 +43,7 @@ class Slash_Cubes(commands.Cog):
             Choice(name = "恢復附加方塊", value = "bonus_renew_cube"),
             Choice(name = "閃亮附加方塊", value = "shiney_bonus_cube"),
             Choice(name = "絕對附加方塊", value = "abs_bonus_cube"),
+            Choice(name = "結合附加方塊", value = "uni_bonus_cube"),
         ],
         target = [
             Choice(name = "萌獸", value = ""),
@@ -201,6 +202,10 @@ def Convert_cubeandtarget(cubetype, target):
         cubename = "絕對附加方塊"
         cubecolor = 0x9CBCEF      
         cubeemoji = "<:cube13:1283030624080367701>"
+    elif cubetype == "uni_bonus_cube":
+        cubename = "結合附加方塊"
+        cubecolor = 0x4488CC      
+        cubeemoji = "<:cube19:1468959368086159493>"
         
     
         
@@ -308,6 +313,36 @@ def uni_cube(cubetype, target, secondaffix):
             )
         
     return content, secondaffix
+
+def uni_bonus_cube(cubetype, target, secondaffix): 
+    # 結合方塊
+    if cubetype == "uni_bonus_cube":
+        
+        chosenaffix = random.choice([1, 2, 3])
+        
+        if  chosenaffix == 2:
+            secondaffix = f'{rolldice(cubestable[cubetype]["legendary"][target]) if probably(0.005) else rolldice(cubestable[cubetype]["unique"][target])}'
+        
+        
+        firstattribute = (
+            f'```{"fix" if chosenaffix == 1 else "" }\n'  
+            f'{"-"*10}```' 
+            )
+        secondattribute = (
+            f'```{"fix" if chosenaffix == 2 else "" }\n'  
+            f'{secondaffix}```' 
+            )
+        thirdattribute = (
+            f'```{"fix" if chosenaffix == 3 else "" }\n'  
+            f'{"-"*10}```' 
+            )   
+        content = (
+            f'{firstattribute}'     
+            f'{secondattribute}'
+            f'{thirdattribute}'
+            )
+        
+    return content, secondaffix
    
 def roll_equipment_cube(cubetype, target):
     
@@ -318,6 +353,10 @@ def roll_equipment_cube(cubetype, target):
     if cubetype == "uni_cube":
         secondaffix = 'MP + 10%'
         content, secondaffix = uni_cube(cubetype, target, secondaffix)
+    
+    if cubetype == "uni_bonus_cube":
+        secondaffix = 'MP + 10%'
+        content, secondaffix = uni_bonus_cube(cubetype, target, secondaffix)
     
         
     usedcubecount = 1
@@ -343,6 +382,8 @@ def roll_equipment_cube(cubetype, target):
         if cubetype == "uni_cube":
             content, secondaffix = uni_cube(cubetype, target, secondaffix)
         
+        if cubetype == "uni_bonus_cube":
+            content, secondaffix = uni_bonus_cube(cubetype, target, secondaffix)
         
         embed = discord.Embed(
         title="洗方塊模擬器", 
