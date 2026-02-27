@@ -16,6 +16,9 @@ from functions.API_functions.CreateUnionTrackingEmbed import create_union_tracki
 from functions.API_functions.CreateAPIAnalyseEmbed import create_api_analyse_embed
 
 from functions.SlashCommandManager import UseSlashCommand
+from functions.database_manager import UserDataDB
+
+user_db = UserDataDB()
 
 
 class CharacterView(discord.ui.View):
@@ -201,9 +204,20 @@ class Slash_API(commands.Cog):
         self.client = client
 
     @app_commands.command(name="character角色查詢", description="API角色查詢")
-    async def api_character_basic(self, interaction: discord.Interaction, playername: str):
+    @app_commands.describe(playername="角色名稱 (不輸入則使用本尊設定)")
+    async def api_character_basic(self, interaction: discord.Interaction, playername: str = None):
         
         start_time = time.time()
+        
+        # 未輸入角色名稱 → 從 UserDataDB 取得本尊
+        if playername is None:
+            playername = user_db.get_user_character(str(interaction.user.id))
+            if playername is None:
+                await interaction.response.send_message(
+                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:本尊` 設定您的遊戲角色ID。",
+                    ephemeral=True
+                )
+                return
         
         try:
             await interaction.response.defer()
@@ -305,10 +319,20 @@ class Slash_API(commands.Cog):
 
 
     @app_commands.command(name="exptracking經驗追蹤", description="顯示角色近7日經驗成長分析")
-    @app_commands.describe(character_name="角色名稱")
-    async def api_exp_tracking(self, interaction: discord.Interaction, character_name: str):
+    @app_commands.describe(character_name="角色名稱 (不輸入則使用本尊設定)")
+    async def api_exp_tracking(self, interaction: discord.Interaction, character_name: str = None):
         
         start_time = time.time()
+        
+        # 未輸入角色名稱 → 從 UserDataDB 取得本尊
+        if character_name is None:
+            character_name = user_db.get_user_character(str(interaction.user.id))
+            if character_name is None:
+                await interaction.response.send_message(
+                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:本尊` 設定您的遊戲角色ID。",
+                    ephemeral=True
+                )
+                return
         
         try:
             await interaction.response.defer()

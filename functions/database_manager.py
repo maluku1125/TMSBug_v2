@@ -115,3 +115,59 @@ class GuildFunctionDB:
             cursor = conn.cursor()
             cursor.execute('SELECT guild_id FROM guild_functions')
             return [row[0] for row in cursor.fetchall()]
+
+
+class UserDataDB:
+    def __init__(self, db_path: str = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\Function\\Discord_UserData.db'):
+        self.db_path = db_path
+        self.init_database()
+
+    def init_database(self):
+        """初始化資料庫並建立表格"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS user_data (
+                    user_id TEXT PRIMARY KEY,
+                    character_name TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            conn.commit()
+
+    def get_user_character(self, user_id: str) -> Optional[str]:
+        """取得使用者的遊戲角色ID"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT character_name FROM user_data WHERE user_id = ?',
+                (user_id,)
+            )
+            row = cursor.fetchone()
+            return row[0] if row else None
+
+    def set_user_character(self, user_id: str, character_name: str):
+        """設定或更新使用者的遊戲角色ID"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO user_data
+                (user_id, character_name, updated_at)
+                VALUES (?, ?, ?)
+            ''', (user_id, character_name, datetime.datetime.now()))
+            conn.commit()
+
+    def remove_user(self, user_id: str) -> bool:
+        """移除使用者資料"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM user_data WHERE user_id = ?', (user_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_all_users(self) -> Dict[str, str]:
+        """取得所有使用者的角色ID對應"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT user_id, character_name FROM user_data')
+            return {row[0]: row[1] for row in cursor.fetchall()}
