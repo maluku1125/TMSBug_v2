@@ -8,7 +8,7 @@ import time
 from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
 from functions.MSCrawler import Format_ApplePrizeData, Format_FashionBoxPrizeData, save_apple_json_file, save_fashionbox_json_file
 from functions.GetPrize import reloaddata
-from ..SlashCommandManager import UseSlashCommand, GetSlashCommandUsage, SaveSystemStats
+from ..SlashCommandManager import UseSlashCommand, GetSlashCommandUsage, SaveSystemStats, GetLastHourCommandCount, GetTopCommandsSimple, GetDailyTrend
  
 process = psutil.Process()
 
@@ -26,10 +26,94 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v3.7.0'
+version = 'v3.8.1'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
+
+class HelpCommandView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=180)
+
+    @discord.ui.button(label="指令說明", style=discord.ButtonStyle.primary, emoji="📋")
+    async def command_info_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = discord.Embed(
+            title="📋 指令說明",
+            color=0x32EBA7,
+        )
+        embed.add_field(
+            name="基本功能",
+            value=(
+                "```\n"
+                "/help - 幫助\n"
+                "/ping - BOT延遲\n"
+                "/打王備忘 - 顯示打王備忘\n"
+                "/練等備忘 - 顯示練等備忘\n"               
+                "```"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="BOSS查詢",
+            value=(
+                "```\n"
+                "/bossarc困王 - 查詢ARC區的BOSS資料\n"
+                "/bossaut困王 - 查詢AUT區的BOSS資料\n"
+                "/easyboss里程周王 - 查詢史戴以前的BOSS資料\n"
+                "```"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="活動與查詢",
+            value=(
+                "```\n"
+                "/events當期活動 - 顯示當前進行中的活動\n"
+                "/prize當期抽獎機率 - 查詢當期抽獎機率\n"
+                "```"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="計算與模擬",
+            value=(
+                "```\n"
+                "/solerda碎片進度 - 計算六轉碎片進度\n"
+                "/formulas各種公式 - 各種公式的簡易計算機\n"
+                "/scrolls卷軸模擬器 - 卷軸模擬器\n"
+                "/cubes洗方塊 - 洗方塊模擬器\n"
+                "/starforce衛星 -衛星模擬\n"
+                "```"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="API功能",
+            value=(
+                "```\n"
+                "/character角色查詢 - API 角色查詢\n"
+                "/guild公會查詢 - API 公會查詢\n"
+                "/exptracking經驗追蹤 - API 角色經驗追蹤\n"
+                "/uniontracking戰地追蹤 - API 角色戰地追蹤\n"
+                "/rank排行 - API 角色排行榜\n"
+                "/apianalyse楓谷分析 - API 資料分析\n"
+                "/union戰地查詢 - API 戰地查詢\n"
+                "```"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="設定",
+            value=(
+                "```\n"
+                "/servercheck - 伺服器開機通知設定(僅群主)\n"
+                "/setting設定 - 設定連結角色\n"
+                "```"
+            ),
+            inline=False,
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 class Slash_BasicCommands(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -122,23 +206,11 @@ class Slash_BasicCommands(commands.Cog):
                 ""
                 f"[__TMS Discord & Support Guild__](https://discord.gg/maplestory-tw)\n"
                 f"[__邀請TMSBug__](https://reurl.cc/aLj8V9)\n"
-                f"[__功能/指令列表__](https://reurl.cc/kr25Wq)\n"
                 ""
             ),
             inline=False,
         )
-        embed.add_field(
-            name="BOT資料",
-            value=(
-                "```autohotkey\n"
-                f"指令數量: {len(self.client.tree.get_commands())}\n"
-                f"群組數量: {len(self.client.guilds):,}\n"
-                f"成員人數: {sum([_.member_count or 0 for _ in self.client.guilds if not _.unavailable]):,}\n" 
-                "```"
-            ),
-            inline=False,
-        )
-        # 在需要的時候計算運行時間
+        # 計算運行時間
         runtime_seconds = time.time() - start_time
         runtime_minutes, runtime_seconds = divmod(runtime_seconds, 60)
         runtime_hours, runtime_minutes = divmod(runtime_minutes, 60)
@@ -148,26 +220,52 @@ class Slash_BasicCommands(commands.Cog):
         else:
             runtime_str = f"{int(runtime_hours)}小時{int(runtime_minutes)}分{int(runtime_seconds)}秒"
 
-
         embed.add_field(
-            name="運行狀態",
+            name="BOT資料",
             value=(
                 "```autohotkey\n"
-                f"CPU使用率: {cpu_usage}%\n"
-                f"MEM使用率: {memory_usage_percent:.2f}%\n"
-                f"MEM使用量: {memory_usage_mb:.2f} MB\n"
-                f"BOT運行時間: {runtime_str} \n"
+                f"指令數量: {len(self.client.tree.get_commands())}\n"
+                f"群組數量: {len(self.client.guilds):,}\n"
+                f"成員人數: {sum([_.member_count or 0 for _ in self.client.guilds if not _.unavailable]):,}\n"
+                f"運行時間: {runtime_str}\n"
                 "```"
             ),
             inline=False,
         )
-        
+        # 營運狀態
+        last_hour_count = GetLastHourCommandCount()
+        daily_trend = GetDailyTrend(7)
+        separator = '\u2500' * 28
+        operation_text = f"過去1小時指令觸發次數: {last_hour_count}\n"
+        if daily_trend:
+            operation_text += f"{separator}\n"
+            operation_text += '\n'.join([
+                f"{day['date']} | {day['count']:>6,} 次"
+                for day in daily_trend[-7:]
+            ])
+
+        embed.add_field(
+            name="營運狀態",
+            value=f"```autohotkey\n{operation_text}\n```",
+            inline=False,
+        )
+        # 最熱門指令
+        top_commands = GetTopCommandsSimple(30, 5)
+        if top_commands:
+            cmd_text = '\n'.join([
+                f"{cmd['command']:23s} | {cmd['count']:>6,} 次"
+                for cmd in top_commands
+            ])
+            embed.add_field(
+                name="最熱門指令 (過去30天)",
+                value=f"```{cmd_text}```",
+                inline=False,
+            )
+
         embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/957283103364235284.webp?size=96&quality=lossless')
         UseSlashCommand('help', interaction)
-        if interaction.guild_id != 420666881368784929 and self.client.user.id == 684625575729561609:
-            await interaction.response.send_message("TMS_Bug未通過Discord驗證，可以轉至TMSBug_v2服務，請聯絡管理員邀請並於邀請後踢除TMS_Bug\n具體差異：\n```diff\n+通過discord認證\n+無法閱讀聊天室內容\n-無法使用<!>指令或讀取聊天室相關互動```\n[邀請TMSBug_v2](https://reurl.cc/aLj8V9)",embed=embed)
-        else:
-            await interaction.response.send_message(embed=embed)
+        view = HelpCommandView()
+        await interaction.response.send_message(embed=embed, view=view)
     #-----------------MEMO-----------------
     @app_commands.command(name="練等備忘", description="練等備忘")
     async def farmingmemo(self, interaction: discord.Interaction):

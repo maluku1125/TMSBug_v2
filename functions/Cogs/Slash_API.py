@@ -17,8 +17,10 @@ from functions.API_functions.CreateAPIAnalyseEmbed import create_api_analyse_emb
 
 from functions.SlashCommandManager import UseSlashCommand
 from functions.database_manager import UserDataDB
+from functions.CombineCharacter import combine_character_images
 
 user_db = UserDataDB()
+SLOT_NAMES = UserDataDB.SLOT_NAMES
 
 
 class CharacterView(discord.ui.View):
@@ -199,24 +201,175 @@ class CharacterView(discord.ui.View):
             item.disabled = True
 
 
+class CharacterSelectView(discord.ui.View):
+    """多角色選擇畫面：顯示合成圖 + 下拉選單讓使用者選擇要查詢的角色"""
+    def __init__(self, registered_characters: dict, interaction: discord.Interaction, start_time: float):
+        super().__init__(timeout=120)
+        self.registered_characters = registered_characters  # {slot: name}
+        self.original_interaction = interaction
+        self.start_time = start_time
+
+        # 建立下拉選單
+        options = []
+        for slot, name in sorted(registered_characters.items()):
+            options.append(discord.SelectOption(
+                label=name,
+                value=name
+            ))
+
+        select = discord.ui.Select(
+            placeholder="選擇要查詢的角色...",
+            options=options,
+            min_values=1,
+            max_values=1,
+        )
+        select.callback = self._on_select
+        self.add_item(select)
+
+    async def _on_select(self, interaction: discord.Interaction):
+        selected_name = interaction.data['values'][0]
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            return
+
+        try:
+            view = CharacterView(selected_name)
+            embed = view.get_character_basic_embed()
+
+            if embed:
+                await interaction.edit_original_response(embed=embed, view=view, attachments=[])
+                response_time = time.time() - self.start_time
+                UseSlashCommand('api_character', self.original_interaction, response_time, True)
+            else:
+                error_embed = discord.Embed(
+                    title="錯誤",
+                    description=f"無法獲取角色 '{selected_name}' 的資訊",
+                    color=discord.Color.red()
+                )
+                await interaction.edit_original_response(embed=error_embed, view=None, attachments=[])
+                response_time = time.time() - self.start_time
+                UseSlashCommand('api_character', self.original_interaction, response_time, False)
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="錯誤",
+                description=f"生成角色資訊時發生錯誤: {str(e)}",
+                color=discord.Color.red()
+            )
+            try:
+                await interaction.edit_original_response(embed=error_embed, view=None, attachments=[])
+            except NotFound:
+                pass
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
+
+class ExpTrackingSelectView(discord.ui.View):
+    """經驗追蹤多角色選擇畫面"""
+    def __init__(self, registered_characters: dict, interaction: discord.Interaction, start_time: float):
+        super().__init__(timeout=120)
+        self.registered_characters = registered_characters
+        self.original_interaction = interaction
+        self.start_time = start_time
+
+        options = []
+        for slot, name in sorted(registered_characters.items()):
+            options.append(discord.SelectOption(label=name, value=name))
+
+        select = discord.ui.Select(
+            placeholder="選擇要追蹤的角色...",
+            options=options,
+            min_values=1,
+            max_values=1,
+        )
+        select.callback = self._on_select
+        self.add_item(select)
+
+    async def _on_select(self, interaction: discord.Interaction):
+        selected_name = interaction.data['values'][0]
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            return
+
+        try:
+            result = create_exp_tracking_embed(selected_name)
+            if result["success"]:
+                await interaction.edit_original_response(embed=result["embed"], view=None, attachments=[])
+                response_time = time.time() - self.start_time
+                UseSlashCommand('api_exptracking', self.original_interaction, response_time, True)
+            else:
+                await interaction.edit_original_response(embed=result["embed"], view=None, attachments=[])
+                response_time = time.time() - self.start_time
+                UseSlashCommand('api_exptracking', self.original_interaction, response_time, False)
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ 錯誤",
+                description=f"生成經驗追蹤資訊時發生錯誤: {str(e)}",
+                color=discord.Color.red()
+            )
+            try:
+                await interaction.edit_original_response(embed=error_embed, view=None, attachments=[])
+            except NotFound:
+                pass
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
+
 class Slash_API(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
 
     @app_commands.command(name="character角色查詢", description="API角色查詢")
-    @app_commands.describe(playername="角色名稱 (不輸入則使用本尊設定)")
+    @app_commands.describe(playername="角色名稱 (不輸入則使用已登錄的角色)")
     async def api_character_basic(self, interaction: discord.Interaction, playername: str = None):
         
         start_time = time.time()
         
-        # 未輸入角色名稱 → 從 UserDataDB 取得本尊
         if playername is None:
-            playername = user_db.get_user_character(str(interaction.user.id))
-            if playername is None:
+            user_id = str(interaction.user.id)
+            all_chars = user_db.get_all_user_characters(user_id)
+            registered = {slot: name for slot, name in all_chars.items() if name}
+
+            # 情況 3：無登錄任何角色 → 要求輸入
+            if len(registered) == 0:
                 await interaction.response.send_message(
-                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:本尊` 設定您的遊戲角色ID。",
+                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
                     ephemeral=True
                 )
+                return
+
+            # 情況 1：只有 1 個角色 → 直接查詢
+            if len(registered) == 1:
+                playername = list(registered.values())[0]
+            else:
+                # 情況 2：多個角色 → 顯示合成圖 + 下拉選單
+                try:
+                    await interaction.response.defer()
+                except NotFound:
+                    logging.warning("api_character_basic: Interaction expired before defer")
+                    return
+
+                select_view = CharacterSelectView(registered, interaction, start_time)
+
+                # 合成角色圖片
+                combined_image = await combine_character_images(all_chars)
+
+                embed = discord.Embed(
+                    title="🎮 請選擇要查詢的角色",
+                    color=0x00bfff
+                )
+
+                if combined_image:
+                    file = discord.File(combined_image, filename="characters.png")
+                    embed.set_image(url="attachment://characters.png")
+                    await interaction.followup.send(embed=embed, view=select_view, file=file)
+                else:
+                    await interaction.followup.send(embed=embed, view=select_view)
                 return
         
         try:
@@ -319,19 +472,50 @@ class Slash_API(commands.Cog):
 
 
     @app_commands.command(name="exptracking經驗追蹤", description="顯示角色近7日經驗成長分析")
-    @app_commands.describe(character_name="角色名稱 (不輸入則使用本尊設定)")
+    @app_commands.describe(character_name="角色名稱 (不輸入則使用已登錄的角色)")
     async def api_exp_tracking(self, interaction: discord.Interaction, character_name: str = None):
         
         start_time = time.time()
         
-        # 未輸入角色名稱 → 從 UserDataDB 取得本尊
         if character_name is None:
-            character_name = user_db.get_user_character(str(interaction.user.id))
-            if character_name is None:
+            user_id = str(interaction.user.id)
+            all_chars = user_db.get_all_user_characters(user_id)
+            registered = {slot: name for slot, name in all_chars.items() if name}
+
+            # 無登錄角色
+            if len(registered) == 0:
                 await interaction.response.send_message(
-                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:本尊` 設定您的遊戲角色ID。",
+                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
                     ephemeral=True
                 )
+                return
+
+            # 只有 1 個角色 → 直接查詢
+            if len(registered) == 1:
+                character_name = list(registered.values())[0]
+            else:
+                # 多個角色 → 顯示合成圖 + 下拉選單
+                try:
+                    await interaction.response.defer()
+                except NotFound:
+                    logging.warning("api_exp_tracking: Interaction expired before defer")
+                    return
+
+                select_view = ExpTrackingSelectView(registered, interaction, start_time)
+
+                combined_image = await combine_character_images(all_chars)
+
+                embed = discord.Embed(
+                    title="📊 請選擇要追蹤的角色",
+                    color=0x00bfff
+                )
+
+                if combined_image:
+                    file = discord.File(combined_image, filename="characters.png")
+                    embed.set_image(url="attachment://characters.png")
+                    await interaction.followup.send(embed=embed, view=select_view, file=file)
+                else:
+                    await interaction.followup.send(embed=embed, view=select_view)
                 return
         
         try:

@@ -521,6 +521,59 @@ class SlashCommandManager:
                 color=discord.Color.red()
             )
     
+    def get_last_hour_command_count(self) -> int:
+        """獲取過去1小時的指令觸發次數"""
+        try:
+            with self._get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT COUNT(*) as count
+                    FROM command_usage 
+                    WHERE timestamp >= datetime('now', '-1 hour')
+                ''')
+                row = cursor.fetchone()
+                return row['count'] if row else 0
+        except Exception as e:
+            logger.error(f"獲取過去1小時指令次數失敗: {e}")
+            return 0
+
+    def get_top_commands_simple(self, days: int = 30, limit: int = 5) -> list:
+        """獲取最熱門指令（簡化版，只返回名稱和次數）"""
+        try:
+            with self._get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT command_type, COUNT(*) as count
+                    FROM command_usage 
+                    WHERE created_date >= date('now', ?)
+                    GROUP BY command_type
+                    ORDER BY count DESC
+                    LIMIT ?
+                ''', (f'-{days} days', limit))
+                return [{'command': row['command_type'], 'count': row['count']}
+                        for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"獲取最熱門指令失敗: {e}")
+            return []
+
+    def get_daily_trend(self, days: int = 7) -> list:
+        """獲取每日使用趨勢"""
+        try:
+            with self._get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT created_date, COUNT(*) as count
+                    FROM command_usage 
+                    WHERE created_date >= date('now', ?)
+                    GROUP BY created_date
+                    ORDER BY created_date
+                ''', (f'-{days} days',))
+                return [{'date': row['created_date'], 'count': row['count']} 
+                        for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"獲取每日趨勢失敗: {e}")
+            return []
+
     def cleanup_old_data(self, days: int = None):
         """清理舊資料"""
         cleanup_days = days or self.config.get('db_cleanup_days', 30)
@@ -570,3 +623,15 @@ def GetSystemStats() -> Dict:
 def SaveSystemStats(guild_count: int = 0, user_count: int = 0):
     """保存系統統計"""
     command_manager.save_system_stats(guild_count, user_count)
+
+def GetLastHourCommandCount() -> int:
+    """獲取過去1小時指令次數"""
+    return command_manager.get_last_hour_command_count()
+
+def GetTopCommandsSimple(days: int = 30, limit: int = 5) -> list:
+    """獲取最熱門指令"""
+    return command_manager.get_top_commands_simple(days, limit)
+
+def GetDailyTrend(days: int = 7) -> list:
+    """獲取每日使用趨勢"""
+    return command_manager.get_daily_trend(days)
