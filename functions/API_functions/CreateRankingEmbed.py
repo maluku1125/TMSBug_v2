@@ -192,8 +192,8 @@ class RankingView(discord.ui.View):
         
         # Set timestamp
         embed.timestamp = datetime.datetime.now()
-        embed.set_footer(text=f"排行自{format(len(self.ranking_data), ',')}位玩家 | TMSBug API 資料查詢")
-        
+        embed.set_footer(text=f"{'-'*19}排行自{format(len(self.ranking_data), ',')}位玩家 | TMSBug API 資料查詢{'-'*19}")
+
         return embed
     
     @discord.ui.button(label="⬅️ 上一頁", style=discord.ButtonStyle.secondary)
@@ -325,7 +325,7 @@ def create_ranking_embed(ranking_data: list, include_view: bool = True, characte
             )
             
             embed.timestamp = datetime.datetime.now()
-            embed.set_footer(text=f"排行自{format(len(ranking_data), ',')}位玩家 | TMSBug API 資料查詢")
+            embed.set_footer(text=f"{'-'*19}排行自{format(len(ranking_data), ',')}位玩家 | TMSBug API 資料查詢{'-'*19}")
             
             return {
                 "embed": embed,

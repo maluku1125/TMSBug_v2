@@ -494,19 +494,23 @@ class SlashCommandManager:
                     inline=False
                 )
             
-            # 每日趨勢 (最近7天)
-            if stats['daily_stats']:
-                recent_days = stats['daily_stats'][-7:]  # 最近7天
-                trend_text = '\n'.join([
-                    f"{day['date']:10s} | {day['count']:>6,} 次"
-                    for day in recent_days
-                ])
-                
+            # 當月 API 分析（總次數 + 各 API 請求次數）
+            try:
+                from functions.API_functions.API_RequestLogger import get_month_summary
+                api_month = get_month_summary()
+                sep = '─' * 28
+                api_lines = '\n'.join(
+                    f"{(ep or '(未知)'):26s} | {cnt:>7,}"
+                    for ep, cnt in api_month['by_endpoint']
+                ) or "(本月尚無資料)"
+                api_text = f"總次數: {api_month['total']:,}\n{sep}\n{api_lines}"
                 embed.add_field(
-                    name="每日使用趨勢 (最近7天)",
-                    value=f"```{trend_text}```",
+                    name=f"當月 API 分析 ({api_month['month']})",
+                    value=f"```{api_text}```",
                     inline=False
                 )
+            except Exception as e:
+                logger.error(f"載入當月API分析失敗: {e}")
             
             embed.set_footer(text="TMSBug 統計系統 v2.0")
             embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/957283103364235284.webp?size=96&quality=lossless')

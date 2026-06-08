@@ -188,6 +188,18 @@ class UserDataDB:
                     print("[UserDataDB] 已遷移：移除 character_name NOT NULL 約束")
                     break
 
+            # 遷移：新增角色動作欄位（action / emotion / wmotion）。須在上方重建表之後執行
+            for col in ('char_action', 'char_emotion', 'char_wmotion'):
+                try:
+                    cursor.execute(f'ALTER TABLE user_data ADD COLUMN {col} TEXT')
+                except sqlite3.OperationalError:
+                    pass
+            # 遷移：新增「是否動畫」欄位（0/1）
+            try:
+                cursor.execute('ALTER TABLE user_data ADD COLUMN char_animated INTEGER DEFAULT 0')
+            except sqlite3.OperationalError:
+                pass
+
             conn.commit()
 
     # ---------- 單一 slot 操作 ----------
@@ -247,6 +259,60 @@ class UserDataDB:
             if not row:
                 return {i: None for i in range(1, 7)}
             return {i: row[i - 1] for i in range(1, 7)}
+
+    # ---------- 角色動作設定（每位使用者一組，套用於 /character 角色圖）----------
+
+    def get_user_action(self, user_id: str) -> Dict[str, Optional[str]]:
+        """取得使用者的角色動作設定 {action, emotion, wmotion, animated}"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT char_action, char_emotion, char_wmotion, char_animated '
+                'FROM user_data WHERE user_id = ?',
+                (user_id,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return {'action': None, 'emotion': None, 'wmotion': None, 'animated': False}
+            return {'action': row[0], 'emotion': row[1], 'wmotion': row[2],
+                    'animated': bool(row[3])}
+
+    def set_user_action(self, user_id: str, action: Optional[str] = None,
+                        emotion: Optional[str] = None, wmotion: Optional[str] = None):
+        """設定或更新使用者的角色動作（只動 action/emotion/wmotion，不影響 animated）"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT user_id FROM user_data WHERE user_id = ?', (user_id,))
+            if cursor.fetchone():
+                cursor.execute(
+                    'UPDATE user_data SET char_action = ?, char_emotion = ?, char_wmotion = ?, '
+                    'updated_at = ? WHERE user_id = ?',
+                    (action, emotion, wmotion, datetime.datetime.now(), user_id)
+                )
+            else:
+                cursor.execute(
+                    'INSERT INTO user_data (user_id, char_action, char_emotion, char_wmotion, updated_at) '
+                    'VALUES (?, ?, ?, ?, ?)',
+                    (user_id, action, emotion, wmotion, datetime.datetime.now())
+                )
+            conn.commit()
+
+    def set_user_animated(self, user_id: str, animated: bool):
+        """設定或更新「是否動畫」（不影響 action/emotion/wmotion）"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT user_id FROM user_data WHERE user_id = ?', (user_id,))
+            if cursor.fetchone():
+                cursor.execute(
+                    'UPDATE user_data SET char_animated = ?, updated_at = ? WHERE user_id = ?',
+                    (1 if animated else 0, datetime.datetime.now(), user_id)
+                )
+            else:
+                cursor.execute(
+                    'INSERT INTO user_data (user_id, char_animated, updated_at) VALUES (?, ?, ?)',
+                    (user_id, 1 if animated else 0, datetime.datetime.now())
+                )
+            conn.commit()
 
     # ---------- 向後相容方法（操作 slot 1 = 1本）----------
 

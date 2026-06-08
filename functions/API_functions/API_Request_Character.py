@@ -5,10 +5,11 @@ from typing import Optional
 import datetime
 import configparser
 from functions.API_functions.API_DataBase_Character import (
-    save_character_ocid_db, get_character_ocid_db, 
+    save_character_ocid_db, get_character_ocid_db,
     save_character_basic_info_db, get_character_basic_info_with_fallback, get_all_expired_character_lists,
     delete_character_data_by_ocid
 )
+from functions.API_functions.API_RequestLogger import logged_get, log_request
 
 
 try:
@@ -85,7 +86,7 @@ def request_character_ocid(character_name: str) -> Optional[str]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/id?character_name={character_name}"
     
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
         
         data = response.json()
@@ -135,7 +136,7 @@ def request_character_basic(ocid: str, use_cache: bool = False, date = None) -> 
         url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/basic?ocid={ocid}"
     
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
         
         character_basic_data = response.json()
@@ -168,7 +169,7 @@ def request_character_stat(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/stat?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_stat_data = response.json()
@@ -187,7 +188,7 @@ def request_character_hexamatrix(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/hexamatrix?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_hexamatrix_data = response.json()
@@ -206,7 +207,7 @@ def request_character_hexamatrix_stat(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/hexamatrix-stat?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_hexamatrix_stat_data = response.json()
@@ -226,7 +227,7 @@ def request_character_itemequipment(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/item-equipment?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_itemequipment_data = response.json()
@@ -245,7 +246,7 @@ def request_character_symbolequipment(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/symbol-equipment?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_symbolequipment_data = response.json()
@@ -264,7 +265,7 @@ def request_character_cashitemequipment(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/cashitem-equipment?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_cashitemequipment_data = response.json()
@@ -283,7 +284,7 @@ def request_character_pet_equipment(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/pet-equipment?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_pet_equipment_data = response.json()
@@ -303,7 +304,7 @@ def request_character_beauty_equipment(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/beauty-equipment?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_beauty_equipment_data = response.json()
@@ -322,7 +323,7 @@ def request_character_ability(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/ability?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_ability_data = response.json()
@@ -341,7 +342,7 @@ def request_character_hyper_stat(ocid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/hyper-stat?ocid={ocid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
 
         character_hyper_stat_data = response.json()
@@ -380,6 +381,7 @@ async def request_character_basic_async(session: aiohttp.ClientSession, ocid: st
     async with semaphore:  # 控制併發數量
         try:
             async with session.get(url_string, headers=headers) as response:
+                log_request(url_string, response.status)
                 response.raise_for_status()
                 character_basic_data = await response.json()
                 

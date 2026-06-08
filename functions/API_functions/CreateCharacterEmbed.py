@@ -5,11 +5,30 @@ from discord.ext import commands
 from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix, request_character_symbolequipment, request_character_hexamatrix_stat
 from functions.API_functions.API_Request_union import request_user_union
 import datetime
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment
 from Data.BotEmojiList import EmojiList
 
 
-def create_character_basic_embed(character_name: str, return_data: bool = False):
+def apply_look_params(image_url: str, action: str = None, emotion: str = None, wmotion: str = None) -> str:
+    """將角色動作參數 (action/emotion/wmotion) 套用到 Nexon 角色外型圖片 URL，保留原有參數(如 width/height)"""
+    if not image_url:
+        return image_url
+    try:
+        parts = urlparse(image_url)
+        query = parse_qs(parts.query)
+        if action:
+            query['action'] = [action]
+        if emotion:
+            query['emotion'] = [emotion]
+        if wmotion:
+            query['wmotion'] = [wmotion]
+        return urlunparse(parts._replace(query=urlencode(query, doseq=True)))
+    except Exception:
+        return image_url
+
+
+def create_character_basic_embed(character_name: str, return_data: bool = False, action_params: dict = None):
 
     try:
         ocid = get_character_ocid(character_name)
@@ -459,18 +478,28 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         timestamp=datetime.datetime.now()
     )
     
-    # character_image
+    # character_image（套用使用者設定的動作/表情/武器動作）
     if character_basic_data.get('character_image'):
-        embed.set_thumbnail(url=character_basic_data['character_image'])
+        image_url = character_basic_data['character_image']
+        if action_params:
+            image_url = apply_look_params(
+                image_url,
+                action_params.get('action'),
+                action_params.get('emotion'),
+                action_params.get('wmotion'),
+            )
+            # 寫回 dict，讓裝備頁等共用此資料的地方也套用同一姿勢
+            character_basic_data['character_image'] = image_url
+        embed.set_thumbnail(url=image_url)
              
     embed.add_field(
         name="基本資訊",
-        value=f"```autohotkey\n{'\n'.join(character_info)}```",
+        value=f"```ml\n{'\n'.join(character_info)}```",
         inline=False
     )
     embed.add_field(
         name="機體資訊",
-        value=f"```autohotkey\n{'\n'.join(stat_info)}```",
+        value=f"```ml\n{'\n'.join(stat_info)}```",
         inline=False
     )
     
@@ -486,18 +515,20 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
         
         embed.add_field(
             name=f"{EmojiList.get('hexamatrix', '')}六轉核心 ({percentage:.2f}%)",
-            value=f"```autohotkey\n{'\n'.join(hexa_info)}\n{'\n'.join(hexa_stat_info)}```",
+            value=f"```ml\n{'\n'.join(hexa_info)}\n{'\n'.join(hexa_stat_info)}```",
             inline=False
         )
        
     if symbol_info:
         embed.add_field(
             name=f"{EmojiList.get('Aut0', '')}符文{EmojiList.get('Arc0', '')}",
-            value=f"```autohotkey\n{'\n'.join(symbol_info)}```",
+            value=f"```ml\n{'\n'.join(symbol_info)}```",
             inline=False
         )
 
     # create_date
+    # 預設純虛線，避免無創建日期資料時 character_create_date 未定義導致 NameError
+    character_create_date = f"{'-'*19}　　　　　　　　　　{'-'*19}"
     create_date = character_basic_data.get('character_date_create')
     if create_date:
         try:
@@ -516,11 +547,11 @@ def create_character_basic_embed(character_name: str, return_data: bool = False)
                           create_date_only.day == today_date_only.day)
             
             if is_birthday:
-                character_create_date = f"創建日期: {formatted_date} ({days_diff}天) 🎉生日快樂！🎂"
+                character_create_date = f"{'-'*19}創建日期: {formatted_date} ({days_diff}天) 🎉生日快樂！🎂{'-'*19}"
             else:
-                character_create_date = f"創建日期: {formatted_date} ({days_diff}天)"
+                character_create_date = f"{'-'*19}創建日期: {formatted_date} ({days_diff}天){'-'*19}"
         except:
-            character_create_date = f"創建日期: {create_date}"
+            character_create_date = f"{'-'*19}創建日期: {create_date}{'-'*19}"
 
     embed.set_footer(
         text=f"{character_create_date}"

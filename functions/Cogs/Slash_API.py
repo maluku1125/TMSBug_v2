@@ -14,6 +14,7 @@ from functions.API_functions.CreateRankingEmbed import create_ranking_embed
 from functions.API_functions.CreateEXPTrackingEmbed import create_exp_tracking_embed
 from functions.API_functions.CreateUnionTrackingEmbed import create_union_tracking_embed
 from functions.API_functions.CreateAPIAnalyseEmbed import create_api_analyse_embed
+from functions.API_functions.CreateCharacterGIF import build_character_gif
 
 from functions.SlashCommandManager import UseSlashCommand
 from functions.database_manager import UserDataDB
@@ -23,11 +24,42 @@ user_db = UserDataDB()
 SLOT_NAMES = UserDataDB.SLOT_NAMES
 
 
+def get_action_params(user_id: str):
+    """取得使用者設定的角色動作（action/emotion/wmotion/animated），無設定則回 None"""
+    if not user_id:
+        return None
+    action = user_db.get_user_action(user_id)
+    if action and (action.get('action') or action.get('emotion')
+                   or action.get('wmotion') or action.get('animated')):
+        return action
+    return None
+
+
+async def make_character_gif_file(user_id: str, image_url: str):
+    """若使用者開啟動畫且該動作可動畫，回傳 ('attachment://char.gif', discord.File)；否則 (None, None)"""
+    ap = get_action_params(user_id)
+    if not (ap and ap.get('animated') and image_url):
+        return None, None
+    try:
+        gif = await build_character_gif(
+            image_url,
+            ap.get('action') or 'A00',
+            ap.get('emotion') or 'E00',
+            ap.get('wmotion'),
+        )
+        if gif:
+            return 'attachment://char.gif', discord.File(gif, filename='char.gif')
+    except Exception:
+        pass
+    return None, None
+
+
 class CharacterView(discord.ui.View):
-    def __init__(self, character_name: str, character_basic_data: dict = None):
+    def __init__(self, character_name: str, character_basic_data: dict = None, user_id: str = None):
         super().__init__(timeout=300)  # 5 minutes timeout
         self.character_name = character_name
         self.character_basic_data = character_basic_data
+        self.user_id = user_id  # 用來查詢該使用者設定的角色動作
         self.current_mode = "character"  # character, preset_1, preset_2, preset_3
         self._update_button_styles()
     
@@ -48,7 +80,14 @@ class CharacterView(discord.ui.View):
     def get_character_basic_embed(self):
         """Get character basic data embed"""
         try:
-            result = create_character_basic_embed(self.character_name, return_data=True)
+            # 查詢使用者設定的角色動作（action/emotion/wmotion），有設定才套用
+            action_params = None
+            if self.user_id:
+                action = user_db.get_user_action(self.user_id)
+                if action and (action.get('action') or action.get('emotion') or action.get('wmotion')):
+                    action_params = action
+
+            result = create_character_basic_embed(self.character_name, return_data=True, action_params=action_params)
             if isinstance(result, dict):
                 self.character_basic_data = result["character_basic_data"]
                 return result["embed"]
@@ -66,7 +105,14 @@ class CharacterView(discord.ui.View):
                 await interaction.response.defer()
                 embed = self.get_character_basic_embed()
                 if embed:
-                    await interaction.edit_original_response(embed=embed, view=self)
+                    # 回到角色頁時，若有開啟動畫則重新附上 GIF（否則清掉先前附件）
+                    image_url = (self.character_basic_data or {}).get('character_image')
+                    thumb_url, gif_file = await make_character_gif_file(self.user_id, image_url)
+                    if gif_file:
+                        embed.set_thumbnail(url=thumb_url)
+                        await interaction.edit_original_response(embed=embed, view=self, attachments=[gif_file])
+                    else:
+                        await interaction.edit_original_response(embed=embed, view=self, attachments=[])
             else:
                 await interaction.response.defer()
         except NotFound:
@@ -92,7 +138,7 @@ class CharacterView(discord.ui.View):
                     view._process_equipment_data()
                     view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
-                    await interaction.edit_original_response(embed=embed, view=view)
+                    await interaction.edit_original_response(embed=embed, view=view, attachments=[])
                 else:
                     error_embed = discord.Embed(
                         title="錯誤",
@@ -133,7 +179,7 @@ class CharacterView(discord.ui.View):
                     view._process_equipment_data()
                     view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
-                    await interaction.edit_original_response(embed=embed, view=view)
+                    await interaction.edit_original_response(embed=embed, view=view, attachments=[])
                 else:
                     error_embed = discord.Embed(
                         title="錯誤",
@@ -174,7 +220,7 @@ class CharacterView(discord.ui.View):
                     view._process_equipment_data()
                     view._update_preset_button_styles()
                     embed = view.create_embed("weapon")
-                    await interaction.edit_original_response(embed=embed, view=view)
+                    await interaction.edit_original_response(embed=embed, view=view, attachments=[])
                 else:
                     error_embed = discord.Embed(
                         title="錯誤",
@@ -234,11 +280,17 @@ class CharacterSelectView(discord.ui.View):
             return
 
         try:
-            view = CharacterView(selected_name)
+            view = CharacterView(selected_name, user_id=str(interaction.user.id))
             embed = view.get_character_basic_embed()
 
             if embed:
-                await interaction.edit_original_response(embed=embed, view=view, attachments=[])
+                image_url = (view.character_basic_data or {}).get('character_image')
+                thumb_url, gif_file = await make_character_gif_file(str(interaction.user.id), image_url)
+                if gif_file:
+                    embed.set_thumbnail(url=thumb_url)
+                    await interaction.edit_original_response(embed=embed, view=view, attachments=[gif_file])
+                else:
+                    await interaction.edit_original_response(embed=embed, view=view, attachments=[])
                 response_time = time.time() - self.start_time
                 UseSlashCommand('api_character', self.original_interaction, response_time, True)
             else:
@@ -295,9 +347,14 @@ class ExpTrackingSelectView(discord.ui.View):
             return
 
         try:
-            result = create_exp_tracking_embed(selected_name)
+            result = create_exp_tracking_embed(selected_name, action_params=get_action_params(str(interaction.user.id)))
             if result["success"]:
-                await interaction.edit_original_response(embed=result["embed"], view=None, attachments=[])
+                thumb_url, gif_file = await make_character_gif_file(str(interaction.user.id), result.get("image_url"))
+                if gif_file:
+                    result["embed"].set_thumbnail(url=thumb_url)
+                    await interaction.edit_original_response(embed=result["embed"], view=None, attachments=[gif_file])
+                else:
+                    await interaction.edit_original_response(embed=result["embed"], view=None, attachments=[])
                 response_time = time.time() - self.start_time
                 UseSlashCommand('api_exptracking', self.original_interaction, response_time, True)
             else:
@@ -380,11 +437,17 @@ class Slash_API(commands.Cog):
 
         try:
             # Create character data View
-            view = CharacterView(playername)
+            view = CharacterView(playername, user_id=str(interaction.user.id))
             embed = view.get_character_basic_embed()
             
             if embed:
-                await interaction.followup.send(embed=embed, view=view)
+                image_url = (view.character_basic_data or {}).get('character_image')
+                thumb_url, gif_file = await make_character_gif_file(str(interaction.user.id), image_url)
+                if gif_file:
+                    embed.set_thumbnail(url=thumb_url)
+                    await interaction.followup.send(embed=embed, view=view, file=gif_file)
+                else:
+                    await interaction.followup.send(embed=embed, view=view)
                 response_time = time.time() - start_time
                 UseSlashCommand('api_character', interaction, response_time, True)
             else:
@@ -526,10 +589,15 @@ class Slash_API(commands.Cog):
         
         try:
             # Create experience tracking embed
-            result = create_exp_tracking_embed(character_name)
-            
+            result = create_exp_tracking_embed(character_name, action_params=get_action_params(str(interaction.user.id)))
+
             if result["success"]:
-                await interaction.followup.send(embed=result["embed"])
+                thumb_url, gif_file = await make_character_gif_file(str(interaction.user.id), result.get("image_url"))
+                if gif_file:
+                    result["embed"].set_thumbnail(url=thumb_url)
+                    await interaction.followup.send(embed=result["embed"], file=gif_file)
+                else:
+                    await interaction.followup.send(embed=result["embed"])
                 response_time = time.time() - start_time
                 UseSlashCommand('api_exptracking', interaction, response_time, True)
             else:

@@ -9,6 +9,7 @@ from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
 from functions.MSCrawler import Format_ApplePrizeData, Format_FashionBoxPrizeData, save_apple_json_file, save_fashionbox_json_file
 from functions.GetPrize import reloaddata
 from ..SlashCommandManager import UseSlashCommand, GetSlashCommandUsage, SaveSystemStats, GetLastHourCommandCount, GetTopCommandsSimple, GetDailyTrend
+from functions.API_functions.API_RequestLogger import get_last_hour_count as GetLastHourAPICount, get_daily_counts as GetDailyAPICounts
  
 process = psutil.Process()
 
@@ -26,7 +27,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v3.8.1'
+version = 'v3.9.1'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -234,13 +235,16 @@ class Slash_BasicCommands(commands.Cog):
         )
         # 營運狀態
         last_hour_count = GetLastHourCommandCount()
+        last_hour_api_count = GetLastHourAPICount()
         daily_trend = GetDailyTrend(7)
         separator = '\u2500' * 28
-        operation_text = f"過去1小時指令觸發次數: {last_hour_count}\n"
+        operation_text = f"指令觸發/hr: {last_hour_count}\n"
+        operation_text += f"API請求/hr: {last_hour_api_count}\n"
         if daily_trend:
+            api_daily = GetDailyAPICounts(7)
             operation_text += f"{separator}\n"
             operation_text += '\n'.join([
-                f"{day['date']} | {day['count']:>6,} 次"
+                f"{day['date']} | {day['count']:>6,} | {api_daily.get(day['date'], 0):>6,}"
                 for day in daily_trend[-7:]
             ])
 
@@ -263,6 +267,8 @@ class Slash_BasicCommands(commands.Cog):
             )
 
         embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/957283103364235284.webp?size=96&quality=lossless')
+        # 虛線足標：一整條連續虛線撐住 embed 寬度，避免跑版（數字可調整寬度）
+        embed.set_footer(text='-' * 72)
         UseSlashCommand('help', interaction)
         view = HelpCommandView()
         await interaction.response.send_message(embed=embed, view=view)

@@ -45,24 +45,65 @@ class EquipmentView(discord.ui.View):
         """Process equipment data and categorize"""
         preset_key = f'item_equipment_{self.current_preset}'
         preset_equipment = self.character_equipment_data.get(preset_key, [])
-        
+
         # Equipment slot categorization
         weapon_slots = ['武器', '輔助武器', '徽章']
         armor_slots = ['帽子', '上衣', '褲/裙', '鞋子', '手套', '披風', '肩膀裝飾']
         accessory_slots = ['臉飾', '眼飾', '耳環', '墜飾', '墜飾2', '腰帶', '戒指1', '戒指2', '戒指3', '戒指4']
-        other_slots = ['口袋道具', '胸章', '勳章', '機器人', '機器心臟']
-        
+        # 其他裝備：口袋/胸章/勳章/機器心臟 + 圖騰1/2/3（馴服的怪物 / 馬鞍 / 怪物裝備）
+        other_slots = ['口袋道具', '胸章', '勳章', '機器人', '機器心臟', '馴服的怪物', '馬鞍', '怪物裝備']
+
+        # 圖騰與寶玉不隨 preset 切換，只存在於頂層 item_equipment，補進來一起處理（歸入「其他裝備」）
+        totem_slots = ('馴服的怪物', '馬鞍', '怪物裝備')
+        top_level_equipment = self.character_equipment_data.get('item_equipment', [])
+        extra_equipment = [
+            e for e in top_level_equipment
+            if e.get('item_equipment_slot') in totem_slots or '寶玉' in e.get('item_name', '')
+        ]
+        combined_equipment = list(preset_equipment) + extra_equipment
+
         # Reset grouping
         self.weapon_info = []
         self.armor_info = []
         self.accessory_info = []
         self.other_info = []
-        
-        for equipment in preset_equipment:
+
+        for equipment in combined_equipment:
             item_name = equipment.get('item_name', '未知裝備')
             item_slot = equipment.get('item_equipment_slot', '未知部位')
             starforce = equipment.get('starforce', '0')
-            
+
+            # 寶玉（伊妮絲的寶玉）特別處理：與墜飾共用部位，改以名稱辨識並歸入「其他裝備」
+            # 只列出 item_total_option 中不為零的屬性（例如 INT+6775）
+            if '寶玉' in item_name:
+                total_option = equipment.get('item_total_option', {})
+                gem_stat_mapping = {
+                    'str': 'STR', 'dex': 'DEX', 'int': 'INT', 'luk': 'LUK',
+                    'max_hp': 'HP', 'max_mp': 'MP',
+                    'attack_power': '物攻', 'magic_power': '魔攻',
+                    'armor': '防禦', 'speed': '移動速度', 'jump': '跳躍力',
+                    'boss_damage': 'Boss傷害', 'damage': '傷害', 'all_stat': '全屬性',
+                    'ignore_monster_armor': '無視防禦率',
+                    'max_hp_rate': 'HP%', 'max_mp_rate': 'MP%',
+                }
+                percent_stats = {'boss_damage', 'damage', 'all_stat',
+                                 'ignore_monster_armor', 'max_hp_rate', 'max_mp_rate'}
+                gem_stats = []
+                for stat_key, stat_label in gem_stat_mapping.items():
+                    stat_value = total_option.get(stat_key, '0')
+                    try:
+                        if int(stat_value) != 0:
+                            suffix = '%' if stat_key in percent_stats else ''
+                            gem_stats.append(f"{stat_label}+{stat_value}{suffix}")
+                    except (ValueError, TypeError):
+                        pass
+                gem_text = f"**{item_name}**\n"
+                if gem_stats:
+                    gem_text += f"```{' / '.join(gem_stats)}```"
+                gem_text += "\n"
+                self.other_info.append(gem_text)
+                continue
+
             # Potential options
             potential_grade = equipment.get('potential_option_grade', 'None')
             potential_1 = equipment.get('potential_option_1')
@@ -642,8 +683,36 @@ class EquipmentView(discord.ui.View):
                     embed.add_field(name="內在潛能", value=text, inline=False)
             else:
                 embed.add_field(name="內在潛能", value="無內在潛能資料", inline=False)
-        
+
+        # Footer 虛線：與角色頁一致，撐住 embed 寬度，避免切換分頁時跑版
+        embed.set_footer(text=self._build_footer_text())
+
         return embed
+
+    def _build_footer_text(self) -> str:
+        """產生與角色頁相同格式的「創建日期＋虛線」footer，維持 embed 寬度避免跑版"""
+        # 無創建日期資料時，退回純虛線（仍維持寬度）
+        fallback = f"{'-'*19}　　　　　　　　　　{'-'*19}"
+        if not (self.character_basic_data and self.character_basic_data.get('character_date_create')):
+            return fallback
+
+        create_date = self.character_basic_data['character_date_create']
+        try:
+            date_obj = datetime.datetime.fromisoformat(create_date.replace('Z', '+00:00'))
+            formatted_date = date_obj.strftime('%Y-%m-%d')
+
+            today_date_only = datetime.datetime.now().date()
+            create_date_only = date_obj.date()
+            days_diff = (today_date_only - create_date_only).days
+
+            is_birthday = (create_date_only.month == today_date_only.month and
+                           create_date_only.day == today_date_only.day)
+
+            if is_birthday:
+                return f"{'-'*19}創建日期: {formatted_date} ({days_diff}天) 🎉生日快樂！🎂{'-'*19}"
+            return f"{'-'*19}創建日期: {formatted_date} ({days_diff}天){'-'*19}"
+        except Exception:
+            return f"{'-'*19}創建日期: {create_date}{'-'*19}"
     
     @discord.ui.select(
         placeholder="選擇要查看的裝備分類...",

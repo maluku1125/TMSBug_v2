@@ -3,6 +3,7 @@ from typing import Optional
 import datetime
 import configparser
 from functions.API_functions.API_DataBase_Guild import save_guildid_db, get_guildid_db, init_Guild_ID_database
+from functions.API_functions.API_RequestLogger import logged_get
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -83,7 +84,7 @@ def request_guildid(guild_name: str, world_name: str) -> Optional[str]:
     url_string = f"https://open.api.nexon.com/maplestorytw/v1/guild/id?guild_name={guild_name}&world_name={world_name}"
     
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
         
         data = response.json()
@@ -122,7 +123,7 @@ def request_guild_basic(oguildid: str) -> Optional[dict]:
     url_string = f"https://open.api.nexon.com/maplestorytw/v1/guild/basic?oguild_id={oguildid}"
 
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         
         response.raise_for_status()
                 

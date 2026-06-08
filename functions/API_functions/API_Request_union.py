@@ -3,6 +3,7 @@ from typing import Optional
 import datetime
 import configparser
 from functions.API_functions.API_DataBase_Character import save_character_ocid_db, get_character_ocid_db
+from functions.API_functions.API_RequestLogger import logged_get
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -79,7 +80,7 @@ def request_character_ocid(character_name: str) -> Optional[str]:
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/id?character_name={character_name}"
     
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
         
         data = response.json()
@@ -121,7 +122,7 @@ def request_user_union(ocid: str, date = None) -> Optional[dict]:
         url_string = f"https://open.api.nexon.com/{serveraddress}/v1/user/union?ocid={ocid}"
     
     try:
-        response = requests.get(url_string, headers=headers)
+        response = logged_get(url_string, headers=headers)
         response.raise_for_status()
         
         user_union_data = response.json()

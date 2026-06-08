@@ -1,6 +1,7 @@
 import discord
 import datetime
 from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic
+from functions.API_functions.CreateCharacterEmbed import apply_look_params
 from Data.BotEmojiList import EmojiList
 
 def get_adjusted_datetime():
@@ -45,7 +46,7 @@ def format_growth_display(growth_exp):
     """Format growth experience for display"""
     return f"{growth_exp:7.2f}%"
 
-def create_exp_tracking_embed(character_name: str) -> dict:
+def create_exp_tracking_embed(character_name: str, action_params: dict = None) -> dict:
     try:
         # Get character OCID
         ocid = get_character_ocid(character_name)
@@ -255,8 +256,15 @@ def create_exp_tracking_embed(character_name: str) -> dict:
         timestamp=datetime.datetime.now()
     )
     
-    # Set character image as thumbnail
+    # Set character image as thumbnail（套用使用者設定的動作/表情/武器動作）
     if character_image:
+        if action_params:
+            character_image = apply_look_params(
+                character_image,
+                action_params.get('action'),
+                action_params.get('emotion'),
+                action_params.get('wmotion'),
+            )
         embed.set_thumbnail(url=character_image)
     
     # Add current level info
@@ -269,33 +277,34 @@ def create_exp_tracking_embed(character_name: str) -> dict:
     # Add individual period growth fields (inline)
     embed.add_field(
         name=f"{EmojiList.get('exp_coupon', '')} 7日成長",
-        value=f"```autohotkey\n{period_data[7]}```",
+        value=f"```fix\n{period_data[7]  }```",
         inline=True
     )
     
     embed.add_field(
         name=f"{EmojiList.get('exp_coupon', '')} 30日成長",
-        value=f"```autohotkey\n{period_data[30]}```",
+        value=f"```fix\n{period_data[30]  }```",
         inline=True
     )
     
     embed.add_field(
         name=f"{EmojiList.get('exp_coupon', '')} 90日成長 ",
-        value=f"```autohotkey\n{period_data[90]}```",
+        value=f"```fix\n{period_data[90]}```",
         inline=True
     )
     
     # Add daily breakdown (Second field)
     embed.add_field(
         name=f"{EmojiList.get('upper_exp_coupon', '')} 近七日 {EmojiList.get('upper_exp_coupon', '')}",
-        value=f"```autohotkey\n{chr(10).join(daily_breakdown)}```",
+        value=f"```ml\n{chr(10).join(daily_breakdown)}```",
         inline=False
     )
     
     # Set footer with data source info
-    embed.set_footer(text="TMSBug API 經驗追蹤系統")
+    embed.set_footer(text=f"{'-' * 17}TMSBug API 經驗追蹤系統{'-' * 17}")
     
     return {
         "embed": embed,
-        "success": True
+        "success": True,
+        "image_url": character_image,
     }

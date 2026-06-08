@@ -20,6 +20,7 @@ from functions.Cogs.Slash_StarForce import Slash_StarForce
 from functions.Cogs.Slash_API import Slash_API
 from functions.Cogs.Loop_API_Data_Refresh import Loop_API_Data_Refresh
 from functions.Cogs.Slash_Setting import Slash_Setting
+from functions.Cogs.Slash_Battle import Slash_Battle
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -111,6 +112,8 @@ class TMSBot(commands.AutoShardedBot):
         print('Cogs:Loop_API_Data_Refresh loaded')
         await self.add_cog(Slash_Setting(self))
         print('Cogs:Slash_Setting loaded')
+        await self.add_cog(Slash_Battle(self))
+        print('Cogs:Slash_Battle loaded')
 
         # 列出所有已註冊的命令
         all_commands = self.tree.get_commands()
