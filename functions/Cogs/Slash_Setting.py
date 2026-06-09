@@ -7,6 +7,7 @@ import re
 from functions.database_manager import UserDataDB
 from functions.SlashCommandManager import UseSlashCommand
 from functions.CombineCharacter import combine_character_images
+from functions.API_functions.API_BattleRecord import get_quotes, set_quotes
 
 # 初始化資料庫
 user_db = UserDataDB()
@@ -396,6 +397,46 @@ class SettingOverviewView(discord.ui.View):
             item.disabled = True
 
 
+class BattleQuoteModal(discord.ui.Modal):
+    """設定 /battle 勝敗感言（4 種：勝利 / 大勝利 / 敗北 / 大敗北）"""
+    def __init__(self, current: dict):
+        super().__init__(title="設定對戰勝敗感言")
+        self.win_input = discord.ui.TextInput(
+            label="勝利感言", placeholder="一般獲勝時顯示，留空＝不顯示",
+            default=current.get('win') or "", required=False, max_length=100)
+        self.bigwin_input = discord.ui.TextInput(
+            label="大勝利感言（傷害 >10倍）", placeholder="壓倒性獲勝時顯示",
+            default=current.get('big_win') or "", required=False, max_length=100)
+        self.lose_input = discord.ui.TextInput(
+            label="敗北感言", placeholder="一般落敗時顯示",
+            default=current.get('lose') or "", required=False, max_length=100)
+        self.biglose_input = discord.ui.TextInput(
+            label="大敗北感言（傷害 <10倍）", placeholder="慘敗時顯示",
+            default=current.get('big_lose') or "", required=False, max_length=100)
+        for item in (self.win_input, self.bigwin_input, self.lose_input, self.biglose_input):
+            self.add_item(item)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        set_quotes(
+            str(interaction.user.id),
+            win=self.win_input.value,
+            big_win=self.bigwin_input.value,
+            lose=self.lose_input.value,
+            big_lose=self.biglose_input.value,
+        )
+        cur = get_quotes(str(interaction.user.id))
+        embed = discord.Embed(title="✅ 已更新對戰感言", color=discord.Color.green())
+        embed.add_field(
+            name="目前感言（留空＝不顯示）",
+            value=(f"勝利：{cur['win'] or '—'}\n"
+                   f"大勝利：{cur['big_win'] or '—'}\n"
+                   f"敗北：{cur['lose'] or '—'}\n"
+                   f"大敗北：{cur['big_lose'] or '—'}"),
+            inline=False,
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
 class Slash_Setting(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
@@ -424,6 +465,7 @@ class Slash_Setting(commands.Cog):
     @app_commands.choices(type=[
         app_commands.Choice(name="角色", value="character"),
         app_commands.Choice(name="角色動作", value="action"),
+        app_commands.Choice(name="battle", value="battle"),
     ])
     async def setting(self, interaction: discord.Interaction,
                       type: Optional[app_commands.Choice[str]] = None,
@@ -438,6 +480,15 @@ class Slash_Setting(commands.Cog):
             embed = build_action_reference_embed(current)
             view = ActionSettingView(user_id)
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+            return
+
+        # battle：依 type2 分流（目前有「感言」，未來可擴充）
+        if type_value == 'battle':
+            if type2 == '感言':
+                await interaction.response.send_modal(BattleQuoteModal(get_quotes(user_id)))
+            else:
+                await interaction.response.send_message(
+                    "❌ 請選擇 `type2`：感言", ephemeral=True)
             return
 
         # 角色 + 指定本數 → 開啟登記 Modal
@@ -456,15 +507,21 @@ class Slash_Setting(commands.Cog):
 
     @setting.autocomplete('type2')
     async def setting_type2_autocomplete(self, interaction: discord.Interaction, current: str):
-        """type2 依 type 動態預填：選「角色」時提供 1本~6本"""
+        """type2 依 type 動態預填：角色→1本~6本；battle→感言"""
         selected_type = getattr(interaction.namespace, 'type', None)
+        current = current or ''
         if selected_type == 'character':
-            current = current or ''
             return [
                 app_commands.Choice(name=label, value=label)
                 for label in SLOT_NAMES.values()
                 if current in label
             ][:25]
+        if selected_type == 'battle':
+            return [
+                app_commands.Choice(name=opt, value=opt)
+                for opt in ('感言',)
+                if current in opt
+            ]
         # 角色動作 不需要 type2
         return []
 
