@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment, request_character_pet_equipment, request_character_beauty_equipment, request_character_ability, request_character_hyper_stat
+from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment, request_character_pet_equipment, request_character_beauty_equipment, request_character_ability, request_character_hyper_stat, request_character_familiar
 import datetime
 
 from functions.Cogs.Slash_CalculateScrolls import scrolls_fitting
@@ -11,7 +11,7 @@ from Data.SmallData import class_main_stat
 from Data.BotEmojiList import EmojiList
 
 class EquipmentView(discord.ui.View):
-    def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, character_pet_equipment_data: dict = None, character_beauty_equipment_data: dict = None, character_ability_data: dict = None, character_hyper_stat_data: dict = None, current_preset: str = "preset_1", character_basic_data: dict = None):
+    def __init__(self, character_name: str, character_equipment_data: dict, character_cashitem_equipment_data: dict = None, character_pet_equipment_data: dict = None, character_beauty_equipment_data: dict = None, character_ability_data: dict = None, character_hyper_stat_data: dict = None, current_preset: str = "preset_1", character_basic_data: dict = None, character_familiar_data: dict = None):
         super().__init__(timeout=300)  # 5 minute timeout
         self.character_name = character_name
         self.character_equipment_data = character_equipment_data
@@ -21,6 +21,7 @@ class EquipmentView(discord.ui.View):
         self.character_ability_data = character_ability_data
         self.character_hyper_stat_data = character_hyper_stat_data
         self.character_basic_data = character_basic_data
+        self.character_familiar_data = character_familiar_data
         self.current_preset = current_preset
     
         self.current_category = "weapon"  # Default category
@@ -50,11 +51,12 @@ class EquipmentView(discord.ui.View):
         weapon_slots = ['武器', '輔助武器', '徽章']
         armor_slots = ['帽子', '上衣', '褲/裙', '鞋子', '手套', '披風', '肩膀裝飾']
         accessory_slots = ['臉飾', '眼飾', '耳環', '墜飾', '墜飾2', '腰帶', '戒指1', '戒指2', '戒指3', '戒指4']
-        # 其他裝備：口袋/胸章/勳章/機器心臟 + 圖騰1/2/3（馴服的怪物 / 馬鞍 / 怪物裝備）
-        other_slots = ['口袋道具', '胸章', '勳章', '機器人', '機器心臟', '馴服的怪物', '馬鞍', '怪物裝備']
+        # 圖騰槽位 API 已正名：馴服的怪物/馬鞍/怪物裝備 → 圖騰1/圖騰2/圖騰3（保留舊名向後相容）
+        totem_slots = ('圖騰1', '圖騰2', '圖騰3', '馴服的怪物', '馬鞍', '怪物裝備')
+        # 其他裝備：口袋/胸章/勳章/機器心臟 + 圖騰1/2/3
+        other_slots = ['口袋道具', '胸章', '勳章', '機器人', '機器心臟'] + list(totem_slots)
 
         # 圖騰與寶玉不隨 preset 切換，只存在於頂層 item_equipment，補進來一起處理（歸入「其他裝備」）
-        totem_slots = ('馴服的怪物', '馬鞍', '怪物裝備')
         top_level_equipment = self.character_equipment_data.get('item_equipment', [])
         extra_equipment = [
             e for e in top_level_equipment
@@ -466,7 +468,42 @@ class EquipmentView(discord.ui.View):
                         ability_text += f"\n{fame_text}"
                     
                     self.ability_info.append(ability_text)
-        
+
+        # Process familiar (萌獸)：主萌獸(summoned_flag) + 連結萌獸(slot 1/2/3/vip)
+        self.familiar_info = []
+        if self.character_familiar_data:
+            infos = self.character_familiar_data.get('familiar_info') or []
+            link_slots = self.character_familiar_data.get('familiar_link_slot') or []
+            active_map = {str(s.get('slot_id')): (s.get('active_flag') == 'true') for s in link_slots}
+
+            def _fmt_familiar_options(fam):
+                opts = fam.get('option') or []
+                lines = [f"{o.get('option_name')} +{o.get('option_value')}" for o in opts]
+                return "```\n" + ("\n".join(lines) if lines else "無屬性") + "\n```"
+
+            # 主萌獸
+            main = next((f for f in infos if f.get('summoned_flag') == 'true'), None)
+            if main:
+                self.familiar_info.append(
+                    f"🌟 **主萌獸：{main.get('familiar_name', '未知')}**\n{_fmt_familiar_options(main)}"
+                )
+
+            # 連結萌獸（依 slot 1,2,3,vip 順序）
+            link_blocks = []
+            for slot in ('1', '2', '3', 'vip'):
+                fam = next((f for f in infos
+                            if f.get('familiar_state') == 'linked' and str(f.get('slot_id')) == slot), None)
+                if not fam:
+                    continue
+                mark = '✅' if active_map.get(slot) else '❌'
+                label = 'VIP' if slot == 'vip' else slot
+                link_blocks.append(
+                    f"`[{label}]`{mark} **{fam.get('familiar_name', '未知')}**\n{_fmt_familiar_options(fam)}"
+                )
+            if link_blocks:
+                self.familiar_info.append("🔗 **連結萌獸**")
+                self.familiar_info.extend(link_blocks)
+
     def create_embed(self, category: str) -> discord.Embed:
         """Create corresponding embed based on category"""
         category_names = {
@@ -477,7 +514,8 @@ class EquipmentView(discord.ui.View):
             "cashitem": "時裝外觀",
             "cashitem_base": "時裝",
             "pet": "寵物",
-            "ability": "極限屬性/內在潛能"
+            "ability": "極限屬性/內在潛能",
+            "familiar": "萌獸"
         }
         
         preset_names = {
@@ -684,6 +722,24 @@ class EquipmentView(discord.ui.View):
             else:
                 embed.add_field(name="內在潛能", value="無內在潛能資料", inline=False)
 
+        elif category == "familiar":
+            if self.familiar_info:
+                chunks = []
+                current_chunk = ""
+                for item in self.familiar_info:
+                    piece = item + "\n"
+                    if len(current_chunk + piece) > 1000:
+                        chunks.append(current_chunk)
+                        current_chunk = piece
+                    else:
+                        current_chunk += piece
+                if current_chunk:
+                    chunks.append(current_chunk)
+                for chunk in chunks:
+                    embed.add_field(name="​", value=chunk, inline=False)
+            else:
+                embed.add_field(name="​", value="無萌獸資料", inline=False)
+
         # Footer 虛線：與角色頁一致，撐住 embed 寬度，避免切換分頁時跑版
         embed.set_footer(text=self._build_footer_text())
 
@@ -766,6 +822,12 @@ class EquipmentView(discord.ui.View):
                 description="",
                 emoji="✨",
                 value="ability"
+            ),
+            discord.SelectOption(
+                label="萌獸",
+                description="",
+                emoji="🐹",
+                value="familiar"
             )
         ]
     )
@@ -897,7 +959,8 @@ def create_character_equipment_embed(character_name: str, character_basic_data: 
     character_beauty_equipment_data = request_character_beauty_equipment(ocid)
     character_ability_data = request_character_ability(ocid)
     character_hyper_stat_data = request_character_hyper_stat(ocid)
-    
+    character_familiar_data = request_character_familiar(ocid)
+
     if not character_equipment_data:
         embed = discord.Embed(
             title="錯誤",
@@ -925,7 +988,7 @@ def create_character_equipment_embed(character_name: str, character_basic_data: 
         return {"embed": embed, "view": None}
     
     # Create View and initial embed
-    view = EquipmentView(character_name, character_equipment_data, character_cashitem_equipment_data, character_pet_equipment_data, character_beauty_equipment_data, character_ability_data, character_hyper_stat_data, current_preset="preset_1", character_basic_data=character_basic_data)
+    view = EquipmentView(character_name, character_equipment_data, character_cashitem_equipment_data, character_pet_equipment_data, character_beauty_equipment_data, character_ability_data, character_hyper_stat_data, current_preset="preset_1", character_basic_data=character_basic_data, character_familiar_data=character_familiar_data)
     initial_embed = view.create_embed("weapon")  # Default display weapons
     
     return {"embed": initial_embed, "view": view}

@@ -133,12 +133,19 @@ def get_daily_counts(days: int = 7) -> dict:
         return {}
 
 
-def get_month_summary() -> dict:
-    """當月 API 統計，回傳 {'month': 'YYYY-MM', 'total': N, 'by_endpoint': [(endpoint, count), ...]}"""
-    result = {'month': datetime.datetime.now().strftime('%Y-%m'), 'total': 0, 'by_endpoint': []}
+def get_month_summary(year: int = None, month: int = None) -> dict:
+    """指定月份的 API 統計（省略則為當月）。自動挑對應季度的 DB 檔。
+    回傳 {'month': 'YYYY-MM', 'total': N, 'by_endpoint': [(endpoint, count), ...]}"""
+    now = datetime.datetime.now()
+    year = year or now.year
+    month = month or now.month
+    ym = f"{year:04d}-{month:02d}"
+    quarter = (month - 1) // 3 + 1
+    path = os.path.join(LOG_DIR, f"API_Log_{year}Q{quarter}.db")
+
+    result = {'month': ym, 'total': 0, 'by_endpoint': []}
     try:
-        ym = result['month']
-        with sqlite3.connect(_current_db_path()) as conn:
+        with sqlite3.connect(path) as conn:
             _ensure_table(conn)
             result['total'] = conn.execute(
                 "SELECT COUNT(*) FROM api_log WHERE strftime('%Y-%m', ts) = ?", (ym,)

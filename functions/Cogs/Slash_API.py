@@ -657,7 +657,8 @@ class Slash_API(commands.Cog):
     @app_commands.choices(analysis_type=[
         app_commands.Choice(name="職業分析", value="class"),
         app_commands.Choice(name="世界分析", value="world"),
-        app_commands.Choice(name="等級分析", value="level")
+        app_commands.Choice(name="等級分析", value="level"),
+        app_commands.Choice(name="寶玉排行", value="gem")
     ])
     async def api_analyse(self, interaction: discord.Interaction, analysis_type: str = "class"):
         

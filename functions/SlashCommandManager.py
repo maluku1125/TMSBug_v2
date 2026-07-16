@@ -578,6 +578,134 @@ class SlashCommandManager:
             logger.error(f"獲取每日趨勢失敗: {e}")
             return []
 
+    def get_month_command_report(self, year: int = None, month: int = None) -> dict:
+        """指定月份的指令統計（省略則當月）。以 timestamp 的 strftime('%Y-%m') 分組（本地時間）。"""
+        now = datetime.datetime.now()
+        year = year or now.year
+        month = month or now.month
+        ym = f"{year:04d}-{month:02d}"
+        report = {
+            'month': ym, 'total': 0, 'success': 0, 'success_rate': 0.0,
+            'avg_response': None, 'active_days': 0,
+            'top_commands': [], 'top_guilds': [], 'top_users': [],
+        }
+        cond = "strftime('%Y-%m', timestamp) = ?"
+        try:
+            with self._get_db_connection() as conn:
+                c = conn.cursor()
+                report['total'] = c.execute(
+                    f"SELECT COUNT(*) FROM command_usage WHERE {cond}", (ym,)).fetchone()[0]
+                report['success'] = c.execute(
+                    f"SELECT COUNT(*) FROM command_usage WHERE {cond} AND success = 1", (ym,)).fetchone()[0]
+                if report['total']:
+                    report['success_rate'] = report['success'] / report['total'] * 100
+                avg_row = c.execute(
+                    f"SELECT AVG(response_time) FROM command_usage "
+                    f"WHERE {cond} AND response_time IS NOT NULL", (ym,)).fetchone()
+                report['avg_response'] = avg_row[0] if avg_row and avg_row[0] is not None else None
+                report['active_days'] = c.execute(
+                    f"SELECT COUNT(DISTINCT date(timestamp)) FROM command_usage WHERE {cond}", (ym,)).fetchone()[0]
+                report['top_commands'] = [{'command': r[0], 'count': r[1]} for r in c.execute(
+                    f"SELECT command_type, COUNT(*) FROM command_usage WHERE {cond} "
+                    f"GROUP BY command_type ORDER BY 2 DESC LIMIT 10", (ym,)).fetchall()]
+                report['top_guilds'] = [{'guild': r[0], 'count': r[1]} for r in c.execute(
+                    f"SELECT guild_name, COUNT(*) FROM command_usage WHERE {cond} "
+                    f"GROUP BY guild_name ORDER BY 2 DESC LIMIT 5", (ym,)).fetchall()]
+                report['top_users'] = [{'user': r[0], 'count': r[1]} for r in c.execute(
+                    f"SELECT user_name, COUNT(*) FROM command_usage WHERE {cond} "
+                    f"GROUP BY user_name ORDER BY 2 DESC LIMIT 5", (ym,)).fetchall()]
+        except Exception as e:
+            logger.error(f"獲取月報指令統計失敗: {e}")
+        return report
+
+    def create_monthly_report_text(self, year: int = None, month: int = None) -> str:
+        """產生月報「文字排版報表」（code block）。預設為『上一個月』，並與再前一月比較 (MoM)。"""
+        now = datetime.datetime.now()
+        # 預設：上一個月
+        if year is None or month is None:
+            prev_last = datetime.date(now.year, now.month, 1) - datetime.timedelta(days=1)
+            year, month = prev_last.year, prev_last.month
+        ym = f"{year:04d}-{month:02d}"
+
+        # 再前一個月（供 MoM 比較）
+        prev_last = datetime.date(year, month, 1) - datetime.timedelta(days=1)
+        py, pm = prev_last.year, prev_last.month
+        pym = f"{py:04d}-{pm:02d}"
+
+        cmd = self.get_month_command_report(year, month)
+        prev_cmd = self.get_month_command_report(py, pm)
+
+        # API 統計（延遲匯入避免循環依賴）
+        try:
+            from functions.API_functions.API_RequestLogger import get_month_summary
+            api = get_month_summary(year, month)
+            prev_api = get_month_summary(py, pm)
+        except Exception as e:
+            logger.error(f"月報載入 API 統計失敗: {e}")
+            api = {'total': 0, 'by_endpoint': []}
+            prev_api = {'total': 0}
+
+        def mom(cur: int, prev: int) -> str:
+            if not prev:
+                return "—（前月無資料）"
+            diff = (cur - prev) / prev * 100
+            arrow = "▲" if diff > 0 else ("▼" if diff < 0 else "＝")
+            return f"{arrow}{abs(diff):.1f}%（前月 {prev:,}）"
+
+        W = 40
+        avg_resp = f"{cmd['avg_response']:.2f}s" if cmd['avg_response'] is not None else "—"
+        L = []
+        L.append("━" * W)
+        L.append(f"  TMSBug 月報　{ym}")
+        L.append(f"  （對比 {pym}）")
+        L.append("━" * W)
+        L.append("【指令總覽】")
+        L.append(f"  總次數　: {cmd['total']:,}")
+        L.append(f"　　　　　  {mom(cmd['total'], prev_cmd['total'])}")
+        L.append(f"  成功率　: {cmd['success_rate']:.1f}%")
+        L.append(f"  平均回應: {avg_resp}")
+        L.append(f"  活躍天數: {cmd['active_days']} 天")
+        L.append("")
+        L.append("【熱門指令 Top10】")
+        if cmd['top_commands']:
+            for i, c in enumerate(cmd['top_commands'], 1):
+                L.append(f"  {i:>2}. {c['command']:<20}{c['count']:>7,}")
+        else:
+            L.append("  （無資料）")
+        L.append("")
+        L.append("【最活躍群組 Top5】")
+        if cmd['top_guilds']:
+            for i, g in enumerate(cmd['top_guilds'], 1):
+                L.append(f"  {i}. {g['count']:>6,} ｜ {g['guild']}")
+        else:
+            L.append("  （無資料）")
+        L.append("")
+        L.append("【最活躍用戶 Top5】")
+        if cmd['top_users']:
+            for i, u in enumerate(cmd['top_users'], 1):
+                L.append(f"  {i}. {u['count']:>6,} ｜ {u['user']}")
+        else:
+            L.append("  （無資料）")
+        L.append("")
+        L.append("【API 呼叫】")
+        L.append(f"  總次數　: {api['total']:,}")
+        L.append(f"　　　　　  {mom(api['total'], prev_api.get('total', 0))}")
+        L.append("─" * W)
+        if api['by_endpoint']:
+            for ep, cnt in api['by_endpoint'][:10]:
+                L.append(f"  {(ep or '(未知)'):<26}{cnt:>7,}")
+        else:
+            L.append("  （本月無資料）")
+        L.append("━" * W)
+        L.append(f"  產生於 {now.strftime('%Y-%m-%d %H:%M')}")
+
+        body = "\n".join(L)
+        text = "```\n" + body + "\n```"
+        # Discord 訊息上限 2000 字，保險截斷
+        if len(text) > 1990:
+            text = text[:1985] + "\n…```"
+        return text
+
     def cleanup_old_data(self, days: int = None):
         """清理舊資料"""
         cleanup_days = days or self.config.get('db_cleanup_days', 30)
@@ -639,3 +767,7 @@ def GetTopCommandsSimple(days: int = 30, limit: int = 5) -> list:
 def GetDailyTrend(days: int = 7) -> list:
     """獲取每日使用趨勢"""
     return command_manager.get_daily_trend(days)
+
+def GetMonthlyReport(year: int = None, month: int = None) -> str:
+    """獲取月報文字報表（指令 + API，省略年月則為『上一個月』）"""
+    return command_manager.create_monthly_report_text(year, month)

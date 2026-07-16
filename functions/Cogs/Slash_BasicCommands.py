@@ -8,7 +8,7 @@ import time
 from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
 from functions.MSCrawler import Format_ApplePrizeData, Format_FashionBoxPrizeData, save_apple_json_file, save_fashionbox_json_file
 from functions.GetPrize import reloaddata
-from ..SlashCommandManager import UseSlashCommand, GetSlashCommandUsage, SaveSystemStats, GetLastHourCommandCount, GetTopCommandsSimple, GetDailyTrend
+from ..SlashCommandManager import UseSlashCommand, GetSlashCommandUsage, SaveSystemStats, GetLastHourCommandCount, GetTopCommandsSimple, GetDailyTrend, GetMonthlyReport
 from functions.API_functions.API_RequestLogger import get_last_hour_count as GetLastHourAPICount, get_daily_counts as GetDailyAPICounts
  
 process = psutil.Process()
@@ -27,7 +27,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v3.9.1'
+version = 'v3.10.1'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -155,6 +155,29 @@ class Slash_BasicCommands(commands.Cog):
             
         # 開發者功能處理 - 合併的 usage/dashboard/stats 功能
         if dev_func and str(interaction.user.id) == '310164490391912448':
+            # 月報：dev_func = "monthly"（當月）或 "monthly 2026-05"（指定月份）
+            if dev_func.split()[0] == "monthly":
+                report_start_time = time.time()
+                await interaction.response.defer()
+                try:
+                    year = month = None
+                    parts = dev_func.split()
+                    if len(parts) > 1 and '-' in parts[1]:
+                        year, month = (int(x) for x in parts[1].split('-')[:2])
+                    report_text = GetMonthlyReport(year, month)
+                    await interaction.edit_original_response(content=report_text)
+                    UseSlashCommand('help_monthly', interaction, time.time() - report_start_time)
+                    return
+                except Exception as e:
+                    error_embed = discord.Embed(
+                        title="❌ 月報載入失敗",
+                        description=f"錯誤: {str(e)}\n格式：`monthly` 或 `monthly 2026-05`",
+                        color=discord.Color.red()
+                    )
+                    await interaction.edit_original_response(embed=error_embed)
+                    UseSlashCommand('help_monthly', interaction, time.time() - report_start_time, False)
+                    return
+
             if dev_func == "dashboard":
                 print(f"slash_command_{dev_func}")
                 dashboard_start_time = time.time()

@@ -106,6 +106,7 @@ class Slash_CreateBossDataEmbed(commands.Cog):
             Choice(name = "巴德利斯", value = "巴德利斯"),
             Choice(name = "最初的敵對者", value = "最初的敵對者"),
             Choice(name = "璀璨的凶星", value = "璀璨的凶星"),
+            Choice(name = "尤彼太", value = "尤彼太"),
         ],
         difficulty = [
             Choice(name = "簡單", value = "easy"),

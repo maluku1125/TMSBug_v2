@@ -387,7 +387,7 @@ class Slash_Battle(commands.Cog):
         embed.add_field(name=f"{target.display_name}", value=_intro_value(opp), inline=True)
         embed.add_field(name="📜 戰鬥流程", value=_battle_log(me, opp), inline=False)
         embed.add_field(name="🏆 結果", value=_result_value(winner, loser), inline=False)
-        embed.set_footer(text=f"{'-' * 19}TMS對戰系統 v1.0.0{'-' * 19}")
+        embed.set_footer(text=f"{'-' * 19}TMS對戰系統 v1.1.0{'-' * 19}")
 
         # 合成決鬥圖：發起方(me)固定在左、左邊一律左右鏡像；對象(opp)固定在右
         duel_file = None

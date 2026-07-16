@@ -1,11 +1,24 @@
 import discord
 import datetime
+import unicodedata
 from Data.SmallData import worldlogo, worldemoji
 from functions.API_functions.API_Analyse import (
-    get_class_distribution_analysis, 
-    get_world_distribution_analysis, 
+    get_class_distribution_analysis,
+    get_world_distribution_analysis,
     get_level_distribution_analysis
 )
+from functions.API_functions.API_EquipStat import get_gem_ranking_normalized
+
+# 寶玉屬性標籤；需顯示「等效主屬」的職業類型
+_GEM_STAT_LABEL = {'str': 'STR', 'dex': 'DEX', 'int': 'INT', 'luk': 'LUK',
+                   'str+dex+luk': 'S+D+L', 'max_hp': 'HP'}
+_GEM_NORMALIZED = {'str+dex+luk', 'max_hp'}
+
+# 過長職業名縮短（避免職業分析兩欄排版折行）
+_CLASS_SHORT_NAME = {
+    '大魔導士(火、毒)': '火毒大魔導', '大魔導士（火、毒）': '火毒大魔導',
+    '大魔導士(冰、雷)': '冰雷大魔導', '大魔導士（冰、雷）': '冰雷大魔導',
+}
 
 class LevelFilterModal(discord.ui.Modal):
     def __init__(self, view_instance):
@@ -133,20 +146,18 @@ class APIAnalyseView(discord.ui.View):
         # Format class statistics
         formatted_stats = []
         for i, stat in enumerate(display_stats):
-            class_name = stat['class_name']
+            # 過長職業名先縮短（火毒/冰雷大魔導），避免兩欄排版折行
+            class_name = _CLASS_SHORT_NAME.get(stat['class_name'], stat['class_name'])
             count = stat['count']
             percentage = stat['percentage']
 
-            # Process class name, max 9 characters
-            short_class = class_name[:9] if len(class_name) > 9 else class_name
-            
-            # Use full-width spaces for Chinese class name alignment
-            # Calculate needed full-width spaces (target width 10 character positions)
-            padding_needed = 9 - len(short_class)
+            # 補齊到 5 格全形（縮短後最長職業名約 5 字），百分比 1 位小數，縮減行寬避免折行
+            short_class = class_name[:5] if len(class_name) > 5 else class_name
+            padding_needed = 5 - len(short_class)
             padded_class = short_class + '　' * padding_needed  # Use full-width space (U+3000)
-            
+
             # Format display
-            formatted_stats.append(f"{i+1:2d}. {padded_class} {percentage:5.2f}%")
+            formatted_stats.append(f"{i+1:2d}.{padded_class}{percentage:.1f}%")
         
         # Display in two columns, 30 classes per column
         if len(formatted_stats) > 30:
@@ -179,7 +190,10 @@ class APIAnalyseView(discord.ui.View):
             value="1. 統計基於已搜尋過的角色資料\n2. 僅統計轉職為 4/5/6 轉的職業\n3. 百分比計算基於當前選定的伺服器範圍\n4. 點擊其他按鈕切換分析類型",
             inline=False
         )
-        
+
+        # 虛線足標（撐寬 embed，兩欄較不易折行）
+        embed.set_footer(text=f"{'-' * 22}共 {total_characters:,} 名角色{'-' * 22}")
+
         # Set timestamp
         embed.timestamp = datetime.datetime.now()
         embed.set_footer(text=f"分析自 {format(total_characters, ',')} 位玩家的職業分布 | TMSBug API 資料查詢")
@@ -383,10 +397,16 @@ class APIAnalyseView(discord.ui.View):
             await interaction.response.send_modal(modal)
         else:
             await interaction.response.send_message(
-                "等級篩選僅支援職業分析和世界分析", 
+                "等級篩選僅支援職業分析和世界分析",
                 ephemeral=True
             )
-    
+
+    @discord.ui.button(label="💎 寶玉排行", style=discord.ButtonStyle.secondary, row=1)
+    async def gem_ranking_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = get_gem_ranking_normalized(100)
+        view = GemRankingView(data)
+        await interaction.response.edit_message(embed=view.create_embed(), view=view)
+
     @discord.ui.select(
         placeholder="選擇世界篩選...",
         options=[
@@ -420,6 +440,69 @@ class APIAnalyseView(discord.ui.View):
             item.disabled = True
 
 
+class GemRankingView(discord.ui.View):
+    """伊妮絲的寶玉排行（分頁，每頁 20 筆，依等效主屬排序）"""
+    def __init__(self, data: list):
+        super().__init__(timeout=300)
+        self.data = data  # [(name, gem_stat, raw_value, equiv), ...]
+        self.items_per_page = 20
+        self.current_page = 0
+        self.total_pages = max(1, (len(data) + self.items_per_page - 1) // self.items_per_page)
+
+    def create_embed(self) -> discord.Embed:
+        embed = discord.Embed(color=discord.Color.purple())
+        embed.set_author(name="💎 伊妮絲的寶玉排行 TOP 100")
+        embed.description = f"第 {self.current_page + 1} 頁 / 共 {self.total_pages} 頁"
+        embed.timestamp = datetime.datetime.now()
+
+        start = self.current_page * self.items_per_page
+        page = self.data[start:start + self.items_per_page]
+        if not page:
+            embed.add_field(name="📭 暫無資料", value="目前沒有寶玉資料（需先刷新裝備統計）", inline=False)
+            return embed
+
+        # 以「東亞字寬」把名字補齊到固定欄寬，monospace 才會對齊
+        def _w(s):
+            return sum(2 if unicodedata.east_asian_width(c) in ('W', 'F') else 1 for c in s)
+
+        name_w = max(_w(n) for n, _, _, _ in page)
+        lines = []
+        for i, (name, stat, raw, equiv) in enumerate(page):
+            rank = start + i + 1
+            label = _GEM_STAT_LABEL.get(stat, (stat or '?').upper())
+            name_pad = name + ' ' * (name_w - _w(name))
+            value = f"+{raw}(等效{equiv})" if stat in _GEM_NORMALIZED else f"+{raw}"
+            lines.append(f"{rank:>2d}. {name_pad}  {label:<5} {value}")
+        embed.add_field(name="​", value="```\n" + "\n".join(lines) + "\n```", inline=False)
+        embed.set_footer(text=f"{'-' * 19}寶玉排行 共 {len(self.data)} 人{'-' * 19}")
+        return embed
+
+    @discord.ui.button(label="⬅️ 上一頁", style=discord.ButtonStyle.secondary)
+    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.current_page > 0:
+            self.current_page -= 1
+            await interaction.response.edit_message(embed=self.create_embed(), view=self)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.button(label="➡️ 下一頁", style=discord.ButtonStyle.secondary)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            await interaction.response.edit_message(embed=self.create_embed(), view=self)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.button(label="🔙 返回分析", style=discord.ButtonStyle.primary)
+    async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = APIAnalyseView("class")
+        await interaction.response.edit_message(embed=view.create_analysis_embed(), view=view)
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
+
 def create_api_analyse_embed(analysis_type: str = "class", include_view: bool = True) -> dict:
     """
     創建 API 分析嵌入
@@ -433,6 +516,10 @@ def create_api_analyse_embed(analysis_type: str = "class", include_view: bool = 
     """
     try:
         if include_view:
+            # 寶玉排行用專屬分頁 View
+            if analysis_type == "gem":
+                view = GemRankingView(get_gem_ranking_normalized(100))
+                return {"embed": view.create_embed(), "view": view, "success": True}
             view = APIAnalyseView(analysis_type)
             embed = view.create_analysis_embed()
             return {

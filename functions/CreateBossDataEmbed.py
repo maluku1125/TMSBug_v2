@@ -1,5 +1,6 @@
 
 import json
+import os
 import discord
 
 boss_aliases = {
@@ -48,9 +49,12 @@ boss_aliases = {
     '最初的敵對者':'最初的敵對者',
     "瑪麗西亞": "瑪麗西亞",
     "璀璨的凶星": "璀璨的凶星",
+    "尤彼太": "尤彼太",
     '蟲蟲':'蟲蟲'
 }
-with open(rf'C:\Users\User\Desktop\DiscordBot\TMSBug_v2\Data\BossData.json', 'r', encoding='utf-8') as f:
+# 動態讀取「本專案自己」的 Data/BossData.json（原本寫死 v2 路徑，導致 beta 讀到 v2 的資料）
+_BOSS_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Data', 'BossData.json')
+with open(_BOSS_DATA_PATH, 'r', encoding='utf-8-sig') as f:
     boss_data = json.load(f)
 
 def Create_Boss_Data_Embed(Content, Bossmode):
@@ -76,9 +80,7 @@ def Create_Boss_Data_Embed(Content, Bossmode):
         '\n'.join([f"{k}: {v}"for k, v in boss_info.get("4thStage", {}).items()]),
         '\n'.join([f"{k}: {v}"for k, v in boss_info.get("5thStage", {}).items()]),
     ]
-    main_drop = boss_info.get("MainDrop", "")
-    sub_drop = boss_info.get("SubDrop", [])
-    cube_drop = boss_info.get("CubeDrop", "")
+    progress_points = boss_info.get("進度點", {})
     glowing_soul_crystal = boss_info.get("GlowingSoulCrystal", 0)
 
     if use_arc_aut == "Arcane":
@@ -88,12 +90,7 @@ def Create_Boss_Data_Embed(Content, Bossmode):
     else:
         arcane_authentic = ""
 
-    sub_drop_items = [' '.join(sub_drop[i:i+3]) for i in range(0, len(sub_drop), 3)]
-    sub_drop_description = '\n'.join(sub_drop_items)
-
-    sub_drop_description += f'\n{cube_drop}'
-
-    main_drop_description = '\n'.join(main_drop)
+    progress_desc = '\n'.join(f"{k}：{v}" for k, v in progress_points.items()) or "—"
 
     embed = discord.Embed(
         title=f"**{boss_name}({boss_mode}**)", 
@@ -106,8 +103,7 @@ def Create_Boss_Data_Embed(Content, Bossmode):
     for _ in range(len([_ for _ in stages if _])):
         embed.add_field(name=stage_count[_], value=stages[_], inline=True)
     embed.add_field(name="", value="> 💎__**獎勵**__", inline = False)
-    embed.add_field(name="🎁__主要掉落物__", value=f"{main_drop_description}", inline = True)
-    embed.add_field(name="🎁__其他掉落物__", value=f"{sub_drop_description}", inline = True)
+    embed.add_field(name="📊__進度點__", value=f"{progress_desc}", inline = True)
     embed.add_field(name="💰結晶石", value=f"{glowing_soul_crystal:,}", inline = True)
 
     return embed

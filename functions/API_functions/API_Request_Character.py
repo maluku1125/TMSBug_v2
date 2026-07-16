@@ -110,7 +110,29 @@ def request_character_ocid(character_name: str) -> Optional[str]:
     except Exception as e:
         print(f"API request failed: {e}")
         return None
-    
+
+
+async def request_character_ocid_async(session: aiohttp.ClientSession, character_name: str,
+                                       semaphore: asyncio.Semaphore) -> tuple:
+    """非同步查單一角色 OCID（併發用）。
+
+    回傳 (character_name, ocid|None)。刻意「不」寫 DB —— 交給呼叫端收集後批次寫入，
+    避免數十萬個獨立 transaction。
+    """
+    headers = {"x-nxopen-api-key": api_key}
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/id?character_name={character_name}"
+
+    async with semaphore:  # 控制併發數量
+        try:
+            async with session.get(url_string, headers=headers) as response:
+                log_request(url_string, response.status)
+                response.raise_for_status()
+                data = await response.json()
+                return (character_name, data.get('ocid'))
+        except Exception as e:
+            print(f"OCID async request failed for '{character_name}': {e}")
+            return (character_name, None)
+
 
 def request_character_basic(ocid: str, use_cache: bool = False, date = None) -> Optional[dict]:
     
@@ -237,8 +259,27 @@ def request_character_itemequipment(ocid: str) -> Optional[dict]:
         print(f"error occurred while fetching character item equipment info: {e}")
         return None
 
+def request_character_familiar(ocid: str) -> Optional[dict]:
+    """萌獸系統：主萌獸 + 連結萌獸資料"""
+    headers = {
+        "x-nxopen-api-key": api_key
+    }
+
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/familiar?ocid={ocid}"
+
+    try:
+        response = logged_get(url_string, headers=headers)
+        response.raise_for_status()
+
+        character_familiar_data = response.json()
+        return character_familiar_data
+
+    except Exception as e:
+        print(f"error occurred while fetching character familiar info: {e}")
+        return None
+
 def request_character_symbolequipment(ocid: str) -> Optional[dict]:
-    
+
     headers = {
         "x-nxopen-api-key": api_key
     }
@@ -398,6 +439,22 @@ async def request_character_basic_async(session: aiohttp.ClientSession, ocid: st
             return None
 
 
+async def request_character_itemequipment_async(session: aiohttp.ClientSession, ocid: str,
+                                                 semaphore: asyncio.Semaphore) -> Optional[dict]:
+    """非同步查角色裝備（併發用）。回傳裝備資料或 None。"""
+    headers = {"x-nxopen-api-key": api_key}
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/item-equipment?ocid={ocid}"
+    async with semaphore:
+        try:
+            async with session.get(url_string, headers=headers) as response:
+                log_request(url_string, response.status)
+                response.raise_for_status()
+                return await response.json()
+        except Exception as e:
+            print(f"item-equipment async request failed for '{ocid}': {e}")
+            return None
+
+
 async def refresh_single_character_async(session: aiohttp.ClientSession, item: dict, semaphore: asyncio.Semaphore) -> dict:
     """
     非同步刷新單一角色資料
@@ -443,6 +500,18 @@ async def refresh_single_character_async(session: aiohttp.ClientSession, item: d
             else:
                 print(f"✓ Successfully refreshed '{character_name}'")
                 result['status'] = 'success'
+
+                # 順便追蹤裝備（只對 250 等以上抓 item-equipment：寶玉/輪迴碑石屬終局裝備）
+                try:
+                    level = int(fresh_data.get('character_level') or 0)
+                except (ValueError, TypeError):
+                    level = 0
+                if level >= 250:
+                    equip = await request_character_itemequipment_async(session, ocid, semaphore)
+                    if equip:
+                        from functions.API_functions.API_EquipStat import update_from_equipment
+                        update_from_equipment(ocid, fresh_data.get('character_name'),
+                                              equip.get('item_equipment') or [])
         else:
             print(f"✗ Failed to fetch fresh data for '{character_name}' from API")
             result['status'] = 'failed'
