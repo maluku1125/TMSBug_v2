@@ -1,0 +1,111 @@
+{
+  "date": null,
+  "union_champion": [
+    {
+      "champion_name": "諭諭0",
+      "champion_slot": 1,
+      "champion_grade": "SSS",
+      "champion_class": "龍魔導士",
+      "champion_badge_info": [
+        {
+          "stat": "增加全屬性 20、最大HP/MP 1000"
+        },
+        {
+          "stat": "攻擊力/魔力增加 10"
+        },
+        {
+          "stat": "攻擊Boss怪物時傷害增加5%"
+        },
+        {
+          "stat": "爆擊傷害增加3.00%"
+        },
+        {
+          "stat": "無視防禦率增加 5%"
+        }
+      ]
+    },
+    {
+      "champion_name": "諭諭03",
+      "champion_slot": 2,
+      "champion_grade": "SSS",
+      "champion_class": "惡魔復仇者",
+      "champion_badge_info": [
+        {
+          "stat": "增加全屬性 20、最大HP/MP 1000"
+        },
+        {
+          "stat": "攻擊力/魔力增加 10"
+        },
+        {
+          "stat": "攻擊Boss怪物時傷害增加5%"
+        },
+        {
+          "stat": "爆擊傷害增加3.00%"
+        },
+        {
+          "stat": "無視防禦率增加 5%"
+        }
+      ]
+    },
+    {
+      "champion_name": "諭諭52",
+      "champion_slot": 3,
+      "champion_grade": "SS",
+      "champion_class": "蓮",
+      "champion_badge_info": [
+        {
+          "stat": "增加全屬性 20、最大HP/MP 1000"
+        },
+        {
+          "stat": "攻擊力/魔力增加 10"
+        },
+        {
+          "stat": "攻擊Boss怪物時傷害增加5%"
+        },
+        {
+          "stat": "爆擊傷害增加3.00%"
+        }
+      ]
+    },
+    {
+      "champion_name": "諭諭53",
+      "champion_slot": 4,
+      "champion_grade": "SSS",
+      "champion_class": "陰陽師",
+      "champion_badge_info": [
+        {
+          "stat": "增加全屬性 20、最大HP/MP 1000"
+        },
+        {
+          "stat": "攻擊力/魔力增加 10"
+        },
+        {
+          "stat": "攻擊Boss怪物時傷害增加5%"
+        },
+        {
+          "stat": "爆擊傷害增加3.00%"
+        },
+        {
+          "stat": "無視防禦率增加 5%"
+        }
+      ]
+    }
+  ],
+  "champion_badge_total_info": [
+    {
+      "stat": "增加全屬性 80、最大HP/MP 4000"
+    },
+    {
+      "stat": "攻擊力/魔力增加 40"
+    },
+    {
+      "stat": "攻擊Boss怪物時傷害增加20%"
+    },
+    {
+      "stat": "爆擊傷害增加12.00%"
+    },
+    {
+      "stat": "無視防禦率增加 15%"
+    }
+  ]
+}

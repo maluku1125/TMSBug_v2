@@ -19,6 +19,14 @@ class GuildFunctionDB:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            # 官網公告通知設定（獨立表，避免與 ServerCheck 的移除邏輯互相影響）
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS guild_announce (
+                    guild_id TEXT PRIMARY KEY,
+                    channel_id INTEGER,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
             conn.commit()
     
     def get_guild_config(self, guild_id: str) -> Optional[Dict]:
@@ -76,6 +84,42 @@ class GuildFunctionDB:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('DELETE FROM guild_functions WHERE guild_id = ?', (guild_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    # ---------- 官網公告通知 (guild_announce) ----------
+    def set_announce_channel(self, guild_id: str, channel_id: int):
+        """設定或更新 Guild 的公告通知頻道"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO guild_announce (guild_id, channel_id, updated_at)
+                VALUES (?, ?, ?)
+            ''', (guild_id, channel_id, datetime.datetime.now()))
+            conn.commit()
+
+    def get_announce_config(self, guild_id: str) -> Optional[Dict]:
+        """取得單一 Guild 的公告通知設定"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT channel_id, updated_at FROM guild_announce WHERE guild_id = ?', (guild_id,))
+            row = cursor.fetchone()
+            if row:
+                return {'Announce_Channel': row[0], 'updated_at': row[1]}
+            return None
+
+    def get_all_announce_configs(self) -> Dict[str, int]:
+        """取得所有 Guild 的公告通知頻道 {guild_id: channel_id}"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT guild_id, channel_id FROM guild_announce')
+            return {row[0]: row[1] for row in cursor.fetchall()}
+
+    def remove_announce_channel(self, guild_id: str) -> bool:
+        """移除 Guild 的公告通知設定"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM guild_announce WHERE guild_id = ?', (guild_id,))
             conn.commit()
             return cursor.rowcount > 0
     
@@ -200,6 +244,14 @@ class UserDataDB:
             except sqlite3.OperationalError:
                 pass
 
+            # 遷移：新增名片設定欄位（背景 id、版型 id、與 6 個 slot 的項目，slot 以 JSON 存）
+            # 背景與版型為獨立變數：namecard_bg = 背景圖、namecard_layout = 定位版型
+            for col in ('namecard_bg', 'namecard_layout', 'namecard_slots'):
+                try:
+                    cursor.execute(f'ALTER TABLE user_data ADD COLUMN {col} TEXT')
+                except sqlite3.OperationalError:
+                    pass
+
             conn.commit()
 
     # ---------- 單一 slot 操作 ----------
@@ -311,6 +363,53 @@ class UserDataDB:
                 cursor.execute(
                     'INSERT INTO user_data (user_id, char_animated, updated_at) VALUES (?, ?, ?)',
                     (user_id, 1 if animated else 0, datetime.datetime.now())
+                )
+            conn.commit()
+
+    # ---------- 名片設定（每位使用者一組，供 /namecard 使用）----------
+
+    def get_namecard_setting(self, user_id: str) -> Optional[Dict]:
+        """取得使用者的名片設定 {bg, layout, slots}；未設定回 None。
+        bg=背景 id、layout=版型 id、slots=長度 6 的 list（元素是項目 key 或 None）。"""
+        import json
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT namecard_bg, namecard_layout, namecard_slots '
+                'FROM user_data WHERE user_id = ?',
+                (user_id,)
+            )
+            row = cursor.fetchone()
+            if not row or row[0] is None:
+                return None
+            try:
+                slots = json.loads(row[2]) if row[2] else [None] * 6
+            except (ValueError, TypeError):
+                slots = [None] * 6
+            # 補滿 6 格，避免舊資料長度不足
+            slots = (slots + [None] * 6)[:6]
+            # layout 為後加欄位，舊資料可能為 None → 預設版型 '1'
+            return {'bg': row[0], 'layout': row[1] or '1', 'slots': slots}
+
+    def set_namecard_setting(self, user_id: str, bg: str, layout: str, slots: list):
+        """設定或更新使用者的名片設定。slots 為長度 6 的 list（元素可為 None）。"""
+        import json
+        slots = (list(slots) + [None] * 6)[:6]
+        slots_json = json.dumps(slots, ensure_ascii=False)
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT user_id FROM user_data WHERE user_id = ?', (user_id,))
+            if cursor.fetchone():
+                cursor.execute(
+                    'UPDATE user_data SET namecard_bg = ?, namecard_layout = ?, '
+                    'namecard_slots = ?, updated_at = ? WHERE user_id = ?',
+                    (bg, layout, slots_json, datetime.datetime.now(), user_id)
+                )
+            else:
+                cursor.execute(
+                    'INSERT INTO user_data (user_id, namecard_bg, namecard_layout, '
+                    'namecard_slots, updated_at) VALUES (?, ?, ?, ?, ?)',
+                    (user_id, bg, layout, slots_json, datetime.datetime.now())
                 )
             conn.commit()
 

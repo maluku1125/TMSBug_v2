@@ -15,6 +15,7 @@ from functions.API_functions.CreateEXPTrackingEmbed import create_exp_tracking_e
 from functions.API_functions.CreateUnionTrackingEmbed import create_union_tracking_embed
 from functions.API_functions.CreateAPIAnalyseEmbed import create_api_analyse_embed
 from functions.API_functions.CreateCharacterGIF import build_character_gif
+from functions.API_functions.CreateChampionEmbed import create_champion_embed
 
 from functions.SlashCommandManager import UseSlashCommand
 from functions.database_manager import UserDataDB
@@ -614,6 +615,50 @@ class Slash_API(commands.Cog):
             await interaction.followup.send(embed=error_embed)
             response_time = time.time() - start_time
             UseSlashCommand('api_exptracking', interaction, response_time, False)
+
+
+    @app_commands.command(name="champion聯盟冠軍", description="查詢聯盟冠軍角色（等級/經驗、六轉進度與戰鬥力）")
+    @app_commands.describe(playername="角色名稱 (不輸入則使用已登錄的角色)")
+    async def api_champion(self, interaction: discord.Interaction, playername: str = None):
+
+        start_time = time.time()
+
+        if playername is None:
+            user_id = str(interaction.user.id)
+            all_chars = user_db.get_all_user_characters(user_id)
+            registered = {slot: name for slot, name in all_chars.items() if name}
+
+            if len(registered) == 0:
+                await interaction.response.send_message(
+                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
+                    ephemeral=True
+                )
+                return
+
+            # 聯盟冠軍為帳號同世界共用，使用主要登錄角色即可
+            playername = list(registered.values())[0]
+
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            logging.warning("api_champion: Interaction expired before defer")
+            return
+
+        try:
+            result = create_champion_embed(playername)
+            await interaction.followup.send(embed=result["embed"])
+            response_time = time.time() - start_time
+            UseSlashCommand('api_champion', interaction, response_time, result["success"])
+
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ 錯誤",
+                description=f"查詢聯盟冠軍時發生錯誤: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed)
+            response_time = time.time() - start_time
+            UseSlashCommand('api_champion', interaction, response_time, False)
 
 
     @app_commands.command(name="uniontracking戰地追蹤", description="顯示角色近7日戰地聯盟成長分析")

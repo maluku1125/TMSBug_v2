@@ -6,7 +6,7 @@ from functions.API_functions.API_Request_Character import get_character_ocid, re
 from functions.API_functions.API_Request_union import request_user_union
 import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
-from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment
+from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment, common_cores_open
 from Data.BotEmojiList import EmojiList
 
 
@@ -301,7 +301,11 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
     BoostNode2 = hexa_dict.get('EnhanceCore2', 0)
     BoostNode3 = hexa_dict.get('EnhanceCore3', 0)
     BoostNode4 = hexa_dict.get('EnhanceCore4', 0)
+    # 共用核心2/共通核心3 未達開放日先隱藏（不列入完成度分母）
+    c2_open, c3_open = common_cores_open()
     CommonNode1 = hexa_dict.get('CommonCore1', 0)
+    CommonNode2 = hexa_dict.get('CommonCore2', 0) if c2_open else -1
+    CommonNode3 = hexa_dict.get('CommonCore3', 0) if c3_open else -1
 
     # Calculate hexa core completion rate
     totalcount, maxfragment = Calculatefragment(
@@ -309,7 +313,8 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
         MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
-        extrafragment=0
+        extrafragment=0,
+        CommonNode2=CommonNode2, CommonNode3=CommonNode3
     )
     percentage = (totalcount / maxfragment * 100) if maxfragment > 0 else 0
 
@@ -360,10 +365,11 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
         formatted_enhance_cores = [format_core_level(level) for level in enhance_cores]
         hexa_info.append(f"強化核心　： {' | '.join(formatted_enhance_cores)}")
         
-        # Common cores: ensure 1 is displayed
-        while len(common_cores) < 1:
+        # Common cores: 依開放狀態決定顯示數量（共用1固定，共用2/共通核心3 未開放先隱藏）
+        common_slots = 1 + (1 if c2_open else 0) + (1 if c3_open else 0)
+        while len(common_cores) < common_slots:
             common_cores.append(0)
-        common_cores = common_cores[:1]  # Only take first 1
+        common_cores = common_cores[:common_slots]
         formatted_common_cores = [format_core_level(level) for level in common_cores]
         hexa_info.append(f"共用核心　： {' | '.join(formatted_common_cores)}")
 
@@ -506,11 +512,12 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
     # Display hexa core information, show standard format even if no valid cores
     if hexa_equipment is not None:  # Display as long as there is core equipment data
         if not hexa_info:  # If no valid cores, create default format
+            common_default = ' | '.join(['  0'] * (1 + (1 if c2_open else 0) + (1 if c3_open else 0)))
             hexa_info = [
                 "技能核心　：  0 |  0",
-                "精通核心　：  0 |  0 |  0 |  0", 
+                "精通核心　：  0 |  0 |  0 |  0",
                 "強化核心　：  0 |  0 |  0 |  0",
-                "共用核心　：  0"
+                f"共用核心　： {common_default}"
             ]
         
         embed.add_field(

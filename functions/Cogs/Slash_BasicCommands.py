@@ -27,7 +27,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v3.10.1'
+version = 'v3.11.1'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -79,7 +79,7 @@ class HelpCommandView(discord.ui.View):
             name="計算與模擬",
             value=(
                 "```\n"
-                "/solerda碎片進度 - 計算六轉碎片進度\n"
+                "/solerda碎片進度 - 查詢角色六轉進度與所需材料\n"
                 "/formulas各種公式 - 各種公式的簡易計算機\n"
                 "/scrolls卷軸模擬器 - 卷軸模擬器\n"
                 "/cubes洗方塊 - 洗方塊模擬器\n"
@@ -96,6 +96,7 @@ class HelpCommandView(discord.ui.View):
                 "/guild公會查詢 - API 公會查詢\n"
                 "/exptracking經驗追蹤 - API 角色經驗追蹤\n"
                 "/uniontracking戰地追蹤 - API 角色戰地追蹤\n"
+                "/champion聯盟冠軍 - API 聯盟冠軍查詢\n"
                 "/rank排行 - API 角色排行榜\n"
                 "/apianalyse楓谷分析 - API 資料分析\n"
                 "/union戰地查詢 - API 戰地查詢\n"
@@ -108,6 +109,7 @@ class HelpCommandView(discord.ui.View):
             value=(
                 "```\n"
                 "/servercheck - 伺服器開機通知設定(僅群主)\n"
+                "/serverannounce_beta - 官網公告通知設定(僅群主/測試中)\n"
                 "/setting設定 - 設定連結角色\n"
                 "```"
             ),

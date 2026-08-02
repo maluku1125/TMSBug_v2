@@ -15,6 +15,7 @@ from functions.Cogs.Slash_Formulas import Slash_Formulas
 from functions.Cogs.Slash_CalculateScrolls import Slash_CalculateScrolls
 from functions.Cogs.Slash_Cubes import Slash_Cubes
 from functions.Cogs.Loop_ServerCheck import Loop_ServerCheck
+from functions.Cogs.Loop_ServerAnnounce import Loop_ServerAnnounce
 from functions.Cogs.Slash_GuildFunction import Slash_GuildFunctions
 from functions.Cogs.Slash_StarForce import Slash_StarForce
 from functions.Cogs.Slash_API import Slash_API
@@ -102,6 +103,8 @@ class TMSBot(commands.AutoShardedBot):
         print('Cogs:Slash_Cubes loaded')
         await self.add_cog(Loop_ServerCheck(self))
         print('Cogs:Loop_ServerCheck loaded')
+        await self.add_cog(Loop_ServerAnnounce(self))
+        print('Cogs:Loop_ServerAnnounce loaded')
         await self.add_cog(Slash_GuildFunctions(self))
         print('Cogs:Slash_GuildFunctions loaded')
         await self.add_cog(Slash_StarForce(self))

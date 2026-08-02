@@ -5,6 +5,7 @@ import json
 import datetime
 import asyncio
 from functions.database_manager import GuildFunctionDB
+from functions.ConcurrentBroadcast import broadcast_to_channels
 from concurrent.futures import ThreadPoolExecutor
 
 HOST = [
@@ -121,90 +122,57 @@ class Loop_ServerCheck(commands.Cog):
  
         if server_online and self.server_status != 'online':
 
-            await self.bot.change_presence(activity=discord.Game(name="MapleStory")) 
+            await self.bot.change_presence(activity=discord.Game(name="MapleStory"))
+
+            # 預先初始化計數，避免 offline_count < 30 時未定義（舊版 NameError）
+            channelsendcountsuccess = 0
+            channelsendcountfail = 0
 
             if self.offline_count >= 30:
                 # 發送通知前先確認Bot網路狀態正常
                 network_check = {}
-                self.worker('www.google.com', network_check)
-                
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(self.executor, self.worker, 'www.google.com', network_check)
+
                 if network_check.get('www.google.com') != 'online':
                     print(f"{get_now_HMS()}, Bot network issue detected, skipping notifications")
                     # 不重置offline_count，等下次網路正常時再發送
                     return
                 
-                channelsendcountsuccess = 0
-                channelsendcountfail = 0   
-                
                 Guild_Function = self.load_guild_function()
                 remove_list = []
-                
+                targets = []
+
                 for guild_id, guild_config in Guild_Function.items():
-                    
                     channel_id = guild_config['ServerCheck_Channel']
                     if not channel_id:
                         print(f"{get_now_HMS()}, Guild: {guild_id} dont have ServerCheck_Channel")
                         remove_list.append(guild_id)
-                        channelsendcountfail += 1
                         continue
-                    
-                    channel = self.bot.get_channel(channel_id)
-                    
-                    if channel is None:
-                        print(f"{get_now_HMS()}, ChannelID: {channel_id} message not sent")
-                        remove_list.append(guild_id)
-                        channelsendcountfail += 1
-                        continue
-                    
-                    if channel is None or not channel.permissions_for(channel.guild.me).send_messages:
-                        print(f"{get_now_HMS()}, ChannelID: {channel_id} has no permission")
-                        remove_list.append(guild_id)
-                        channelsendcountfail += 1
-                        continue
-                        
-                    mention = guild_config.get('ServerCheck_mention')
-                    
-                    try:
-                        if mention and mention != "None":
-                            await channel.send(f"<@&{mention}> 登入口已開啟。")
-                            print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
-                            channelsendcountsuccess += 1
-                        else:
-                            await channel.send("登入口已開啟。")
-                            print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
-                            
-                        await asyncio.sleep(0.02)
-                        channelsendcountsuccess += 1
-                        
-                    except Exception as e:
-                        print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")
-                        
-                        # 延遲後重試一次，避免因短暫問題誤判
-                        await asyncio.sleep(2)
-                        try:
-                            if mention and mention != "None":
-                                await channel.send(f"<@&{mention}> 登入口已開啟。")
-                            else:
-                                await channel.send("登入口已開啟。")
-                            print(f"{get_now_HMS()}, ChannelID: {channel_id} retry successful")
-                            channelsendcountsuccess += 1
-                        except Exception as retry_error:
-                            print(f"{get_now_HMS()}, ChannelID: {channel_id} retry failed: {retry_error}")
-                            
-                            # 重試失敗後檢查網路狀況
-                            network_status = {}
-                            self.worker('www.google.com', network_status)
-                            
-                            # 只有在網路正常但持續發送失敗時才刪除guild
-                            if network_status.get('www.google.com') == 'online':
-                                print(f"{get_now_HMS()}, Network is online but send failed twice, removing guild {guild_id}")
-                                remove_list.append(guild_id)
-                            else:
-                                print(f"{get_now_HMS()}, Network issue detected, skipping guild removal for {guild_id}")
-                            
-                            channelsendcountfail += 1
-                        continue
-                    
+                    targets.append((guild_id, channel_id))
+
+                def make_payload(guild_id, channel_id):
+                    mention = Guild_Function[guild_id].get('ServerCheck_mention')
+                    if mention and mention != "None":
+                        return {'content': f"<@&{mention}> 登入口已開啟。"}
+                    return {'content': "登入口已開啟。"}
+
+                # 並發廣播（含每頻道一次重試）
+                channelsendcountsuccess, failures = await broadcast_to_channels(
+                    self.bot, targets, make_payload, concurrency=20
+                )
+                channelsendcountfail = len(failures) + len(remove_list)
+
+                # 只有在 Bot 網路正常時，才將發送失敗的 guild 移除
+                if failures:
+                    network_status = {}
+                    loop = asyncio.get_event_loop()
+                    await loop.run_in_executor(self.executor, self.worker, 'www.google.com', network_status)
+                    if network_status.get('www.google.com') == 'online':
+                        remove_list += [guild_id for guild_id, _, _ in failures]
+                    else:
+                        print(f"{get_now_HMS()}, Network issue detected, skipping guild removal")
+
                 for gid in remove_list:
                     removeguild(self.db, gid)
                  
@@ -278,75 +246,33 @@ class Loop_ServerCheck(commands.Cog):
         # if server_online and self.server_status != 'offline':
             
             await self.bot.change_presence(activity=discord.CustomActivity(name="TMS 登入口關閉中"))
-            channelsendcountsuccess = 0
-            channelsendcountfail = 0
-            
+
             Guild_Function = self.load_guild_function()
-            
+            targets = []
+
             for guild_id, guild_config in Guild_Function.items():
                 channel_id = guild_config['ServerCheck_Channel']
-                
                 if not channel_id:
                     print(f"{get_now_HMS()}, Guild: {guild_id} dont have ServerCheck_Channel")
                     remove_list.append(guild_id)
-                    channelsendcountfail += 1
                     continue
-                
-                channel = self.bot.get_channel(channel_id)                
-                if channel is None:
-                    print(f"{get_now_HMS()}, ChannelID: {channel_id} message not sent")
-                    remove_list.append(guild_id)
-                    channelsendcountfail += 1
-                    continue
-                
-                if channel is None or not channel.permissions_for(channel.guild.me).send_messages:
-                    print(f"{get_now_HMS()}, ChannelID: {channel_id} has no permission")
-                    remove_list.append(guild_id)
-                    channelsendcountfail += 1
-                    continue
-                                
-                mention = guild_config.get('ServerCheck_mention')
-                
-                try:
-                    if mention and mention != "None":
-                        await channel.send(f"MapleStory 登入口已關閉。")
-                        print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
-                    else:
-                        await channel.send("MapleStory 登入口已關閉。")
-                        print(f"{get_now_HMS()}, ChannelID: {channel_id} message sent successfully") 
-                                  
-                    channelsendcountsuccess += 1
-                    await asyncio.sleep(0.02)
-                    
-                except Exception as e:
-                        print(f"{get_now_HMS()}, ChannelID: {channel_id} error: {e}")
-                        
-                        # 延遲後重試一次
-                        await asyncio.sleep(2)
-                        try:
-                            if mention and mention != "None":
-                                await channel.send(f"MapleStory 登入口已關閉。")
-                            else:
-                                await channel.send("MapleStory 登入口已關閉。")
-                            print(f"{get_now_HMS()}, ChannelID: {channel_id} retry successful")
-                            channelsendcountsuccess += 1
-                        except Exception as retry_error:
-                            print(f"{get_now_HMS()}, ChannelID: {channel_id} retry failed: {retry_error}")
-                            
-                            # 重試失敗後檢查網路狀況
-                            network_status = {}
-                            self.worker('www.google.com', network_status)
-                            
-                            # 只有在網路正常但持續發送失敗時才刪除guild
-                            if network_status.get('www.google.com') == 'online':
-                                print(f"{get_now_HMS()}, Network is online but send failed twice, removing guild {guild_id}")
-                                remove_list.append(guild_id)
-                            else:
-                                print(f"{get_now_HMS()}, Network issue detected, skipping guild removal for {guild_id}")
-                            
-                            channelsendcountfail += 1
-                        continue
- 
+                targets.append((guild_id, channel_id))
+
+            # 並發廣播（含每頻道一次重試）
+            channelsendcountsuccess, failures = await broadcast_to_channels(
+                self.bot, targets, lambda g, c: {'content': "MapleStory 登入口已關閉。"}, concurrency=20
+            )
+            channelsendcountfail = len(failures) + len(remove_list)
+
+            # 只有在 Bot 網路正常時，才將發送失敗的 guild 移除
+            if failures:
+                network_status = {}
+                await loop.run_in_executor(self.executor, self.worker, 'www.google.com', network_status)
+                if network_status.get('www.google.com') == 'online':
+                    remove_list += [guild_id for guild_id, _, _ in failures]
+                else:
+                    print(f"{get_now_HMS()}, Network issue detected, skipping guild removal")
+
             for gid in remove_list:
                 removeguild(self.db, gid)
                                        

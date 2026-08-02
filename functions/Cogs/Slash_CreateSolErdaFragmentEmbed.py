@@ -3,47 +3,135 @@ from discord import app_commands
 from discord.ext import commands
 import datetime
 import json
+import os
 from functions.tinyfunctions import probably
 from functions.SlashCommandManager import UseSlashCommand
+from functions.API_functions.API_Request_Character import get_character_ocid, request_character_hexamatrix
 
 # 偷走的數量
 stolen_fragments = 0
 
 
-with open(f'C:\\Users\\User\\Desktop\\DiscordBot\\TMSBug_v2\\Data\\HexaNodesCost.json', 'r', encoding='utf-8') as f:
+# 動態讀取「本專案自己」的 Data/HexaNodesCost.json（原本寫死 v2 路徑）
+_HEXA_COST_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Data', 'HexaNodesCost.json')
+with open(_HEXA_COST_PATH, 'r', encoding='utf-8-sig') as f:
     HexaNodesCost = json.load(f)
+
+# 核心對映：API 依序回傳，前2共用核心用 CommonNodes(6268)、第3顆(職業共通)用 CommonNodes3(4035)
+# 技能x2、精通x4、強化x4、共用x2、職業共通x1
+
 
 class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
 
     #-----------------碎碎-----------------
-    @app_commands.command(name="solerda碎片進度", description="碎碎進度")
+    @app_commands.command(name="solerda碎片進度", description="查詢角色六轉核心進度與距離全滿所需材料")
     @app_commands.describe(
-            skillnodes1 = "起源", skillnodes2 = "上升",
-            masterynodes1 = "精通1", masterynodes2 = "精通2", masterynodes3 = "精通3", masterynodes4 = "精通4", 
-            boostnode1 = "強化1", boostnode2 = "強化2", boostnode3 = "強化3", boostnode4 = "強化4", 
-            commonnode1 = "共用1",
-            extrafragment = "預留碎片"
+            name = "角色名稱",
+            solerda = "目前持有的靈魂艾爾達（預設0）",
+            solerdafragment = "目前持有的靈魂艾爾達碎片（預設0）"
         )
     async def calculatefragment(
-        self, interaction: discord.Interaction, 
-        skillnodes1: int, skillnodes2: int, 
-        masterynodes1: int, masterynodes2: int, masterynodes3: int, masterynodes4: int, 
-        boostnode1: int, boostnode2: int, boostnode3: int, boostnode4: int, 
-        commonnode1: int,
-        extrafragment: int=0
+        self, interaction: discord.Interaction,
+        name: str,
+        solerda: int = 0,
+        solerdafragment: int = 0
         ):
-        embed = CreateSolErdaFragment(
-            skillnodes1, skillnodes2,
-            masterynodes1, masterynodes2, masterynodes3, masterynodes4, 
-            boostnode1, boostnode2, boostnode3, boostnode4, 
-            commonnode1,
-            extrafragment
-        )
+        await interaction.response.defer()
 
+        # 查詢角色
+        ocid = get_character_ocid(name)
+        if not ocid:
+            error_embed = discord.Embed(title="查無角色", description=f"找不到角色「{name}」", color=0xff0000)
+            await interaction.followup.send(embed=error_embed)
+            return
+
+        hexa_data = request_character_hexamatrix(ocid)
+        hexa_equipment = (hexa_data or {}).get('character_hexa_core_equipment')
+        if not hexa_equipment:
+            error_embed = discord.Embed(title="無六轉資料", description=f"角色「{name}」尚無 HEXA 核心資料", color=0xff0000)
+            await interaction.followup.send(embed=error_embed)
+            return
+
+        embed = CreateSolErdaProgress(name, hexa_equipment, solerda, solerdafragment)
         UseSlashCommand('calculatefragment', interaction)
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
+
+
+def extract_hexa_cores(hexa_equipment):
+    """依 API 列舉順序，回傳各類型核心的 (等級, 名稱) 清單。"""
+    cores = {'技能核心': [], '精通核心': [], '強化核心': [], '共用核心': []}
+    for core in hexa_equipment or []:
+        core_type = core.get('hexa_core_type')
+        if core_type in cores:
+            cores[core_type].append((core.get('hexa_core_level', 0) or 0, core.get('hexa_core_name', '') or ''))
+    return cores
+
+
+def extract_hexa_levels(hexa_equipment):
+    """依 API 列舉順序，回傳各類型核心的等級清單。"""
+    return {t: [lv for lv, _ in cs] for t, cs in extract_hexa_cores(hexa_equipment).items()}
+
+
+def _pad(seq, n):
+    seq = list(seq)[:n]
+    return seq + [0] * (n - len(seq))
+
+
+def _pad_cores(seq, n):
+    seq = list(seq)[:n]
+    return seq + [(0, '')] * (n - len(seq))
+
+
+def _core_name_lines(cores, force_zero=False):
+    """每行『等級：核心名稱』，數字右對齊寬2避免跑版。"""
+    return '\n'.join(f"{(0 if force_zero else lv):>2}：{name or '—'}" for lv, name in cores)
+
+
+# 共用核心開放日：未達開放日先隱藏（顯示與計算都不列入）
+_COMMON2_OPEN_DATE = datetime.date(2026, 7, 29)   # 共用核心2
+_COMMON3_OPEN_DATE = datetime.date(2026, 10, 30)  # 共通核心3
+
+
+def common_cores_open(today=None):
+    """回傳 (共用核心2是否開放, 共通核心3是否開放)。"""
+    today = today or datetime.date.today()
+    return today >= _COMMON2_OPEN_DATE, today >= _COMMON3_OPEN_DATE
+
+
+def build_core_pairs(levels, c2_open=True, c3_open=True):
+    """把各類型等級對映到 (成本表key, 等級) 清單；未開放的共用核心不列入。"""
+    skill   = _pad(levels['技能核心'], 2)
+    mastery = _pad(levels['精通核心'], 4)
+    boost   = _pad(levels['強化核心'], 4)
+    common  = _pad(levels['共用核心'], 3)  # 共用1、共用2、共通核心3
+    common_pairs = [("CommonNodes", common[0])]
+    if c2_open:
+        common_pairs.append(("CommonNodes", common[1]))
+    if c3_open:
+        common_pairs.append(("CommonNodes3", common[2]))
+    pairs = (
+        [("SkillNodes", l)   for l in skill] +
+        [("MasteryNodes", l) for l in mastery] +
+        [("BoostNodes", l)   for l in boost] +
+        common_pairs
+    )
+    return pairs, skill, mastery, boost, common
+
+
+def CalculateHexaMaterials(core_pairs):
+    """回傳 (已花靈魂, 全滿靈魂, 已花碎片, 全滿碎片)。"""
+    spent_sol = max_sol = spent_frag = max_frag = 0
+    for table_key, level in core_pairs:
+        sol  = HexaNodesCost[table_key]["solerda"]
+        frag = HexaNodesCost[table_key]["solerdafragment"]
+        lvl = max(0, min(int(level), 30))
+        spent_sol  += sum(sol[:lvl])
+        spent_frag += sum(frag[:lvl])
+        max_sol    += sum(sol)
+        max_frag   += sum(frag)
+    return spent_sol, max_sol, spent_frag, max_frag
 
 
 def Calculatefragment(
@@ -51,27 +139,29 @@ def Calculatefragment(
         MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
         BoostNode1, BoostNode2, BoostNode3, BoostNode4,
         CommonNode1,
-        extrafragment
+        extrafragment,
+        CommonNode2=-1, CommonNode3=-1
     ):
-    
+    """舊版純碎片計算（/character 六轉完成度% 仍使用）。"""
+
     maxtotal = 0
     totalcount = 0
     if SkillNodes1 >= 0 :
-        maxtotal += 4400
+        maxtotal += 4500
         totalcount += sum(HexaNodesCost["SkillNodes"]["solerdafragment"][:SkillNodes1])
     if SkillNodes2 >= 0 :
-        maxtotal += 4400
+        maxtotal += 4500
         totalcount += sum(HexaNodesCost["SkillNodes"]["solerdafragment"][:SkillNodes2])
     if MasteryNodes1 >= 0 :
         totalcount += sum(HexaNodesCost["MasteryNodes"]["solerdafragment"][:MasteryNodes1])
         maxtotal += 2252
-    if MasteryNodes2 >= 0 :  
+    if MasteryNodes2 >= 0 :
         totalcount += sum(HexaNodesCost["MasteryNodes"]["solerdafragment"][:MasteryNodes2])
         maxtotal += 2252
     if MasteryNodes3 >= 0 :
         totalcount += sum(HexaNodesCost["MasteryNodes"]["solerdafragment"][:MasteryNodes3])
         maxtotal += 2252
-    if MasteryNodes4 >= 0 :  
+    if MasteryNodes4 >= 0 :
         totalcount += sum(HexaNodesCost["MasteryNodes"]["solerdafragment"][:MasteryNodes4])
         maxtotal += 2252
     if BoostNode1 >= 0 :
@@ -89,174 +179,112 @@ def Calculatefragment(
     if CommonNode1 >= 0 :
         totalcount += sum(HexaNodesCost["CommonNodes"]["solerdafragment"][:CommonNode1])
         maxtotal += 6268
-   
+    if CommonNode2 >= 0 :
+        totalcount += sum(HexaNodesCost["CommonNodes"]["solerdafragment"][:CommonNode2])
+        maxtotal += 6268
+    if CommonNode3 >= 0 :
+        totalcount += sum(HexaNodesCost["CommonNodes3"]["solerdafragment"][:CommonNode3])
+        maxtotal += 4035
+
     totalcount += extrafragment
 
     return totalcount, maxtotal
 
 
-def CreateSolErdaFragment(
-        SkillNodes1, SkillNodes2,
-        MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
-        BoostNode1, BoostNode2, BoostNode3, BoostNode4,
-        CommonNode1,
-        extrafragment
-    ):
+def CreateSolErdaProgress(character_name, hexa_equipment, solerda_stock=0, fragment_stock=0):
     global stolen_fragments
 
-    # 確保所有節點等級都在有效範圍內
-    nodes = [SkillNodes1, SkillNodes2, MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4, BoostNode1, BoostNode2, BoostNode3, BoostNode4, CommonNode1]
-    for node in nodes:
-        if node < -30 or node > 30:
-            error_embed = discord.Embed(title="等級輸入錯誤", description="必須填入-30~30之間的數", color=0xff0000)
-            return error_embed
+    c2_open, c3_open = common_cores_open()
+    cores = extract_hexa_cores(hexa_equipment)
+    levels = {t: [lv for lv, _ in cs] for t, cs in cores.items()}
+    core_pairs, *_ = build_core_pairs(levels, c2_open, c3_open)
+    spent_sol, max_sol, spent_frag, max_frag = CalculateHexaMaterials(core_pairs)
 
-    # 愚人節機率
-    now = datetime.datetime.now()  
-    if now.month == 4 and now.day == 1:
-        probability = 0.99
-    else:
-        probability = 0.01
+    # 各核心 (等級, 名稱)，共用核心未開放者隱藏
+    skill_c   = _pad_cores(cores['技能核心'], 2)
+    mastery_c = _pad_cores(cores['精通核心'], 4)
+    boost_c   = _pad_cores(cores['強化核心'], 4)
+    common_all = _pad_cores(cores['共用核心'], 3)
+    common_c = [common_all[0]]
+    if c2_open:
+        common_c.append(common_all[1])
+    if c3_open:
+        common_c.append(common_all[2])
 
-    totalcount, maxfragment = Calculatefragment(
-        SkillNodes1, SkillNodes2,
-        MasteryNodes1, MasteryNodes2, MasteryNodes3, MasteryNodes4,
-        BoostNode1, BoostNode2, BoostNode3, BoostNode4,
-        CommonNode1,
-        extrafragment
-    ) 
+    frag_pct = (spent_frag / max_frag * 100) if max_frag else 0
+    sol_pct = (spent_sol / max_sol * 100) if max_sol else 0
 
-    percentage = totalcount / maxfragment * 100
-    percentagemsg = f"{totalcount}/{maxfragment} ({percentage:.2f}%)"
-
-    # 計算進度條的長度
+    # 進度條（以碎片進度為主）
     progress_length = 20
-    progress = min(int(totalcount / maxfragment * progress_length),20)
-
-    # 創建進度條
+    progress = min(int((spent_frag / max_frag) * progress_length) if max_frag else 0, progress_length)
     progress_bar = '▓' * progress + '░' * (progress_length - progress)
 
-    if probably(probability):    
+    # 距離全滿還需
+    need_sol = max(0, max_sol - spent_sol)
+    need_frag = max(0, max_frag - spent_frag)
+    short_sol = max(0, need_sol - solerda_stock)
+    short_frag = max(0, need_frag - fragment_stock)
 
-        stolen_fragments += totalcount
+    # 愚人節機率
+    now = datetime.datetime.now()
+    probability = 0.99 if (now.month == 4 and now.day == 1) else 0.01
 
-        embed = discord.Embed(
-        title=f"**靈魂艾爾達碎片進度**", 
-        color=0x6f00d2,
-        )        
-        embed.add_field(name=f"你原本的進度是{percentage:.2f}%", value=f"但***邪惡***的蟲蟲把他們都偷走了", inline = False)
-
-        embed.add_field(
-        name=f"當前進度：{percentagemsg}", 
-        value=f"{progress_bar}", 
-        inline = False
-    )
-        
-        embed.add_field(
-            name="技能核心",
-            value=(
-                "```autohotkey\n"
-                f"技能核心1 : 0\n"
-                f"技能核心2 : 0\n```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="精通核心",
-            value=(
-                "```autohotkey\n"
-                f"精通核心1 : 0\n"
-                f"精通核心2 : 0\n"
-                f"精通核心3 : 0\n"
-                f"精通核心4 : 0\n```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="強化核心",
-            value=(
-                "```autohotkey\n"
-                f"強化核心1 : 0\n"
-                f"強化核心2 : 0\n"
-                f"強化核心3 : 0\n"
-                f"強化核心4 : 0\n```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="共用核心",
-            value=(
-                "```autohotkey\n"
-                f"共用核心1 : 0"
-                "```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name=f"蟲蟲已經累計偷走了{stolen_fragments:,}個碎片", value=f"請保護好你的碎片", inline = False
-        )
-        embed.set_footer(text=f'預留碎片 : {extrafragment}')
-        
+    if probably(probability):
+        stolen_fragments += spent_frag
+        embed = discord.Embed(title="**靈魂艾爾達碎片進度**", color=0x6f00d2)
+        embed.add_field(name=f"{character_name} 原本的進度是 {frag_pct:.2f}%", value="但***邪惡***的蟲蟲把他們都偷走了", inline=False)
+        embed.add_field(name="技能核心", value="```autohotkey\n" + _core_name_lines(skill_c, force_zero=True) + "\n```", inline=False)
+        embed.add_field(name="精通核心", value="```autohotkey\n" + _core_name_lines(mastery_c, force_zero=True) + "\n```", inline=False)
+        embed.add_field(name="強化核心", value="```autohotkey\n" + _core_name_lines(boost_c, force_zero=True) + "\n```", inline=False)
+        embed.add_field(name="共用核心", value="```autohotkey\n" + _core_name_lines(common_c, force_zero=True) + "\n```", inline=False)
+        embed.add_field(name=f"蟲蟲已經累計偷走了{stolen_fragments:,}個碎片", value="請保護好你的碎片", inline=False)
         embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/1196836355225952336.webp?size=96&quality=lossless')
         return embed
 
-    embed = discord.Embed(
-        title=f"**靈魂艾爾達碎片進度**", 
-        color=0x6f00d2,
-        )
+    embed = discord.Embed(title="**靈魂艾爾達碎片進度**", color=0x6f00d2)
     embed.add_field(
-        name=f"當前進度：{percentagemsg}", 
-        value=(
-            f"{progress_bar}\n"
-            f"預留碎片 : {extrafragment}"
-        ),
-        
-        inline = False
-    )
-
-    embed.add_field(
-        name="技能核心",
+        name=f"{character_name}",
         value=(
             "```autohotkey\n"
-            f"技能核心1 : {max(0, SkillNodes1)}{'🚫' if SkillNodes1 < 0 else ''}\n"
-            f"技能核心2 : {max(0, SkillNodes2)}{'🚫' if SkillNodes2 < 0 else ''}\n```"
-        ),
-        inline=False,
-    )
-    embed.add_field(
-        name="精通核心",
-        value=(
-            "```autohotkey\n"
-            f"精通核心1 : {abs(MasteryNodes1)}{'🚫' if MasteryNodes1 < 0 else ''}\n"
-            f"精通核心2 : {abs(MasteryNodes2)}{'🚫' if MasteryNodes2 < 0 else ''}\n"
-            f"精通核心3 : {abs(MasteryNodes3)}{'🚫' if MasteryNodes3 < 0 else ''}\n"
-            f"精通核心4 : {abs(MasteryNodes4)}{'🚫' if MasteryNodes4 < 0 else ''}\n```"
-        ),
-        inline=False,
-    )
-    embed.add_field(
-        name="強化核心",
-        value=(
-            "```autohotkey\n"
-            f"強化核心1 : {abs(BoostNode1)}{'🚫' if BoostNode1 < 0 else ''}\n"
-            f"強化核心2 : {abs(BoostNode2)}{'🚫' if BoostNode2 < 0 else ''}\n"
-            f"強化核心3 : {abs(BoostNode3)}{'🚫' if BoostNode3 < 0 else ''}\n"
-            f"強化核心4 : {abs(BoostNode4)}{'🚫' if BoostNode4 < 0 else ''}\n```"
-        ),
-        inline=False,
-    )
-    embed.add_field(
-        name="共用核心",
-        value=(
-            "```autohotkey\n"
-            f"共用核心1 : {abs(CommonNode1)}{'🚫' if CommonNode1 < 0 else ''}"
+            f"碎片進度 : {spent_frag:,}/{max_frag:,} ({frag_pct:.2f}%)\n"
+            f"靈魂進度 : {spent_sol:,}/{max_sol:,} ({sol_pct:.2f}%)\n"
+            f"進度條　 : {progress_bar}\n"
             "```"
         ),
         inline=False,
     )
-    embed.set_footer(text=f'輸入-1~-30即忽略該技能進度')
 
+    embed.add_field(
+        name="技能核心",
+        value="```autohotkey\n" + _core_name_lines(skill_c) + "\n```",
+        inline=False,
+    )
+    embed.add_field(
+        name="精通核心",
+        value="```autohotkey\n" + _core_name_lines(mastery_c) + "\n```",
+        inline=False,
+    )
+    embed.add_field(
+        name="強化核心",
+        value="```autohotkey\n" + _core_name_lines(boost_c) + "\n```",
+        inline=False,
+    )
+    embed.add_field(
+        name="共用核心",
+        value="```autohotkey\n" + _core_name_lines(common_c) + "\n```",
+        inline=False,
+    )
+
+    embed.add_field(
+        name="📦距離全滿還需",
+        value=(
+            "```autohotkey\n"
+            f"靈魂艾爾達　　 : {need_sol:,}  (持有 {solerda_stock:,} → 還缺 {short_sol:,})\n"
+            f"靈魂艾爾達碎片 : {need_frag:,}  (持有 {fragment_stock:,} → 還缺 {short_frag:,})\n"
+            "```"
+        ),
+        inline=False,
+    )
 
     embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/1196836355225952336.webp?size=96&quality=lossless')
-    
     return embed

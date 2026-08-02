@@ -124,11 +124,31 @@ def request_user_union(ocid: str, date = None) -> Optional[dict]:
     try:
         response = logged_get(url_string, headers=headers)
         response.raise_for_status()
-        
+
         user_union_data = response.json()
         return user_union_data
-        
+
     except Exception as e:
         print(f"error occurred while fetching user union info: {e}")
+        return None
+
+
+def request_user_union_champion(ocid: str) -> Optional[dict]:
+
+    headers = {
+        "x-nxopen-api-key": api_key
+    }
+
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/user/union-champion?ocid={ocid}"
+
+    try:
+        response = logged_get(url_string, headers=headers)
+        response.raise_for_status()
+
+        user_union_champion_data = response.json()
+        return user_union_champion_data
+
+    except Exception as e:
+        print(f"error occurred while fetching user union champion info: {e}")
         return None
     
