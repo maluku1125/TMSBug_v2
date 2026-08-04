@@ -147,7 +147,7 @@ class Slash_GuildFunctions(commands.Cog):
         UseSlashCommand('ServerCheckSetting', interaction)
 
     #-----------------serverannounce-----------------
-    @app_commands.command(name="serverannounce_beta", description="管理官網公告通知設定（維護/開關機/手動更新）[測試中]")
+    @app_commands.command(name="serverannounce", description="管理官網公告通知設定（維護/開關機/手動更新）")
     @app_commands.describe(
         channel="通知頻道 (未填則為當前頻道)",
         delete="輸入'確認'來刪除此伺服器的設定 (預設不用輸入)",
@@ -179,11 +179,11 @@ class Slash_GuildFunctions(commands.Cog):
                 )
                 embed.add_field(name="📢 通知頻道", value=channel_info, inline=False)
                 embed.add_field(name="⏰ 最後更新", value=config.get('updated_at', '未知'), inline=False)
-                embed.set_footer(text="使用 /serverannounce_beta delete:確認 來刪除設定")
+                embed.set_footer(text="使用 /serverannounce delete:確認 來刪除設定")
                 await interaction.response.send_message(embed=embed)
             else:
                 await interaction.response.send_message(
-                    f"⚠️ 伺服器 **{interaction.guild.name}** 目前沒有公告通知設定。\n使用 `/serverannounce_beta` 指令來建立設定。",
+                    f"⚠️ 伺服器 **{interaction.guild.name}** 目前沒有公告通知設定。\n使用 `/serverannounce` 指令來建立設定。",
                     ephemeral=True
                 )
             UseSlashCommand('ServerAnnounceInfo', interaction)
@@ -234,12 +234,7 @@ class Slash_GuildFunctions(commands.Cog):
                 value="官網出現「維護公告 / 開機公告 / 關機公告 / 手動更新下載開放通知」時，會在指定頻道發送公告標題與連結（每30分鐘檢查一次）。",
                 inline=False
             )
-            embed.add_field(
-                name="⚠️ 功能測試中",
-                value="此功能目前為測試版本，可能出現通知遺漏、重複、延遲或其他例外狀況，敬請見諒。",
-                inline=False
-            )
-            embed.set_footer(text="使用 /serverannounce_beta info:確認 查看設定 | /serverannounce_beta delete:確認 刪除設定")
+            embed.set_footer(text="使用 /serverannounce info:確認 查看設定 | /serverannounce delete:確認 刪除設定")
             await interaction.response.send_message(embed=embed)
         except Exception as e:
             await interaction.response.send_message(f"配置已更新，但發送測試訊息時發生錯誤：{e}")

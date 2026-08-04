@@ -1,12 +1,17 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord.errors import NotFound
 import datetime
 import json
 import os
 from functions.tinyfunctions import probably
 from functions.SlashCommandManager import UseSlashCommand
 from functions.API_functions.API_Request_Character import get_character_ocid, request_character_hexamatrix
+from functions.database_manager import UserDataDB
+from functions.CombineCharacter import combine_character_images
+
+user_db = UserDataDB()
 
 # 偷走的數量
 stolen_fragments = 0
@@ -21,6 +26,67 @@ with open(_HEXA_COST_PATH, 'r', encoding='utf-8-sig') as f:
 # 技能x2、精通x4、強化x4、共用x2、職業共通x1
 
 
+def build_solerda_embed(name, solerda, solerdafragment):
+    """查詢角色六轉資料並產生進度 embed（查無角色/無六轉時回錯誤 embed）。"""
+    ocid = get_character_ocid(name)
+    if not ocid:
+        return discord.Embed(title="查無角色", description=f"找不到角色「{name}」", color=0xff0000)
+
+    hexa_data = request_character_hexamatrix(ocid)
+    hexa_equipment = (hexa_data or {}).get('character_hexa_core_equipment')
+    if not hexa_equipment:
+        return discord.Embed(title="無六轉資料", description=f"角色「{name}」尚無 HEXA 核心資料", color=0xff0000)
+
+    return CreateSolErdaProgress(name, hexa_equipment, solerda, solerdafragment)
+
+
+class SolErdaSelectView(discord.ui.View):
+    """多角色選擇畫面：顯示合成圖 + 下拉選單讓使用者選擇要查詢的角色"""
+    def __init__(self, registered_characters: dict, solerda: int, solerdafragment: int):
+        super().__init__(timeout=120)
+        self.solerda = solerda
+        self.solerdafragment = solerdafragment
+
+        options = []
+        for slot, char_name in sorted(registered_characters.items()):
+            options.append(discord.SelectOption(label=char_name, value=char_name))
+
+        select = discord.ui.Select(
+            placeholder="選擇要查詢的角色...",
+            options=options,
+            min_values=1,
+            max_values=1,
+        )
+        select.callback = self._on_select
+        self.add_item(select)
+
+    async def _on_select(self, interaction: discord.Interaction):
+        selected_name = interaction.data['values'][0]
+        try:
+            await interaction.response.defer()
+        except NotFound:
+            return
+
+        try:
+            embed = build_solerda_embed(selected_name, self.solerda, self.solerdafragment)
+            await interaction.edit_original_response(embed=embed, view=None, attachments=[])
+            UseSlashCommand('calculatefragment', interaction)
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="❌ 錯誤",
+                description=f"查詢碎片進度時發生錯誤: {str(e)}",
+                color=discord.Color.red()
+            )
+            try:
+                await interaction.edit_original_response(embed=error_embed, view=None, attachments=[])
+            except NotFound:
+                pass
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
+
 class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
@@ -28,33 +94,62 @@ class Slash_CreateSolErdaFragmentEmbed(commands.Cog):
     #-----------------碎碎-----------------
     @app_commands.command(name="solerda碎片進度", description="查詢角色六轉核心進度與距離全滿所需材料")
     @app_commands.describe(
-            name = "角色名稱",
+            name = "角色名稱 (不輸入則使用已登錄的角色)",
             solerda = "目前持有的靈魂艾爾達（預設0）",
             solerdafragment = "目前持有的靈魂艾爾達碎片（預設0）"
         )
     async def calculatefragment(
         self, interaction: discord.Interaction,
-        name: str,
+        name: str = None,
         solerda: int = 0,
         solerdafragment: int = 0
         ):
-        await interaction.response.defer()
 
-        # 查詢角色
-        ocid = get_character_ocid(name)
-        if not ocid:
-            error_embed = discord.Embed(title="查無角色", description=f"找不到角色「{name}」", color=0xff0000)
-            await interaction.followup.send(embed=error_embed)
+        if name is None:
+            user_id = str(interaction.user.id)
+            all_chars = user_db.get_all_user_characters(user_id)
+            registered = {slot: n for slot, n in all_chars.items() if n}
+
+            # 無登錄角色 → 要求輸入
+            if len(registered) == 0:
+                await interaction.response.send_message(
+                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
+                    ephemeral=True
+                )
+                return
+
+            # 只有 1 個角色 → 直接查詢
+            if len(registered) == 1:
+                name = list(registered.values())[0]
+            else:
+                # 多個角色 → 顯示合成圖 + 下拉選單
+                try:
+                    await interaction.response.defer()
+                except NotFound:
+                    return
+
+                select_view = SolErdaSelectView(registered, solerda, solerdafragment)
+                combined_image = await combine_character_images(all_chars)
+
+                embed = discord.Embed(
+                    title="🎮 請選擇要查詢的角色",
+                    color=0x00bfff
+                )
+
+                if combined_image:
+                    file = discord.File(combined_image, filename="characters.png")
+                    embed.set_image(url="attachment://characters.png")
+                    await interaction.followup.send(embed=embed, view=select_view, file=file)
+                else:
+                    await interaction.followup.send(embed=embed, view=select_view)
+                return
+
+        try:
+            await interaction.response.defer()
+        except NotFound:
             return
 
-        hexa_data = request_character_hexamatrix(ocid)
-        hexa_equipment = (hexa_data or {}).get('character_hexa_core_equipment')
-        if not hexa_equipment:
-            error_embed = discord.Embed(title="無六轉資料", description=f"角色「{name}」尚無 HEXA 核心資料", color=0xff0000)
-            await interaction.followup.send(embed=error_embed)
-            return
-
-        embed = CreateSolErdaProgress(name, hexa_equipment, solerda, solerdafragment)
+        embed = build_solerda_embed(name, solerda, solerdafragment)
         UseSlashCommand('calculatefragment', interaction)
         await interaction.followup.send(embed=embed)
 

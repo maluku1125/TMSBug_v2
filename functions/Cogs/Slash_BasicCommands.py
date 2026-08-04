@@ -109,7 +109,7 @@ class HelpCommandView(discord.ui.View):
             value=(
                 "```\n"
                 "/servercheck - 伺服器開機通知設定(僅群主)\n"
-                "/serverannounce_beta - 官網公告通知設定(僅群主/測試中)\n"
+                "/serverannounce - 官網公告通知設定(僅群主)\n"
                 "/setting設定 - 設定連結角色\n"
                 "```"
             ),
