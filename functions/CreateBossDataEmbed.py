@@ -90,7 +90,9 @@ def Create_Boss_Data_Embed(Content, Bossmode):
     else:
         arcane_authentic = ""
 
-    progress_desc = '\n'.join(f"{k}：{v}" for k, v in progress_points.items()) or "—"
+    # 進度點名稱補全形空白對齊冒號（至少 7 字元；若有更長的鍵則以最長者為準，如【１０】靈魂碎片）
+    name_width = max([7] + [len(k) for k in progress_points])
+    progress_desc = '\n'.join(f"{k.ljust(name_width, '　')}：{v}" for k, v in progress_points.items()) or "—"
 
     embed = discord.Embed(
         title=f"**{boss_name}({boss_mode}**)", 

@@ -20,8 +20,10 @@ TMS_BULLETIN_URL = "https://maplestory.beanfun.com/bulletin?bid={bid}"
 
 CSRF_RE = re.compile(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"')
 
-# 已通知公告 ID 存本專案自己的 Data 目錄（beta/v2 各自獨立，避免互搶）
-_SEEN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Data', 'ServerAnnounce_seen.json')
+# 已通知公告 ID 存放於專案外的 log 目錄（避免污染 git），檔名帶專案名使 beta/v2 各自獨立
+_LOG_DIR = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\Function'
+_PROJECT_NAME = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_SEEN_PATH = os.path.join(_LOG_DIR, f'ServerAnnounce_seen_{_PROJECT_NAME}.json')
 _SEEN_LIMIT = 300  # 保留最近 N 筆，避免無限成長
 
 
@@ -87,6 +89,7 @@ class Loop_ServerAnnounce(commands.Cog):
 
     def _save_seen(self):
         try:
+            os.makedirs(_LOG_DIR, exist_ok=True)
             with open(_SEEN_PATH, 'w', encoding='utf-8') as f:
                 json.dump(self.seen_ids[-_SEEN_LIMIT:], f)
         except Exception as e:
