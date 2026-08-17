@@ -7,7 +7,10 @@ from functions.API_functions.API_Analyse import (
     get_world_distribution_analysis,
     get_level_distribution_analysis
 )
-from functions.API_functions.API_EquipStat import get_gem_ranking_normalized
+from functions.API_functions.API_EquipStat import (
+    get_gem_ranking_normalized, get_equipment_ownership,
+    get_glove_crit_distribution, get_familiar_distribution, get_hat_cd_distribution,
+    get_classes_with_stats)
 
 # 寶玉屬性標籤；需顯示「等效主屬」的職業類型
 _GEM_STAT_LABEL = {'str': 'STR', 'dex': 'DEX', 'int': 'INT', 'luk': 'LUK',
@@ -407,6 +410,16 @@ class APIAnalyseView(discord.ui.View):
         view = GemRankingView(data)
         await interaction.response.edit_message(embed=view.create_embed(), view=view)
 
+    @discord.ui.button(label="💠 裝備分析", style=discord.ButtonStyle.secondary, row=1)
+    async def equip_analysis_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = EquipAnalyseView()
+        await interaction.response.edit_message(embed=view.create_embed(), view=view)
+
+    @discord.ui.button(label="🧢 CD帽分析", style=discord.ButtonStyle.secondary, row=2)
+    async def hatcd_analysis_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = HatCDAnalyseView()
+        await interaction.response.edit_message(embed=view.create_embed(), view=view)
+
     @discord.ui.select(
         placeholder="選擇世界篩選...",
         options=[
@@ -440,6 +453,237 @@ class APIAnalyseView(discord.ui.View):
             item.disabled = True
 
 
+def _pct(n: int, total: int) -> str:
+    return f"{n:,} ({n / total * 100:.1f}%)" if total else f"{n:,} (—)"
+
+
+class EquipAnalyseView(discord.ui.View):
+    """裝備／萌獸統計分析（下拉切換分析類型；帽子分析可分頁）"""
+
+    HAT_MIN_LEVEL = 290
+
+    def __init__(self):
+        super().__init__(timeout=300)
+        self.mode = 'ownership'
+
+    # ---------- Embed ----------
+    def create_embed(self) -> discord.Embed:
+        if self.mode == 'glove':
+            return self._embed_glove()
+        if self.mode == 'familiar':
+            return self._embed_familiar()
+        return self._embed_ownership()
+
+    def _base(self, title: str) -> discord.Embed:
+        embed = discord.Embed(color=discord.Color.blurple())
+        embed.set_author(name=title)
+        embed.timestamp = datetime.datetime.now()
+        return embed
+
+    def _embed_ownership(self) -> discord.Embed:
+        d = get_equipment_ownership()
+        embed = self._base("💠 全服特殊裝備持有率")
+        total = d['total']
+        if not total:
+            embed.description = "尚無統計資料（需先執行裝備統計刷新）"
+            return embed
+        embed.description = f"統計母數：**{total:,}** 位角色（已完成裝備統計）"
+        width = max(len(n) for n, _ in d['items'])
+        lines = "\n".join(f"{n.ljust(width, '　')} : {_pct(c, total)}"
+                          for n, c in sorted(d['items'], key=lambda x: -x[1]))
+        embed.add_field(name="持有人數 / 佔比",
+                        value=f"```autohotkey\n{lines}\n```", inline=False)
+        return embed
+
+    def _embed_glove(self) -> discord.Embed:
+        embed = self._base("🧤 手套爆擊傷害排數分布")
+        embed.description = "依主潛能中「爆擊傷害」排數統計"
+        data = get_glove_crit_distribution()
+        any_data = False
+        for lv, d in data.items():
+            total = d['total']
+            if not total:
+                continue
+            any_data = True
+            lines = "\n".join(f"{i}排 : {_pct(d[i], total)}" for i in (0, 1, 2, 3))
+            embed.add_field(name=f"LV{lv}+ （{total:,} 人）",
+                            value=f"```autohotkey\n{lines}\n```", inline=False)
+        if not any_data:
+            embed.description = "尚無統計資料（需先執行裝備統計刷新）"
+        return embed
+
+    def _embed_familiar(self) -> discord.Embed:
+        d = get_familiar_distribution()
+        embed = self._base("🐾 萌獸與連結槽統計")
+        total = d['total']
+        if not total:
+            embed.description = "尚無統計資料（需先執行裝備統計刷新）"
+            return embed
+        embed.description = f"統計母數：**{total:,}** 位角色"
+        o = d['options']
+        embed.add_field(
+            name="召喚中萌獸的三排組合",
+            value=("```autohotkey\n"
+                   f"三排終傷　　 : {_pct(o.get('3final', 0), total)}\n"
+                   f"雙終傷+物/魔 : {_pct(o.get('2final_atk', 0), total)}\n"
+                   f"雙終傷+其他　: {_pct(o.get('2final_other', 0), total)}\n"
+                   f"其他/未召喚　: {_pct(o.get('none', 0), total)}\n"
+                   f"特殊萌獸　　 : {_pct(d['special'], total)}\n"
+                   "```"),
+            inline=False)
+        lk = d['links']
+        embed.add_field(
+            name="連結槽啟用",
+            value=("```autohotkey\n"
+                   f"連結1　: {_pct(lk['1'], total)}\n"
+                   f"連結2　: {_pct(lk['2'], total)}\n"
+                   f"連結3　: {_pct(lk['3'], total)}\n"
+                   f"VIP　　: {_pct(lk['VIP'], total)}\n"
+                   "```"),
+            inline=False)
+        return embed
+
+    # ---------- 元件 ----------
+    @discord.ui.select(
+        placeholder="選擇分析項目...",
+        options=[
+            discord.SelectOption(label="特殊裝備持有率", value="ownership", emoji="💠",
+                                 description="輪迴碑石 / 全面控制核心 / 創世胸章"),
+            discord.SelectOption(label="手套爆傷排數", value="glove", emoji="🧤",
+                                 description="LV285 / 290 / 295 以上各 0~3 排"),
+            discord.SelectOption(label="萌獸與連結槽", value="familiar", emoji="🐾",
+                                 description="召喚中萌獸組合、連結1/2/3/VIP"),
+        ])
+    async def mode_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        self.mode = select.values[0]
+        self.page = 0
+        await interaction.response.edit_message(embed=self.create_embed(), view=self)
+
+    @discord.ui.button(label="🔙 返回分析", style=discord.ButtonStyle.primary, row=2)
+    async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = APIAnalyseView()
+        await interaction.response.edit_message(embed=view.create_analysis_embed(), view=view)
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
+
+class HatCDAnalyseView(discord.ui.View):
+    """CD帽分析：進入為全職業總覽，可用下拉選單切換單一職業"""
+
+    LEVELS = (295, 290)     # 同時顯示的等級門檻（高→低）
+    MIN_LEVEL = 290         # 職業清單母體門檻
+    CLASSES_PER_PAGE = 24   # 下拉選單上限 25（保留 1 個給「全職業總覽」）
+
+    def __init__(self):
+        super().__init__(timeout=300)
+        self.character_class = None      # None = 全職業總覽
+        self.class_page = 0
+        self._classes = get_classes_with_stats(self.MIN_LEVEL)
+        self._refresh_options()
+
+    # ---------- 下拉選單內容 ----------
+    def _refresh_options(self):
+        total_pages = max(1, (len(self._classes) + self.CLASSES_PER_PAGE - 1) // self.CLASSES_PER_PAGE)
+        self.class_page = max(0, min(self.class_page, total_pages - 1))
+        start = self.class_page * self.CLASSES_PER_PAGE
+        page_classes = self._classes[start:start + self.CLASSES_PER_PAGE]
+
+        options = [discord.SelectOption(
+            label="全職業總覽", value="__all__", emoji="🌐",
+            default=self.character_class is None)]
+        for cls, n in page_classes:
+            options.append(discord.SelectOption(
+                label=cls[:100], value=cls[:100], description=f"{n:,} 人",
+                default=(cls == self.character_class)))
+
+        select = self.children[0]
+        select.options = options
+        select.placeholder = (f"選擇職業…（第 {self.class_page + 1}/{total_pages} 頁）"
+                              if total_pages > 1 else "選擇職業…")
+
+    # ---------- Embed ----------
+    def create_embed(self) -> discord.Embed:
+        scope = self.character_class or "全職業"
+        embed = discord.Embed(color=discord.Color.teal())
+        embed.set_author(name=f"🧢 CD帽分析 — {scope}")
+        embed.timestamp = datetime.datetime.now()
+
+        data = {lv: get_hat_cd_distribution(lv, self.character_class) for lv in self.LEVELS}
+        if not any(d['total'] for d in data.values()):
+            embed.description = ("尚無統計資料（需先執行裝備統計刷新）"
+                                 if self.character_class is None
+                                 else f"「{scope}」尚無統計資料")
+            return embed
+
+        embed.description = ("CD秒數 = 帽子潛能＋附加潛能的「技能冷卻時間」總和\n"
+                             + "　".join(f"**LV{lv}+**：{data[lv]['total']:,} 人" for lv in self.LEVELS))
+
+        # 兩個等級門檻並列比較（同一表格，便於看出高等玩家的差異）
+        all_cds = sorted({cd for d in data.values() for cd in d['counts']}, reverse=True)
+        header = "CD  " + "".join(f"│ LV{lv}+ 人數   佔比 " for lv in self.LEVELS)
+        lines = [header, "─" * len(header)]
+        for cd in all_cds:
+            row = f"-{cd}  "
+            for lv in self.LEVELS:
+                d = data[lv]
+                n = d['counts'].get(cd, 0)
+                p = (n / d['total'] * 100) if d['total'] else 0
+                row += f"│{n:>8,} {p:>6.1f}% "
+            lines.append(row)
+        embed.add_field(name="冷卻秒數分布",
+                        value="```autohotkey\n" + "\n".join(lines) + "\n```", inline=False)
+
+        # 有/無 CD帽摘要
+        summary = []
+        for lv in self.LEVELS:
+            d = data[lv]
+            t = d['total']
+            with_cd = sum(n for cd, n in d['counts'].items() if cd > 0)
+            summary.append(f"LV{lv}+　有CD帽 : {_pct(with_cd, t)}　無CD帽 : {_pct(d['counts'].get(0, 0), t)}")
+        embed.add_field(name="摘要", value="```autohotkey\n" + "\n".join(summary) + "\n```",
+                        inline=False)
+        return embed
+
+    # ---------- 元件 ----------
+    @discord.ui.select(placeholder="選擇職業…", options=[
+        discord.SelectOption(label="全職業總覽", value="__all__", emoji="🌐")])
+    async def class_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        value = select.values[0]
+        self.character_class = None if value == "__all__" else value
+        self._refresh_options()
+        await interaction.response.edit_message(embed=self.create_embed(), view=self)
+
+    @discord.ui.button(label="⬅️ 職業選單上頁", style=discord.ButtonStyle.secondary, row=1)
+    async def prev_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.class_page > 0:
+            self.class_page -= 1
+            self._refresh_options()
+            await interaction.response.edit_message(embed=self.create_embed(), view=self)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.button(label="➡️ 職業選單下頁", style=discord.ButtonStyle.secondary, row=1)
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        total_pages = max(1, (len(self._classes) + self.CLASSES_PER_PAGE - 1) // self.CLASSES_PER_PAGE)
+        if self.class_page < total_pages - 1:
+            self.class_page += 1
+            self._refresh_options()
+            await interaction.response.edit_message(embed=self.create_embed(), view=self)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.button(label="🔙 返回分析", style=discord.ButtonStyle.primary, row=1)
+    async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = APIAnalyseView()
+        await interaction.response.edit_message(embed=view.create_analysis_embed(), view=view)
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
+
 class GemRankingView(discord.ui.View):
     """伊妮絲的寶玉排行（分頁，每頁 20 筆，依等效主屬排序）"""
     def __init__(self, data: list):
@@ -461,18 +705,12 @@ class GemRankingView(discord.ui.View):
             embed.add_field(name="📭 暫無資料", value="目前沒有寶玉資料（需先刷新裝備統計）", inline=False)
             return embed
 
-        # 以「東亞字寬」把名字補齊到固定欄寬，monospace 才會對齊
-        def _w(s):
-            return sum(2 if unicodedata.east_asian_width(c) in ('W', 'F') else 1 for c in s)
-
-        name_w = max(_w(n) for n, _, _, _ in page)
+        # 格式：<排序> <等效屬性> <暱稱>。暱稱放最後、不補寬度，避免長名字造成 embed 跑版
+        equiv_w = max(len(f"{e:,}") for _, _, _, e in page)
         lines = []
         for i, (name, stat, raw, equiv) in enumerate(page):
             rank = start + i + 1
-            label = _GEM_STAT_LABEL.get(stat, (stat or '?').upper())
-            name_pad = name + ' ' * (name_w - _w(name))
-            value = f"+{raw}(等效{equiv})" if stat in _GEM_NORMALIZED else f"+{raw}"
-            lines.append(f"{rank:>2d}. {name_pad}  {label:<5} {value}")
+            lines.append(f"{rank:>3d}. {equiv:>{equiv_w},} {name}")
         embed.add_field(name="​", value="```\n" + "\n".join(lines) + "\n```", inline=False)
         embed.set_footer(text=f"{'-' * 19}寶玉排行 共 {len(self.data)} 人{'-' * 19}")
         return embed
@@ -519,6 +757,12 @@ def create_api_analyse_embed(analysis_type: str = "class", include_view: bool = 
             # 寶玉排行用專屬分頁 View
             if analysis_type == "gem":
                 view = GemRankingView(get_gem_ranking_normalized(100))
+                return {"embed": view.create_embed(), "view": view, "success": True}
+            if analysis_type == "equip":
+                view = EquipAnalyseView()
+                return {"embed": view.create_embed(), "view": view, "success": True}
+            if analysis_type == "hatcd":
+                view = HatCDAnalyseView()
                 return {"embed": view.create_embed(), "view": view, "success": True}
             view = APIAnalyseView(analysis_type)
             embed = view.create_analysis_embed()

@@ -14,13 +14,26 @@ API_RequestLogger.py
 """
 
 import os
+import time
 import sqlite3
 import datetime
+import threading
+import atexit
 import requests
 from urllib.parse import urlparse, parse_qs
 
 # API 請求 log 存放位置（專屬子資料夾，會自動建立）
 LOG_DIR = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\API\\requestlog'
+
+# 批次寫入：舊版每筆 connect+CREATE TABLE+commit(fsync)，實測 5.1ms/筆，
+# 且是在 async 路徑中同步呼叫 → 直接阻塞 event loop，成為刷新吞吐量的瓶頸。
+# 改為共用連線 + 緩衝 executemany。
+BATCH_SIZE = 200          # 累積筆數達標即寫入
+FLUSH_INTERVAL = 60       # 或距上次寫入超過 N 秒即寫入（低流量時避免久滯）
+_buffer = []              # [(db_path, (ts, endpoint, ocid, status)), ...]
+_lock = threading.RLock()
+_conns = {}               # db_path -> sqlite3.Connection（跨季度各自快取）
+_last_flush = time.time()
 
 
 def _current_db_path() -> str:
@@ -60,21 +73,62 @@ def _parse_url(url: str):
         return None, None
 
 
+def _get_conn(path: str) -> sqlite3.Connection:
+    """取得該季度 DB 的共用連線（WAL）。須在 _lock 保護下呼叫。"""
+    conn = _conns.get(path)
+    if conn is None:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        conn = sqlite3.connect(path, check_same_thread=False)
+        conn.execute('PRAGMA journal_mode=WAL')
+        _ensure_table(conn)
+        conn.commit()
+        _conns[path] = conn
+    return conn
+
+
+def flush_logs() -> int:
+    """把緩衝中的 log 一次寫入（依季度 DB 分組）。回傳寫入筆數。"""
+    global _buffer, _last_flush
+    with _lock:
+        if not _buffer:
+            _last_flush = time.time()
+            return 0
+        rows, _buffer = _buffer, []
+        _last_flush = time.time()
+        written = 0
+        grouped = {}
+        for path, row in rows:
+            grouped.setdefault(path, []).append(row)
+        for path, items in grouped.items():
+            try:
+                conn = _get_conn(path)
+                conn.executemany(
+                    'INSERT INTO api_log (ts, endpoint, ocid, status) VALUES (?, ?, ?, ?)',
+                    items)
+                conn.commit()
+                written += len(items)
+            except Exception:
+                pass   # log 失敗絕不影響主流程
+        return written
+
+
 def log_request(url: str, status: int = None):
-    """記錄一筆 API 請求；任何錯誤都被吞掉，不影響呼叫端"""
+    """記錄一筆 API 請求（先進緩衝，滿批或逾時才寫入）；任何錯誤都被吞掉。"""
     try:
         endpoint, ocid = _parse_url(url)
-        path = _current_db_path()
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with sqlite3.connect(path) as conn:
-            _ensure_table(conn)
-            conn.execute(
-                'INSERT INTO api_log (ts, endpoint, ocid, status) VALUES (?, ?, ?, ?)',
-                (datetime.datetime.now(), endpoint, ocid, status)
-            )
-            conn.commit()
+        row = (datetime.datetime.now(), endpoint, ocid, status)
+        with _lock:
+            _buffer.append((_current_db_path(), row))
+            need_flush = (len(_buffer) >= BATCH_SIZE
+                          or time.time() - _last_flush >= FLUSH_INTERVAL)
+        if need_flush:
+            flush_logs()
     except Exception:
         pass
+
+
+# 程式結束時寫出最後一批
+atexit.register(flush_logs)
 
 
 def logged_get(url: str, headers=None, **kwargs):
@@ -100,6 +154,7 @@ def _connect_quarter(year: int = None, quarter: int = None) -> sqlite3.Connectio
 
 def get_total_count(year: int = None, quarter: int = None) -> int:
     """該季 API 請求總次數"""
+    flush_logs()
     with _connect_quarter(year, quarter) as conn:
         return conn.execute('SELECT COUNT(*) FROM api_log').fetchone()[0]
 
@@ -107,6 +162,7 @@ def get_total_count(year: int = None, quarter: int = None) -> int:
 def get_last_hour_count() -> int:
     """過去 1 小時的 API 請求次數（讀目前季度的 DB）"""
     try:
+        flush_logs()
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=1)
         with sqlite3.connect(_current_db_path()) as conn:
             _ensure_table(conn)
@@ -121,6 +177,7 @@ def get_daily_counts(days: int = 7) -> dict:
     """回傳近 N 天每天的 API 請求次數 {'YYYY-MM-DD': count}。
     日期以 UTC 計（date(ts,'utc')），與 command_usage 的 date('now') 基準一致，方便對齊顯示。"""
     try:
+        flush_logs()
         with sqlite3.connect(_current_db_path()) as conn:
             _ensure_table(conn)
             rows = conn.execute(
@@ -144,6 +201,7 @@ def get_month_summary(year: int = None, month: int = None) -> dict:
     path = os.path.join(LOG_DIR, f"API_Log_{year}Q{quarter}.db")
 
     result = {'month': ym, 'total': 0, 'by_endpoint': []}
+    flush_logs()
     try:
         with sqlite3.connect(path) as conn:
             _ensure_table(conn)
@@ -161,6 +219,7 @@ def get_month_summary(year: int = None, month: int = None) -> dict:
 
 def get_count_by_endpoint(year: int = None, quarter: int = None) -> list:
     """各 API(endpoint) 的次數，由多到少"""
+    flush_logs()
     with _connect_quarter(year, quarter) as conn:
         return conn.execute(
             'SELECT endpoint, COUNT(*) FROM api_log GROUP BY endpoint ORDER BY 2 DESC'
@@ -169,6 +228,7 @@ def get_count_by_endpoint(year: int = None, quarter: int = None) -> list:
 
 def get_count_by_ocid(year: int = None, quarter: int = None, limit: int = 50) -> list:
     """各 OCID 的次數，由多到少"""
+    flush_logs()
     with _connect_quarter(year, quarter) as conn:
         return conn.execute(
             'SELECT ocid, COUNT(*) FROM api_log WHERE ocid IS NOT NULL '

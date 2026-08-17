@@ -11,8 +11,12 @@ DB：C:\\Users\\User\\Desktop\\DiscordBotlog\\API\\Equip_Stat.db
 """
 
 import os
+import re
+import json
 import sqlite3
 import datetime
+import threading
+import atexit
 
 EQUIP_DB = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\API\\Equip_Stat.db'
 
@@ -21,21 +25,122 @@ EQUIP_DB = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\API\\Equip_Stat.db'
 _MAIN_STATS = ['str', 'dex', 'int', 'luk', 'max_hp']
 SAMSARA_NAME = '輪迴碑石'
 
+_DDL = '''
+    CREATE TABLE IF NOT EXISTS character_equip_stat (
+        ocid TEXT PRIMARY KEY,
+        character_name TEXT,
+        gem_stat TEXT,          -- 例 'int' 或 'str+dex+luk'，無寶玉為 NULL
+        gem_value INTEGER,      -- 寶玉數值（相等時只存一筆）
+        has_samsara INTEGER DEFAULT 0,  -- 輪迴碑石 0/1
+        refresh_time TIMESTAMP
+    )
+'''
+
+_UPSERT = '''
+    INSERT INTO character_equip_stat
+        (ocid, character_name, gem_stat, gem_value, has_samsara, refresh_time)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(ocid) DO UPDATE SET
+        character_name = excluded.character_name,
+        gem_stat = excluded.gem_stat,
+        gem_value = excluded.gem_value,
+        has_samsara = excluded.has_samsara,
+        refresh_time = excluded.refresh_time
+'''
+
+# 擴充欄位（既有 DB 以 ALTER TABLE 增補，舊資料為 NULL 直到下次刷新）
+_EXTRA_COLUMNS = [
+    ('character_level', 'INTEGER'),      # 角色等級
+    ('character_class', 'TEXT'),         # 職業
+    ('hat_name', 'TEXT'),                # 帽子名稱（供各職業帽子分布統計）
+    ('hat_cd', 'INTEGER'),               # 帽子技能冷卻總秒數（正數，例 6 表示 -6秒）
+    ('glove_crit_lines', 'INTEGER'),     # 手套主潛能爆擊傷害排數 0~3
+    ('has_control_core', 'INTEGER'),     # 全面控制核心 0/1
+    ('has_genesis_badge', 'INTEGER'),    # 創世的胸章 0/1
+    ('has_nightmare', 'INTEGER'),        # 恍惚的惡夢（戒指）0/1
+    ('has_whisper', 'INTEGER'),          # 根源的耳語（戒指）0/1
+    ('has_death_oath', 'INTEGER'),       # 死亡之誓（墜飾）0/1
+    ('has_immortal_legacy', 'INTEGER'),  # 不朽的遺產（勳章）0/1
+    ('has_pride_sin', 'INTEGER'),        # 傲慢的原罪 0/1
+    ('fam_option', 'TEXT'),              # 召喚中萌獸的三排組合：3final/2final_atk/2final_other/NULL
+    ('fam_special', 'INTEGER'),          # 召喚中萌獸是否為特殊萌獸 0/1
+    ('link1', 'INTEGER'),                # 連結槽1 啟用 0/1
+    ('link2', 'INTEGER'),                # 連結槽2 啟用 0/1
+    ('link3', 'INTEGER'),                # 連結槽3 啟用 0/1
+    ('link_vip', 'INTEGER'),             # VIP連結槽 啟用 0/1
+    ('set_effects', 'TEXT'),             # JSON: [["套裝名", 件數], ...]
+]
+
+_upsert_cache = {}
+
+
+def _get_upsert(cols: tuple) -> str:
+    """依「本次要更新的欄位組合」產生並快取 UPSERT SQL。
+
+    只更新有成功取得資料的欄位——若某端點（萌獸/套裝）暫時失敗，
+    對應欄位不會被寫成 NULL 而清掉既有資料。
+    cols 皆來自程式內建常數，非使用者輸入。
+    """
+    sql = _upsert_cache.get(cols)
+    if sql is None:
+        allcols = ('ocid',) + cols
+        sql = (f"INSERT INTO character_equip_stat ({', '.join(allcols)}) "
+               f"VALUES ({', '.join('?' * len(allcols))}) "
+               f"ON CONFLICT(ocid) DO UPDATE SET "
+               + ', '.join(f'{c} = excluded.{c}' for c in cols))
+        _upsert_cache[cols] = sql
+    return sql
+
+# 批次寫入：舊版每筆都 connect+CREATE TABLE+commit(fsync)，實測 4.6ms/筆
+# （50 萬筆需 38 分鐘）。改為共用連線 + 緩衝 executemany 後為 0.004ms/筆。
+BATCH_SIZE = 500
+_buffer = []
+_lock = threading.RLock()   # 保護 _buffer 與共用連線（寫入在背景執行緒、查詢在主執行緒）
+_conn_cache = None
+
 
 def _conn():
-    os.makedirs(os.path.dirname(EQUIP_DB), exist_ok=True)
-    conn = sqlite3.connect(EQUIP_DB)
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS character_equip_stat (
-            ocid TEXT PRIMARY KEY,
-            character_name TEXT,
-            gem_stat TEXT,          -- 例 'int' 或 'str+dex+luk'，無寶玉為 NULL
-            gem_value INTEGER,      -- 寶玉數值（相等時只存一筆）
-            has_samsara INTEGER DEFAULT 0,  -- 輪迴碑石 0/1
-            refresh_time TIMESTAMP
-        )
-    ''')
-    return conn
+    """取得共用連線（WAL 模式）。所有存取都必須在 _lock 保護下進行。"""
+    global _conn_cache
+    if _conn_cache is None:
+        os.makedirs(os.path.dirname(EQUIP_DB), exist_ok=True)
+        # check_same_thread=False：連線跨執行緒共用，並發由 _lock 序列化
+        conn = sqlite3.connect(EQUIP_DB, check_same_thread=False)
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.execute(_DDL)
+        # 欄位遷移：既有 DB 補上擴充欄位（重複執行安全）
+        existing = {r[1] for r in conn.execute('PRAGMA table_info(character_equip_stat)')}
+        for col, coltype in _EXTRA_COLUMNS:
+            if col not in existing:
+                conn.execute(f'ALTER TABLE character_equip_stat ADD COLUMN {col} {coltype}')
+        conn.commit()
+        _conn_cache = conn
+    return _conn_cache
+
+
+def flush_equip_stat() -> int:
+    """把緩衝中的資料一次寫入 DB。回傳實際寫入筆數。批次結束或查詢前應呼叫。"""
+    global _buffer
+    with _lock:
+        if not _buffer:
+            return 0
+        rows, _buffer = _buffer, []
+        try:
+            conn = _conn()
+            grouped = {}
+            for cols, values in rows:
+                grouped.setdefault(cols, []).append(values)
+            for cols, items in grouped.items():
+                conn.executemany(_get_upsert(cols), items)
+            conn.commit()
+            return len(rows)
+        except Exception as e:
+            print(f"[EquipStat] flush 失敗，{len(rows)} 筆未寫入: {e}")
+            return 0
+
+
+# 程式結束時寫出最後一批未滿 BATCH_SIZE 的資料
+atexit.register(flush_equip_stat)
 
 
 def extract_equip_stat(item_equipment: list):
@@ -62,27 +167,129 @@ def extract_equip_stat(item_equipment: list):
     return gem_stat, gem_value, has_samsara
 
 
-def save_equip_stat(ocid: str, character_name: str, gem_stat, gem_value: int, has_samsara: int):
-    """寫入/更新單筆（以 ocid 為 key）。失敗不拋例外。"""
+# 追蹤的特殊裝備：(DB欄位, 顯示名稱)；以 item_name 精確比對
+TRACKED_ITEMS = [
+    ('has_samsara', '輪迴碑石'),
+    ('has_control_core', '全面控制核心'),
+    ('has_genesis_badge', '創世的胸章'),
+    ('has_nightmare', '恍惚的惡夢'),
+    ('has_whisper', '根源的耳語'),
+    ('has_death_oath', '死亡之誓'),
+    ('has_immortal_legacy', '不朽的遺產'),
+    ('has_pride_sin', '傲慢的原罪'),
+]
+_ITEM_TO_COL = {name: col for col, name in TRACKED_ITEMS}
+_CD_RE = re.compile(r'技能冷卻時間\s*-\s*(\d+)\s*秒')
+_MAIN_POT = ('potential_option_1', 'potential_option_2', 'potential_option_3')
+_ADD_POT = ('additional_potential_option_1', 'additional_potential_option_2',
+            'additional_potential_option_3')
+
+
+def extract_equip_extra(item_equipment: list) -> dict:
+    """從 item_equipment 抽取擴充統計項目。
+
+    hat_cd            帽子「技能冷卻時間 -N秒」總和（潛能+附加潛能，回傳正數）
+    glove_crit_lines  手套主潛能中「爆擊傷害」排數 0~3
+    has_control_core  是否裝備全面控制核心
+    has_genesis_badge 是否裝備創世的胸章
+    """
+    out = {'hat_name': None, 'hat_cd': 0, 'glove_crit_lines': 0}
+    # has_samsara 由 extract_equip_stat 負責，此處只處理其餘追蹤裝備
+    out.update({col: 0 for col, _ in TRACKED_ITEMS if col != 'has_samsara'})
+    for it in (item_equipment or []):
+        slot = it.get('item_equipment_slot') or ''
+        name = (it.get('item_name') or '').strip()
+        col = _ITEM_TO_COL.get(name)
+        if col and col != 'has_samsara':
+            out[col] = 1
+        if slot == '帽子':
+            out['hat_name'] = name or None
+            total = 0
+            for k in _MAIN_POT + _ADD_POT:
+                m = _CD_RE.search(it.get(k) or '')
+                if m:
+                    total += int(m.group(1))
+            out['hat_cd'] = total
+        elif slot == '手套':
+            out['glove_crit_lines'] = sum(1 for k in _MAIN_POT if '爆擊傷害' in (it.get(k) or ''))
+    return out
+
+
+_FINAL_DMG = '最終傷害'
+_ATK_NAMES = ('物理攻擊力', '魔法攻擊力')
+
+
+def classify_familiar(options: list) -> str:
+    """依三排選項分類萌獸（順序不影響）：
+    '3final' 三排終傷 / '2final_atk' 雙終傷+物攻或魔攻 / '2final_other' 雙終傷+其他 / '' 其他
+    """
+    names = [(o.get('option_name') or '') for o in (options or [])]
+    finals = sum(1 for n in names if n.startswith(_FINAL_DMG))
+    if finals >= 3:
+        return '3final'
+    if finals == 2:
+        rest = [n for n in names if not n.startswith(_FINAL_DMG)]
+        if any(n.startswith(_ATK_NAMES) for n in rest):
+            return '2final_atk'
+        return '2final_other'
+    return ''
+
+
+def extract_familiar_stat(familiar_data: dict) -> dict:
+    """抽取萌獸統計。
+
+    fam_option / fam_special 只取「召喚中」(summoned_flag=true) 的那一隻——
+    召喚中的萌獸才是實際生效的屬性來源，且不一定在連結槽內（可能是 registered）。
+    link1/2/3/link_vip 為 4 個連結槽的啟用狀態。
+    """
+    out = {'fam_option': None, 'fam_special': 0,
+           'link1': 0, 'link2': 0, 'link3': 0, 'link_vip': 0}
+    if not familiar_data:
+        return out
+    slot_key = {'1': 'link1', '2': 'link2', '3': 'link3', 'vip': 'link_vip'}
+    for s in (familiar_data.get('familiar_link_slot') or []):
+        key = slot_key.get(str(s.get('slot_id') or '').lower())
+        if key and str(s.get('active_flag')).lower() == 'true':
+            out[key] = 1
+    for f in (familiar_data.get('familiar_info') or []):
+        if str(f.get('summoned_flag')).lower() != 'true':
+            continue
+        out['fam_option'] = classify_familiar(f.get('option')) or None
+        out['fam_special'] = 1 if str(f.get('familiar_special_flag')).lower() == 'true' else 0
+        break   # 召喚中僅一隻
+    return out
+
+
+def extract_set_effects(set_effect_data: dict):
+    """抽取套裝清單 [[套裝名, 件數], ...]，存成 JSON 字串；無資料回 None。"""
+    if not set_effect_data:
+        return None
+    rows = [[s.get('set_name'), s.get('total_set_count')]
+            for s in (set_effect_data.get('set_effect') or [])
+            if s.get('set_name')]
+    return json.dumps(rows, ensure_ascii=False) if rows else None
+
+
+def save_character_stat(ocid: str, character_name: str, fields: dict):
+    """排入緩衝。只寫入 fields 中實際提供的欄位，未提供者保留 DB 既有值。"""
     try:
-        with _conn() as conn:
-            conn.execute(
-                '''
-                INSERT INTO character_equip_stat
-                    (ocid, character_name, gem_stat, gem_value, has_samsara, refresh_time)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(ocid) DO UPDATE SET
-                    character_name = excluded.character_name,
-                    gem_stat = excluded.gem_stat,
-                    gem_value = excluded.gem_value,
-                    has_samsara = excluded.has_samsara,
-                    refresh_time = excluded.refresh_time
-                ''',
-                (ocid, character_name, gem_stat, gem_value, has_samsara, datetime.datetime.now())
-            )
-            conn.commit()
+        data = {'character_name': character_name, 'refresh_time': datetime.datetime.now()}
+        data.update(fields)
+        cols = tuple(data.keys())
+        values = tuple([ocid] + [data[c] for c in cols])
+        with _lock:
+            _buffer.append((cols, values))
+            need_flush = len(_buffer) >= BATCH_SIZE
+        if need_flush:
+            flush_equip_stat()
     except Exception:
         pass
+
+
+def save_equip_stat(ocid: str, character_name: str, gem_stat, gem_value: int, has_samsara: int):
+    """將單筆（僅基本欄位）排入緩衝，滿 BATCH_SIZE 才實際寫入。失敗不拋例外。"""
+    save_character_stat(ocid, character_name, {
+        'gem_stat': gem_stat, 'gem_value': gem_value, 'has_samsara': has_samsara})
 
 
 def update_from_equipment(ocid: str, character_name: str, item_equipment: list):
@@ -90,6 +297,30 @@ def update_from_equipment(ocid: str, character_name: str, item_equipment: list):
     gs, gv, hs = extract_equip_stat(item_equipment)
     save_equip_stat(ocid, character_name, gs, gv, hs)
     return gs, gv, hs
+
+
+def update_full_stat(ocid: str, character_name: str, item_equipment: list,
+                     character_level=None, character_class=None,
+                     familiar_data: dict = None, set_effect_data: dict = None):
+    """完整更新一筆：裝備（寶玉/輪迴/CD帽/手套爆傷/核心/胸章）＋萌獸＋套裝＋等級職業。
+
+    回傳寫入用的欄位 dict（供呼叫端統計）。
+    """
+    gs, gv, hs = extract_equip_stat(item_equipment)
+    fields = {'gem_stat': gs, 'gem_value': gv, 'has_samsara': hs}
+    fields.update(extract_equip_extra(item_equipment))
+    if character_level is not None:
+        fields['character_level'] = character_level
+    if character_class is not None:
+        fields['character_class'] = character_class
+    # familiar / set-effect 端點失敗時（None）不寫入對應欄位，
+    # 避免把先前抓到的好資料清成 NULL/0
+    if familiar_data is not None:
+        fields.update(extract_familiar_stat(familiar_data))
+    if set_effect_data is not None:
+        fields['set_effects'] = extract_set_effects(set_effect_data)
+    save_character_stat(ocid, character_name, fields)
+    return fields
 
 
 # ---------- 查詢（供後續排行 / 統計）----------
@@ -112,8 +343,9 @@ def get_gem_ranking_normalized(limit: int = 100) -> list:
     """寶玉排行（依等效主屬降冪）。回傳 [(character_name, gem_stat, gem_value, equiv), ...]"""
     result = []
     try:
-        with _conn() as conn:
-            rows = conn.execute(
+        flush_equip_stat()   # 先寫出緩衝，確保查得到最新資料
+        with _lock:
+            rows = _conn().execute(
                 'SELECT character_name, gem_stat, gem_value FROM character_equip_stat '
                 'WHERE gem_value > 0'
             ).fetchall()
@@ -128,8 +360,9 @@ def get_gem_ranking_normalized(limit: int = 100) -> list:
 def get_gem_ranking(limit: int = 50) -> list:
     """寶玉數值排行（高→低），回傳 [(character_name, gem_stat, gem_value), ...]"""
     try:
-        with _conn() as conn:
-            return conn.execute(
+        flush_equip_stat()   # 先寫出緩衝，確保查得到最新資料
+        with _lock:
+            return _conn().execute(
                 'SELECT character_name, gem_stat, gem_value FROM character_equip_stat '
                 'WHERE gem_value > 0 ORDER BY gem_value DESC LIMIT ?', (limit,)
             ).fetchall()
@@ -137,11 +370,110 @@ def get_gem_ranking(limit: int = 50) -> list:
         return []
 
 
+def _query(sql: str, params=()) -> list:
+    """統計查詢共用：先寫出緩衝再讀，失敗回空list。"""
+    try:
+        flush_equip_stat()
+        with _lock:
+            return _conn().execute(sql, params).fetchall()
+    except Exception as e:
+        print(f"[EquipStat] 查詢失敗: {e}")
+        return []
+
+
+def get_analysed_total(min_level: int = 0) -> int:
+    """已完成擴充統計（character_level 非 NULL）的角色數，作為佔比分母。"""
+    rows = _query('SELECT COUNT(*) FROM character_equip_stat '
+                  'WHERE character_level IS NOT NULL AND character_level >= ?', (min_level,))
+    return rows[0][0] if rows else 0
+
+
+def get_hat_cd_distribution(min_level: int = 290, character_class: str = None) -> dict:
+    """LV min_level 以上的帽子技能冷卻秒數分布，可指定職業。
+    回傳 {'total': n, 'counts': {秒數: 人數, ...}}（秒數為正整數，0 表示無CD）
+    """
+    sql = ('SELECT COALESCE(hat_cd, 0), COUNT(*) FROM character_equip_stat '
+           'WHERE character_level IS NOT NULL AND character_level >= ?')
+    params = [min_level]
+    if character_class:
+        sql += ' AND character_class = ?'
+        params.append(character_class)
+    sql += ' GROUP BY COALESCE(hat_cd, 0) ORDER BY 1 DESC'
+    rows = _query(sql, tuple(params))
+    counts = {int(cd): cnt for cd, cnt in rows}
+    return {'total': sum(counts.values()), 'counts': counts}
+
+
+def get_classes_with_stats(min_level: int = 290) -> list:
+    """有統計資料的職業清單 [(職業, 人數), ...]，依人數降冪。"""
+    return [(c, n) for c, n in _query(
+        'SELECT character_class, COUNT(*) FROM character_equip_stat '
+        'WHERE character_level IS NOT NULL AND character_level >= ? '
+        'AND character_class IS NOT NULL '
+        'GROUP BY character_class ORDER BY COUNT(*) DESC', (min_level,))]
+
+
+def get_equipment_ownership() -> dict:
+    """全服特殊裝備持有人數（分母為已完成統計的角色數）。
+    回傳 {'total': n, 'items': [(顯示名稱, 人數), ...]}
+    """
+    cols = [col for col, _ in TRACKED_ITEMS]
+    sums = ', '.join(f'SUM(COALESCE({c}, 0))' for c in cols)
+    rows = _query(f'SELECT COUNT(*), {sums} FROM character_equip_stat '
+                  'WHERE character_level IS NOT NULL')
+    if not rows or not rows[0][0]:
+        return {'total': 0, 'items': [(name, 0) for _, name in TRACKED_ITEMS]}
+    total = rows[0][0]
+    values = rows[0][1:]
+    items = [(name, values[i] or 0) for i, (_, name) in enumerate(TRACKED_ITEMS)]
+    return {'total': total, 'items': items}
+
+
+def get_glove_crit_distribution(levels=(285, 290, 295)) -> dict:
+    """各等級門檻的手套爆傷排數分布。
+    回傳 {門檻等級: {'total': n, 0: n, 1: n, 2: n, 3: n}}
+    """
+    out = {}
+    for lv in levels:
+        rows = _query(
+            'SELECT COALESCE(glove_crit_lines, 0), COUNT(*) FROM character_equip_stat '
+            'WHERE character_level >= ? AND character_level IS NOT NULL '
+            'GROUP BY COALESCE(glove_crit_lines, 0)', (lv,))
+        d = {0: 0, 1: 0, 2: 0, 3: 0}
+        for lines, cnt in rows:
+            if lines in d:
+                d[lines] = cnt
+        d['total'] = sum(d[k] for k in (0, 1, 2, 3))
+        out[lv] = d
+    return out
+
+
+def get_familiar_distribution(min_level: int = 0) -> dict:
+    """召喚中萌獸的三排組合分布、特殊萌獸數，以及連結槽啟用人數。"""
+    total = get_analysed_total(min_level)
+    rows = _query(
+        'SELECT COALESCE(fam_option, "none"), COUNT(*) FROM character_equip_stat '
+        'WHERE character_level IS NOT NULL AND character_level >= ? '
+        'GROUP BY COALESCE(fam_option, "none")', (min_level,))
+    options = {'3final': 0, '2final_atk': 0, '2final_other': 0, 'none': 0}
+    for k, cnt in rows:
+        options[k] = options.get(k, 0) + cnt
+    link_rows = _query(
+        'SELECT SUM(link1), SUM(link2), SUM(link3), SUM(link_vip), SUM(fam_special) '
+        'FROM character_equip_stat WHERE character_level IS NOT NULL AND character_level >= ?',
+        (min_level,))
+    l1, l2, l3, lv_, sp = (link_rows[0] if link_rows else (0, 0, 0, 0, 0))
+    return {'total': total, 'options': options,
+            'links': {'1': l1 or 0, '2': l2 or 0, '3': l3 or 0, 'VIP': lv_ or 0},
+            'special': sp or 0}
+
+
 def get_samsara_count() -> int:
     """擁有輪迴碑石的角色數量"""
     try:
-        with _conn() as conn:
-            return conn.execute(
+        flush_equip_stat()   # 先寫出緩衝，確保查得到最新資料
+        with _lock:
+            return _conn().execute(
                 'SELECT COUNT(*) FROM character_equip_stat WHERE has_samsara = 1'
             ).fetchone()[0]
     except Exception:

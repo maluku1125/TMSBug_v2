@@ -10,6 +10,16 @@ from functions.API_functions.API_DataBase_Character import (
     delete_character_data_by_ocid
 )
 from functions.API_functions.API_RequestLogger import logged_get, log_request
+from functions.API_functions.API_RateLimiter import acquire as rate_acquire
+
+# 批次作業時把逐筆 print 關掉：主控台輸出是同步 I/O，
+# 大量輸出會阻塞 event loop（實測會導致 discord heartbeat blocked）。
+QUIET = False
+
+
+def _say(msg):
+    if not QUIET:
+        print(msg)
 
 
 try:
@@ -37,17 +47,17 @@ def get_ocid_from_cache(character_name: str, cache_days: int = 7) -> Optional[st
                 time_diff = current_time - refresh_time
                 
                 if time_diff.days < cache_days:
-                    print(f"cache hit: '{character_name}' -> {ocid} ( {time_diff.days} days ago)")
+                    _say(f"cache hit: '{character_name}' -> {ocid} ( {time_diff.days} days ago)")
                     return ocid
                 else:
-                    print(f"cache expired: ({time_diff.days} days ago)")
+                    _say(f"cache expired: ({time_diff.days} days ago)")
                     return None
                     
             except ValueError:
                 print(f"time format error for '{character_name}': {refresh_time_str}")
                 return None
         else:
-            print(f"Cannot find '{character_name}'")
+            _say(f"Cannot find '{character_name}'")
             return None
             
     except Exception as e:
@@ -124,13 +134,16 @@ async def request_character_ocid_async(session: aiohttp.ClientSession, character
 
     async with semaphore:  # 控制併發數量
         try:
+            await rate_acquire()   # 全域速率上限
             async with session.get(url_string, headers=headers) as response:
                 log_request(url_string, response.status)
                 response.raise_for_status()
                 data = await response.json()
                 return (character_name, data.get('ocid'))
         except Exception as e:
-            print(f"OCID async request failed for '{character_name}': {e}")
+            # 400 = 角色不存在（已刪除/改名），屬預期結果，不逐筆輸出
+            if '400' not in str(e):
+                _say(f"OCID async request failed for '{character_name}': {e}")
             return (character_name, None)
 
 
@@ -397,7 +410,7 @@ def request_character_hyper_stat(ocid: str) -> Optional[dict]:
 
 
 
-async def request_character_basic_async(session: aiohttp.ClientSession, ocid: str, semaphore: asyncio.Semaphore, date = None) -> Optional[dict]:
+async def request_character_basic_async(session: aiohttp.ClientSession, ocid: str, semaphore: asyncio.Semaphore, date = None, save_to_db: bool = True) -> Optional[dict]:
     """
     非同步版本的 request_character_basic，用於併行處理
     
@@ -421,13 +434,14 @@ async def request_character_basic_async(session: aiohttp.ClientSession, ocid: st
     
     async with semaphore:  # 控制併發數量
         try:
+            await rate_acquire()   # 全域速率上限
             async with session.get(url_string, headers=headers) as response:
                 log_request(url_string, response.status)
                 response.raise_for_status()
                 character_basic_data = await response.json()
                 
-                if character_basic_data and not date:
-                    # 添加 OCID 並保存到資料庫
+                if character_basic_data and not date and save_to_db:
+                    # 添加 OCID 並保存到資料庫（批次工具可傳 save_to_db=False 改用批次寫入）
                     character_basic_data_with_ocid = character_basic_data.copy()
                     character_basic_data_with_ocid['ocid'] = ocid
                     save_character_basic_info_db(character_basic_data_with_ocid)
@@ -435,7 +449,8 @@ async def request_character_basic_async(session: aiohttp.ClientSession, ocid: st
                 return character_basic_data
                 
         except Exception as e:
-            print(f"Failed to request character basic info from API (async): {e}")
+            if '400' not in str(e):
+                _say(f"Failed to request character basic info from API (async): {e}")
             return None
 
 
@@ -446,6 +461,7 @@ async def request_character_itemequipment_async(session: aiohttp.ClientSession, 
     url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/item-equipment?ocid={ocid}"
     async with semaphore:
         try:
+            await rate_acquire()   # 全域速率上限
             async with session.get(url_string, headers=headers) as response:
                 log_request(url_string, response.status)
                 response.raise_for_status()
@@ -453,6 +469,53 @@ async def request_character_itemequipment_async(session: aiohttp.ClientSession, 
         except Exception as e:
             print(f"item-equipment async request failed for '{ocid}': {e}")
             return None
+
+
+async def request_character_familiar_async(session: aiohttp.ClientSession, ocid: str,
+                                           semaphore: asyncio.Semaphore) -> Optional[dict]:
+    """非同步查角色萌獸（併發用）。回傳萌獸資料或 None。"""
+    headers = {"x-nxopen-api-key": api_key}
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/familiar?ocid={ocid}"
+    async with semaphore:
+        try:
+            await rate_acquire()   # 全域速率上限
+            async with session.get(url_string, headers=headers) as response:
+                log_request(url_string, response.status)
+                response.raise_for_status()
+                return await response.json()
+        except Exception as e:
+            print(f"familiar async request failed for '{ocid}': {e}")
+            return None
+
+
+async def request_character_set_effect_async(session: aiohttp.ClientSession, ocid: str,
+                                             semaphore: asyncio.Semaphore) -> Optional[dict]:
+    """非同步查角色套裝效果（併發用）。回傳套裝資料或 None。"""
+    headers = {"x-nxopen-api-key": api_key}
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/set-effect?ocid={ocid}"
+    async with semaphore:
+        try:
+            await rate_acquire()   # 全域速率上限
+            async with session.get(url_string, headers=headers) as response:
+                log_request(url_string, response.status)
+                response.raise_for_status()
+                return await response.json()
+        except Exception as e:
+            print(f"set-effect async request failed for '{ocid}': {e}")
+            return None
+
+
+def request_character_set_effect(ocid: str) -> Optional[dict]:
+    """同步查角色套裝效果。"""
+    headers = {"x-nxopen-api-key": api_key}
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/set-effect?ocid={ocid}"
+    try:
+        response = logged_get(url_string, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"error occurred while fetching character set-effect info: {e}")
+        return None
 
 
 async def refresh_single_character_async(session: aiohttp.ClientSession, item: dict, semaphore: asyncio.Semaphore) -> dict:
@@ -498,7 +561,7 @@ async def refresh_single_character_async(session: aiohttp.ClientSession, item: d
                 else:
                     result['status'] = 'delete_failed'
             else:
-                print(f"✓ Successfully refreshed '{character_name}'")
+                _say(f"✓ Successfully refreshed '{character_name}'")
                 result['status'] = 'success'
 
                 # 順便追蹤裝備（只對 250 等以上抓 item-equipment：寶玉/輪迴碑石屬終局裝備）
@@ -507,13 +570,24 @@ async def refresh_single_character_async(session: aiohttp.ClientSession, item: d
                 except (ValueError, TypeError):
                     level = 0
                 if level >= 250:
-                    equip = await request_character_itemequipment_async(session, ocid, semaphore)
+                    # 三個端點併行抓取（familiar/set-effect 各僅約 1KB，成本遠低於裝備）
+                    equip, familiar, set_effect = await asyncio.gather(
+                        request_character_itemequipment_async(session, ocid, semaphore),
+                        request_character_familiar_async(session, ocid, semaphore),
+                        request_character_set_effect_async(session, ocid, semaphore),
+                    )
                     if equip:
-                        from functions.API_functions.API_EquipStat import update_from_equipment
-                        update_from_equipment(ocid, fresh_data.get('character_name'),
-                                              equip.get('item_equipment') or [])
+                        from functions.API_functions.API_EquipStat import update_full_stat
+                        update_full_stat(
+                            ocid, fresh_data.get('character_name'),
+                            equip.get('item_equipment') or [],
+                            character_level=level,
+                            character_class=fresh_data.get('character_class'),
+                            familiar_data=familiar,
+                            set_effect_data=set_effect,
+                        )
         else:
-            print(f"✗ Failed to fetch fresh data for '{character_name}' from API")
+            _say(f"✗ Failed to fetch fresh data for '{character_name}' from API")
             result['status'] = 'failed'
             
     except Exception as e:
@@ -524,19 +598,21 @@ async def refresh_single_character_async(session: aiohttp.ClientSession, item: d
     return result
 
 
-async def refresh_all_expired_character_data_async(refresh_days: int = 9999, max_concurrent: int = 10) -> dict:
+async def refresh_all_expired_character_data_async(refresh_days: int = 9999, max_concurrent: int = 20,
+                                                   max_count: int = None) -> dict:
     """
     非同步批次刷新過期角色資料（併行處理版本）
     
     Args:
         refresh_days: 資料過期門檻（天數），預設 9999 天
-        max_concurrent: 最大併發請求數量，預設 10（避免超過 API 限制）
+        max_concurrent: 最大併發請求數量，預設 20
+        max_count: 只刷新最舊的 N 筆（每日均分用），None = 全部
 
     Returns:
         包含處理結果統計的字典
     """
     # 取得過期 OCID 列表
-    expired_check_result = get_all_expired_character_lists(refresh_days)
+    expired_check_result = get_all_expired_character_lists(refresh_days, max_count=max_count)
     
     # 準備結果統計
     result_stats = {
@@ -582,7 +658,21 @@ async def refresh_all_expired_character_data_async(refresh_days: int = 9999, max
                     result_stats['deleted_invalid_records'] += 1
                 elif status in ['failed', 'error', 'delete_failed']:
                     result_stats['failed_refreshes'] += 1
-    
+
+    # 寫出裝備統計與 API log 最後一批未滿批次的緩衝
+    try:
+        from functions.API_functions.API_EquipStat import flush_equip_stat
+        flushed = flush_equip_stat()
+        if flushed:
+            print(f"EquipStat flushed: {flushed} records")
+    except Exception as e:
+        print(f"EquipStat flush failed: {e}")
+    try:
+        from functions.API_functions.API_RequestLogger import flush_logs
+        flush_logs()
+    except Exception:
+        pass
+
     # 輸出統計資訊
     print("\n=== Batch Refresh Results (Concurrent) ===")
     print(f"Total records: {result_stats['total_records']}")
@@ -597,13 +687,14 @@ async def refresh_all_expired_character_data_async(refresh_days: int = 9999, max
     return result_stats
 
 
-def refresh_all_expired_character_data(refresh_days: int = 9999, max_concurrent: int = 5, use_async: bool = True) -> dict:
+def refresh_all_expired_character_data(refresh_days: int = 9999, max_concurrent: int = 20,
+                                       use_async: bool = True, max_count: int = None) -> dict:
     """
     批次刷新過期角色資料（支援同步/非同步模式）
     
     Args:
         refresh_days: 資料過期門檻（天數），預設 9999 天
-        max_concurrent: 最大併發請求數量，預設 5（僅在非同步模式生效）
+        max_concurrent: 最大併發請求數量，預設 20（僅在非同步模式生效）
         use_async: 是否使用非同步併行處理，預設 True
 
     Returns:
@@ -611,7 +702,7 @@ def refresh_all_expired_character_data(refresh_days: int = 9999, max_concurrent:
     """
     if use_async:
         # 使用非同步併行處理
-        return asyncio.run(refresh_all_expired_character_data_async(refresh_days, max_concurrent))
+        return asyncio.run(refresh_all_expired_character_data_async(refresh_days, max_concurrent, max_count))
     else:
         # 傳統的同步處理方式（保留作為後備選項）
         return _refresh_all_expired_character_data_sync(refresh_days)
@@ -628,7 +719,7 @@ def _refresh_all_expired_character_data_sync(refresh_days: int = 9999) -> dict:
         包含處理結果統計的字典
     """
     # Get expired OCID list
-    expired_check_result = get_all_expired_character_lists(refresh_days)
+    expired_check_result = get_all_expired_character_lists(refresh_days, max_count=max_count)
     
     # Prepare result statistics
     result_stats = {
@@ -677,10 +768,10 @@ def _refresh_all_expired_character_data_sync(refresh_days: int = 9999) -> dict:
                     else:
                         result_stats['failed_refreshes'] += 1
                 else:
-                    print(f"✓ Successfully refreshed '{character_name}'")
+                    _say(f"✓ Successfully refreshed '{character_name}'")
                     result_stats['successfully_refreshed'] += 1
             else:
-                print(f"✗ Failed to fetch fresh data for '{character_name}' from API")
+                _say(f"✗ Failed to fetch fresh data for '{character_name}' from API")
                 result_stats['failed_refreshes'] += 1
                 
         except Exception as e:

@@ -1,7 +1,26 @@
 import datetime
 import asyncio
+import sqlite3
 from discord.ext import commands, tasks
 from functions.API_functions.API_Request_Character import refresh_all_expired_character_data
+from functions.API_functions.API_DataBase_Character import character_basic_info_path
+
+# 幾天輪完全部角色（每日刷新 1/N）
+REFRESH_CYCLE_DAYS = 7
+
+# bot 內刷新的 API 速率上限（官方 500/s）。刻意低於 admin 腳本的 350，
+# 讓 bot 保留餘裕回應指令；若同時手動跑腳本，兩邊相加也不會超過上限。
+REFRESH_RATE = 150
+
+
+def get_character_count() -> int:
+    """角色總數，用來換算每日配額"""
+    try:
+        with sqlite3.connect(character_basic_info_path) as conn:
+            return conn.execute('SELECT COUNT(*) FROM character_basic_info').fetchone()[0]
+    except Exception as e:
+        print(f"取得角色總數失敗: {e}")
+        return 0
 
 def get_now_HMS():
     return datetime.datetime.now().strftime('%H:%M:%S')
@@ -26,13 +45,38 @@ class Loop_API_Data_Refresh(commands.Cog):
     @tasks.loop(time=datetime.time(hour=2, minute=15, tzinfo=timezone))  # Set to 2:15 for testing
 
     async def API_AllData_Refresh(self):
-        """Execute database refresh task every Monday at 2:15 AM"""
-        print(f"{get_now_YMDHMS()}, 🚀 Starting API all character data refresh...")
+        """每日 02:15 執行：刷新「最舊的 1/REFRESH_CYCLE_DAYS」筆資料。
+
+        舊版是「刷新所有超過 7 天者」，同一天刷到的角色 7 天後又同一天到期，
+        造成群聚（實測單日 46k、隔日 1.7k）。改為每日固定取最舊的 N 筆後，
+        負載自動均分，且族群成長時 N 會跟著調整。
+        """
+        print(f"{get_now_YMDHMS()}, 🚀 Starting API daily rolling refresh...")
 
         try:
-            # Execute refresh task in a separate thread to avoid blocking the event loop
-            stats = await asyncio.to_thread(refresh_all_expired_character_data, refresh_days=7)
-            
+            total = await asyncio.to_thread(get_character_count)
+            daily_quota = max(1, -(-total // REFRESH_CYCLE_DAYS)) if total else None  # 無條件進位
+            if daily_quota:
+                print(f"{get_now_YMDHMS()}, 總計 {total:,} 筆，"
+                      f"本次配額 {daily_quota:,} 筆（{REFRESH_CYCLE_DAYS} 天輪完一輪）")
+
+            # 刷新期間關閉逐筆 print：主控台輸出是同步 I/O，數萬筆會癱瘓 event loop
+            # （實測會出現 discord.gateway "heartbeat blocked for more than N seconds"）
+            import functions.API_functions.API_Request_Character as _rc
+            from functions.API_functions.API_RateLimiter import set_global_rate
+            _prev_quiet = _rc.QUIET
+            _rc.QUIET = True
+            set_global_rate(REFRESH_RATE)
+            try:
+                # Execute refresh task in a separate thread to avoid blocking the event loop
+                stats = await asyncio.to_thread(
+                    refresh_all_expired_character_data,
+                    refresh_days=REFRESH_CYCLE_DAYS,
+                    max_count=daily_quota,
+                )
+            finally:
+                _rc.QUIET = _prev_quiet
+
             # Output statistics
             print(f"{get_now_YMDHMS()}, 🎉 API all data refresh completed!")
             print(f"Total records: {stats['total_records']}")
