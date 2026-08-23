@@ -395,10 +395,13 @@ class Slash_API(commands.Cog):
 
             # 情況 3：無登錄任何角色 → 要求輸入
             if len(registered) == 0:
-                await interaction.response.send_message(
-                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
-                    ephemeral=True
-                )
+                try:
+                    await interaction.response.send_message(
+                        "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
+                        ephemeral=True
+                    )
+                except NotFound:
+                    logging.warning("Interaction expired before first response")
                 return
 
             # 情況 1：只有 1 個角色 → 直接查詢
@@ -548,10 +551,13 @@ class Slash_API(commands.Cog):
 
             # 無登錄角色
             if len(registered) == 0:
-                await interaction.response.send_message(
-                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
-                    ephemeral=True
-                )
+                try:
+                    await interaction.response.send_message(
+                        "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
+                        ephemeral=True
+                    )
+                except NotFound:
+                    logging.warning("Interaction expired before first response")
                 return
 
             # 只有 1 個角色 → 直接查詢
@@ -629,10 +635,13 @@ class Slash_API(commands.Cog):
             registered = {slot: name for slot, name in all_chars.items() if name}
 
             if len(registered) == 0:
-                await interaction.response.send_message(
-                    "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
-                    ephemeral=True
-                )
+                try:
+                    await interaction.response.send_message(
+                        "❌ 請輸入角色名稱，或先使用 `/setting設定 type:1本` 設定您的遊戲角色ID。",
+                        ephemeral=True
+                    )
+                except NotFound:
+                    logging.warning("Interaction expired before first response")
                 return
 
             # 聯盟冠軍為帳號同世界共用，使用主要登錄角色即可
@@ -705,7 +714,8 @@ class Slash_API(commands.Cog):
         app_commands.Choice(name="等級分析", value="level"),
         app_commands.Choice(name="寶玉排行", value="gem"),
         app_commands.Choice(name="裝備分析", value="equip"),
-        app_commands.Choice(name="CD帽分析", value="hatcd")
+        app_commands.Choice(name="CD帽分析", value="hatcd"),
+        app_commands.Choice(name="冠軍分析", value="champion")
     ])
     async def api_analyse(self, interaction: discord.Interaction, analysis_type: str = "class"):
         

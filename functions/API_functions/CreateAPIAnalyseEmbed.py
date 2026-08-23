@@ -10,7 +10,7 @@ from functions.API_functions.API_Analyse import (
 from functions.API_functions.API_EquipStat import (
     get_gem_ranking_normalized, get_equipment_ownership,
     get_glove_crit_distribution, get_familiar_distribution, get_hat_cd_distribution,
-    get_classes_with_stats)
+    get_classes_with_stats, get_soul_weapon_distribution, get_champion_grade_distribution)
 
 # 寶玉屬性標籤；需顯示「等效主屬」的職業類型
 _GEM_STAT_LABEL = {'str': 'STR', 'dex': 'DEX', 'int': 'INT', 'luk': 'LUK',
@@ -420,6 +420,11 @@ class APIAnalyseView(discord.ui.View):
         view = HatCDAnalyseView()
         await interaction.response.edit_message(embed=view.create_embed(), view=view)
 
+    @discord.ui.button(label="👑 冠軍分析", style=discord.ButtonStyle.secondary, row=2)
+    async def champion_analysis_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = ChampionAnalyseView()
+        await interaction.response.edit_message(embed=view.create_embed(), view=view)
+
     @discord.ui.select(
         placeholder="選擇世界篩選...",
         options=[
@@ -453,6 +458,16 @@ class APIAnalyseView(discord.ui.View):
             item.disabled = True
 
 
+def _dw(text: str) -> int:
+    """字串的顯示寬度（全形字算 2 欄）"""
+    return sum(2 if unicodedata.east_asian_width(c) in ('W', 'F') else 1 for c in text)
+
+
+def _padw(text: str, width: int) -> str:
+    """補半形空白到指定顯示寬度，讓全形/半形混排也能對齊"""
+    return text + ' ' * max(0, width - _dw(text))
+
+
 def _pct(n: int, total: int) -> str:
     return f"{n:,} ({n / total * 100:.1f}%)" if total else f"{n:,} (—)"
 
@@ -468,6 +483,8 @@ class EquipAnalyseView(discord.ui.View):
 
     # ---------- Embed ----------
     def create_embed(self) -> discord.Embed:
+        if self.mode == 'soul':
+            return self._embed_soul()
         if self.mode == 'glove':
             return self._embed_glove()
         if self.mode == 'familiar':
@@ -543,6 +560,29 @@ class EquipAnalyseView(discord.ui.View):
             inline=False)
         return embed
 
+    def _embed_soul(self) -> discord.Embed:
+        d = get_soul_weapon_distribution()
+        embed = self._base("🗡️ 魂武等級分布")
+        total = d['total']
+        if not total:
+            embed.description = "尚無統計資料（需先執行裝備統計刷新）"
+            return embed
+        embed.description = f"統計母數：**{total:,}** 位角色"
+        has_soul = d['has_soul']
+        width = max(_dw(lbl) for lbl, _ in d['buckets'])
+        rows = [f"{_padw(lbl, width)} : {_pct(n, total)}"
+                for lbl, n in d['buckets']]
+        embed.add_field(name="等級區間 / 人數 / 佔比",
+                        value=f"```autohotkey\n" + chr(10).join(rows) + f"\n```",
+                        inline=False)
+        embed.add_field(name="摘要",
+                        value=(f"```autohotkey\n"
+                               f"有魂武 : {_pct(has_soul, total)}\n"
+                               f"無魂武 : {_pct(total - has_soul, total)}\n"
+                               f"```"),
+                        inline=False)
+        return embed
+
     # ---------- 元件 ----------
     @discord.ui.select(
         placeholder="選擇分析項目...",
@@ -553,6 +593,8 @@ class EquipAnalyseView(discord.ui.View):
                                  description="LV285 / 290 / 295 以上各 0~3 排"),
             discord.SelectOption(label="萌獸與連結槽", value="familiar", emoji="🐾",
                                  description="召喚中萌獸組合、連結1/2/3/VIP"),
+            discord.SelectOption(label="魂武等級", value="soul", emoji="🗡️",
+                                 description="魂武等級分布與持有率"),
         ])
     async def mode_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         self.mode = select.values[0]
@@ -684,6 +726,108 @@ class HatCDAnalyseView(discord.ui.View):
             item.disabled = True
 
 
+class ChampionAnalyseView(discord.ui.View):
+    """聯盟冠軍等級分析：全職業總覽，可用下拉選單切換單一職業"""
+
+    MIN_LEVEL = 0
+    CLASSES_PER_PAGE = 24
+
+    def __init__(self):
+        super().__init__(timeout=300)
+        self.character_class = None
+        self.class_page = 0
+        self._classes = get_classes_with_stats(self.MIN_LEVEL)
+        self._refresh_options()
+
+    def _refresh_options(self):
+        total_pages = max(1, (len(self._classes) + self.CLASSES_PER_PAGE - 1) // self.CLASSES_PER_PAGE)
+        self.class_page = max(0, min(self.class_page, total_pages - 1))
+        start = self.class_page * self.CLASSES_PER_PAGE
+        page_classes = self._classes[start:start + self.CLASSES_PER_PAGE]
+        options = [discord.SelectOption(
+            label="全職業總覽", value="__all__", emoji="🌐",
+            default=self.character_class is None)]
+        for cls, n in page_classes:
+            options.append(discord.SelectOption(
+                label=cls[:100], value=cls[:100], description=f"{n:,} 人",
+                default=(cls == self.character_class)))
+        select = self.children[0]
+        select.options = options
+        select.placeholder = (f"選擇職業…（第 {self.class_page + 1}/{total_pages} 頁）"
+                              if total_pages > 1 else "選擇職業…")
+
+    def create_embed(self) -> discord.Embed:
+        d = get_champion_grade_distribution(self.MIN_LEVEL, self.character_class)
+        scope = self.character_class or "全職業"
+        embed = discord.Embed(color=discord.Color.gold())
+        embed.set_author(name=f"👑 聯盟冠軍等級分析 — {scope}")
+        embed.timestamp = datetime.datetime.now()
+
+        total = d['total']
+        if not total:
+            embed.description = ("尚無統計資料（需先執行裝備統計刷新）"
+                                 if self.character_class is None
+                                 else f"「{scope}」尚無統計資料")
+            return embed
+
+        embed.description = f"統計母數：**{total:,}** 位角色"
+        grades = d['grades']
+        champ = d['is_champion']
+        # 只列實際冠軍等級（不含非冠軍），佔比以「冠軍總數」為分母
+        rows = []
+        for g, n in grades:
+            if g == "none":
+                continue
+            pct = (n / champ * 100) if champ else 0
+            rows.append(f"{_padw(g, 4)} : {n:>6,} ({pct:5.1f}%)")
+        embed.add_field(name="冠軍等級 / 人數 / 佔比（佔冠軍總數）",
+                        value=f"```autohotkey\n" + chr(10).join(rows) + f"\n```",
+                        inline=False)
+        embed.add_field(name="摘要",
+                        value=(f"```autohotkey\n"
+                               f"是聯盟冠軍 : {_pct(champ, total)}\n"
+                               f"非冠軍　　 : {_pct(total - champ, total)}\n"
+                               f"```"),
+                        inline=False)
+        return embed
+
+    @discord.ui.select(placeholder="選擇職業…", options=[
+        discord.SelectOption(label="全職業總覽", value="__all__", emoji="🌐")])
+    async def class_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        value = select.values[0]
+        self.character_class = None if value == "__all__" else value
+        self._refresh_options()
+        await interaction.response.edit_message(embed=self.create_embed(), view=self)
+
+    @discord.ui.button(label="⬅️ 職業選單上頁", style=discord.ButtonStyle.secondary, row=1)
+    async def prev_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.class_page > 0:
+            self.class_page -= 1
+            self._refresh_options()
+            await interaction.response.edit_message(embed=self.create_embed(), view=self)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.button(label="➡️ 職業選單下頁", style=discord.ButtonStyle.secondary, row=1)
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        total_pages = max(1, (len(self._classes) + self.CLASSES_PER_PAGE - 1) // self.CLASSES_PER_PAGE)
+        if self.class_page < total_pages - 1:
+            self.class_page += 1
+            self._refresh_options()
+            await interaction.response.edit_message(embed=self.create_embed(), view=self)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.button(label="🔙 返回分析", style=discord.ButtonStyle.primary, row=1)
+    async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = APIAnalyseView()
+        await interaction.response.edit_message(embed=view.create_analysis_embed(), view=view)
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
+
 class GemRankingView(discord.ui.View):
     """伊妮絲的寶玉排行（分頁，每頁 20 筆，依等效主屬排序）"""
     def __init__(self, data: list):
@@ -763,6 +907,9 @@ def create_api_analyse_embed(analysis_type: str = "class", include_view: bool = 
                 return {"embed": view.create_embed(), "view": view, "success": True}
             if analysis_type == "hatcd":
                 view = HatCDAnalyseView()
+                return {"embed": view.create_embed(), "view": view, "success": True}
+            if analysis_type == "champion":
+                view = ChampionAnalyseView()
                 return {"embed": view.create_embed(), "view": view, "success": True}
             view = APIAnalyseView(analysis_type)
             embed = view.create_analysis_embed()

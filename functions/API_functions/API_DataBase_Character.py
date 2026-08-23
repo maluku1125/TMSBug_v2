@@ -13,6 +13,8 @@ def init_Character_Ocid_database():
         
         # Connect to database
         with sqlite3.connect(file_path) as conn:
+            # WAL 模式：寫入不再阻擋讀取（bot 查詢與批次腳本可並行）
+            conn.execute("PRAGMA journal_mode=WAL")
             cursor = conn.cursor()
             
             # Create table
@@ -123,6 +125,8 @@ def init_character_basic_info_database():
         
         # Connect to database
         with sqlite3.connect(character_basic_info_path) as conn:
+            # WAL 模式：寫入不再阻擋讀取（bot 查詢與批次腳本可並行）
+            conn.execute("PRAGMA journal_mode=WAL")
             cursor = conn.cursor()
             
             # Create table

@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 import configparser
 import asyncio
+import logging
 
 
 from functions.Cogs.Slash_BasicCommands import Slash_BasicCommands
@@ -81,6 +82,9 @@ class TMSBot(commands.AutoShardedBot):
         setup_hook 只會在 bot 啟動時執行一次
         適合用來載入 Cogs 和同步命令
         """
+        # 全域指令錯誤處理：互動逾時(10062)不再噴 traceback
+        self.tree.on_error = self.on_tree_error
+
         print('\n🔧 Loading Cogs...')
         
         await self.add_cog(Slash_BasicCommands(self))
@@ -140,6 +144,34 @@ class TMSBot(commands.AutoShardedBot):
         print(f"\n📊 Total Slash Commands Synced: {len(slash)}")
         for cmd in slash:
             print(f"  - {cmd.name}")
+
+    async def on_tree_error(self, interaction: discord.Interaction, error):
+        """全域斜線指令錯誤處理。
+
+        Discord 規定互動必須在 3 秒內被回應，逾時後 token 失效 → 404 (10062)。
+        這種情況多半來自 event loop 短暫阻塞或 Discord 自身的傳播延遲，
+        不是程式邏輯錯誤，因此只記一行 log，不輸出整段 traceback。
+        """
+        cmd = interaction.command.name if interaction.command else 'unknown'
+        err = getattr(error, 'original', error)
+
+        if isinstance(err, discord.NotFound) and getattr(err, 'code', None) == 10062:
+            logging.warning(f"[互動逾時] {cmd}: 使用者端未收到回應 (10062)")
+            return
+        if isinstance(err, discord.errors.InteractionResponded):
+            logging.warning(f"[重複回應] {cmd}")
+            return
+
+        logging.exception(f"指令 {cmd} 發生未預期錯誤", exc_info=err)
+        # 盡量通知使用者；互動已失效就安靜放棄
+        try:
+            msg = "❌ 指令執行時發生錯誤，請稍後再試。"
+            if interaction.response.is_done():
+                await interaction.followup.send(msg, ephemeral=True)
+            else:
+                await interaction.response.send_message(msg, ephemeral=True)
+        except Exception:
+            pass
 
     async def on_ready(self):
         """

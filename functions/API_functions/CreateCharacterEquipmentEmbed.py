@@ -240,7 +240,15 @@ class EquipmentView(discord.ui.View):
                 soul_name = equipment.get('soul_name')
                 soul_option = equipment.get('soul_option')
                 if soul_name and soul_option:
-                    equipment_text += f"```{soul_name}｜{soul_option}\n```"             
+                    equipment_text += f"```{soul_name}｜{soul_option}\n```"
+
+                # 魂武等級（API 新增欄位 soul_weapon_level）
+                soul_weapon_level = equipment.get('soul_weapon_level')
+                try:
+                    if soul_weapon_level and int(soul_weapon_level) > 0:
+                        equipment_text += f"```魂武LV：{soul_weapon_level}\n```"
+                except (ValueError, TypeError):
+                    pass             
 
             # Potential information (detailed display)
             if potential_grade != 'None' and potential_1:

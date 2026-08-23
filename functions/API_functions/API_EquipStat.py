@@ -25,6 +25,10 @@ EQUIP_DB = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\API\\Equip_Stat.db'
 _MAIN_STATS = ['str', 'dex', 'int', 'luk', 'max_hp']
 SAMSARA_NAME = '輪迴碑石'
 
+# 裝備統計的等級門檻：只有 >= 此等級的角色才會抓裝備/萌獸/套裝/冠軍
+# （寶玉、輪迴碑石等皆屬終局裝備，低等角色查了也是空的）
+EQUIP_STAT_MIN_LEVEL = 260
+
 _DDL = '''
     CREATE TABLE IF NOT EXISTS character_equip_stat (
         ocid TEXT PRIMARY KEY,
@@ -69,6 +73,10 @@ _EXTRA_COLUMNS = [
     ('link3', 'INTEGER'),                # 連結槽3 啟用 0/1
     ('link_vip', 'INTEGER'),             # VIP連結槽 啟用 0/1
     ('set_effects', 'TEXT'),             # JSON: [["套裝名", 件數], ...]
+    ('character_exp_rate', 'REAL'),      # 角色經驗%（裝備刷新當下的快照）
+    ('champion_grade', 'TEXT'),          # 聯盟冠軍等級 B/A/S/SS/SSS，非冠軍為 'none'
+    ('total_starforce', 'INTEGER'),      # 全身裝備星力總和
+    ('soul_weapon_level', 'INTEGER'),    # 武器魂武等級（無魂武為 0）
 ]
 
 _upsert_cache = {}
@@ -193,7 +201,8 @@ def extract_equip_extra(item_equipment: list) -> dict:
     has_control_core  是否裝備全面控制核心
     has_genesis_badge 是否裝備創世的胸章
     """
-    out = {'hat_name': None, 'hat_cd': 0, 'glove_crit_lines': 0}
+    out = {'hat_name': None, 'hat_cd': 0, 'glove_crit_lines': 0,
+           'total_starforce': 0, 'soul_weapon_level': 0}
     # has_samsara 由 extract_equip_stat 負責，此處只處理其餘追蹤裝備
     out.update({col: 0 for col, _ in TRACKED_ITEMS if col != 'has_samsara'})
     for it in (item_equipment or []):
@@ -202,6 +211,16 @@ def extract_equip_extra(item_equipment: list) -> dict:
         col = _ITEM_TO_COL.get(name)
         if col and col != 'has_samsara':
             out[col] = 1
+        # 全身星力總和
+        try:
+            out['total_starforce'] += int(it.get('starforce') or 0)
+        except (TypeError, ValueError):
+            pass
+        if slot == '武器':
+            try:
+                out['soul_weapon_level'] = int(it.get('soul_weapon_level') or 0)
+            except (TypeError, ValueError):
+                out['soul_weapon_level'] = 0
         if slot == '帽子':
             out['hat_name'] = name or None
             total = 0
@@ -260,6 +279,23 @@ def extract_familiar_stat(familiar_data: dict) -> dict:
     return out
 
 
+CHAMPION_GRADES = ('B', 'A', 'S', 'SS', 'SSS')
+
+
+def extract_champion_grade(champion_data: dict, character_name: str) -> str:
+    """從帳號冠軍名單中找出「該角色本人」的冠軍等級。
+
+    union-champion 回的是整個帳號的冠軍名單（最多 6 人），
+    因此需比對角色名字；不在名單中回 'none'。
+    """
+    if not champion_data:
+        return 'none'
+    for c in (champion_data.get('union_champion') or []):
+        if (c.get('champion_name') or '') == character_name:
+            return c.get('champion_grade') or 'none'
+    return 'none'
+
+
 def extract_set_effects(set_effect_data: dict):
     """抽取套裝清單 [[套裝名, 件數], ...]，存成 JSON 字串；無資料回 None。"""
     if not set_effect_data:
@@ -301,7 +337,8 @@ def update_from_equipment(ocid: str, character_name: str, item_equipment: list):
 
 def update_full_stat(ocid: str, character_name: str, item_equipment: list,
                      character_level=None, character_class=None,
-                     familiar_data: dict = None, set_effect_data: dict = None):
+                     familiar_data: dict = None, set_effect_data: dict = None,
+                     character_exp_rate=None, champion_data: dict = None):
     """完整更新一筆：裝備（寶玉/輪迴/CD帽/手套爆傷/核心/胸章）＋萌獸＋套裝＋等級職業。
 
     回傳寫入用的欄位 dict（供呼叫端統計）。
@@ -313,6 +350,14 @@ def update_full_stat(ocid: str, character_name: str, item_equipment: list,
         fields['character_level'] = character_level
     if character_class is not None:
         fields['character_class'] = character_class
+    if character_exp_rate is not None:
+        try:
+            fields['character_exp_rate'] = float(character_exp_rate)
+        except (TypeError, ValueError):
+            pass
+    # 冠軍端點失敗時（None）不寫入，避免清掉既有資料
+    if champion_data is not None:
+        fields['champion_grade'] = extract_champion_grade(champion_data, character_name)
     # familiar / set-effect 端點失敗時（None）不寫入對應欄位，
     # 避免把先前抓到的好資料清成 NULL/0
     if familiar_data is not None:
@@ -446,6 +491,71 @@ def get_glove_crit_distribution(levels=(285, 290, 295)) -> dict:
         d['total'] = sum(d[k] for k in (0, 1, 2, 3))
         out[lv] = d
     return out
+
+
+# 魂武等級 0~100，每 10 等一組（最後一組吃到 999 以防上限調高）
+SOUL_BUCKETS = [
+    (0, 9, 'LV 0~9'),
+    (10, 19, 'LV 10~19'),
+    (20, 29, 'LV 20~29'),
+    (30, 39, 'LV 30~39'),
+    (40, 49, 'LV 40~49'),
+    (50, 59, 'LV 50~59'),
+    (60, 69, 'LV 60~69'),
+    (70, 79, 'LV 70~79'),
+    (80, 89, 'LV 80~89'),
+    (90, 999, 'LV 90~100'),
+]
+
+# 由低到高的冠軍等級（顯示時反轉成高→低）
+CHAMPION_ORDER = ['none', 'C', 'B', 'A', 'S', 'SS', 'SSS']
+
+
+def get_soul_weapon_distribution(min_level: int = 0) -> dict:
+    """魂武等級分布（依 SOUL_BUCKETS 分組）。
+    回傳 {'total': n, 'buckets': [(標籤, 人數), ...], 'has_soul': n}
+    """
+    rows = _query(
+        'SELECT COALESCE(soul_weapon_level, 0), COUNT(*) FROM character_equip_stat '
+        'WHERE soul_weapon_level IS NOT NULL AND COALESCE(character_level, 0) >= ? '
+        'GROUP BY COALESCE(soul_weapon_level, 0)', (min_level,))
+    counts = {}
+    total = 0
+    has_soul = 0
+    for lv, n in rows:
+        lv = int(lv)
+        total += n
+        if lv > 0:
+            has_soul += n
+        for lo, hi, label in SOUL_BUCKETS:
+            if lo <= lv <= hi:
+                counts[label] = counts.get(label, 0) + n
+                break
+    buckets = [(label, counts.get(label, 0)) for _, _, label in SOUL_BUCKETS]
+    return {'total': total, 'buckets': buckets, 'has_soul': has_soul}
+
+
+def get_champion_grade_distribution(min_level: int = 0, character_class: str = None) -> dict:
+    """聯盟冠軍等級分布，可指定職業。
+    回傳 {'total': n, 'grades': [(等級, 人數), ...高→低], 'is_champion': n}
+    """
+    sql = ('SELECT champion_grade, COUNT(*) FROM character_equip_stat '
+           'WHERE champion_grade IS NOT NULL AND COALESCE(character_level, 0) >= ?')
+    params = [min_level]
+    if character_class:
+        sql += ' AND character_class = ?'
+        params.append(character_class)
+    sql += ' GROUP BY champion_grade'
+    rows = _query(sql, tuple(params))
+    raw = {g: n for g, n in rows}
+    total = sum(raw.values())
+    ordered = [(g, raw.get(g, 0)) for g in reversed(CHAMPION_ORDER)]
+    # 保留 API 可能新增、不在預設清單中的等級
+    for g, n in raw.items():
+        if g not in CHAMPION_ORDER:
+            ordered.insert(0, (g, n))
+    return {'total': total, 'grades': ordered,
+            'is_champion': total - raw.get('none', 0)}
 
 
 def get_familiar_distribution(min_level: int = 0) -> dict:
