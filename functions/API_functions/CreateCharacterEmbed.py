@@ -4,6 +4,7 @@ from discord.ext import commands
 
 from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix, request_character_symbolequipment, request_character_hexamatrix_stat
 from functions.API_functions.API_Request_union import request_user_union
+from functions.API_functions.API_EquipStat import sample_and_get_cp
 import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment, common_cores_open
@@ -241,6 +242,27 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
 
     
     stat_info.append(f"戰鬥力　　： {format_chinese_number(combat_power)}")
+
+    # 30 日最高戰力：/character 本來就打了 /character/stat，
+    # 所以這次查詢會順便被記成一筆取樣，不額外消耗 API 額度。
+    try:
+        cp_max30, cp_max30_at, _cp_slots = sample_and_get_cp(
+            ocid, character_name, character_stat_data,
+            character_level=character_basic_data.get('character_level'),
+            character_class=character_basic_data.get('character_class'))
+        if cp_max30:
+            when = ''
+            if cp_max30_at:
+                try:
+                    d = (datetime.datetime.now().date()
+                         - datetime.datetime.strptime(cp_max30_at, '%Y-%m-%d').date()).days
+                    when = '（今日測得）' if d <= 0 else f'（{d}天前測得）'
+                except (ValueError, TypeError):
+                    when = ''
+            stat_info.append(f"３０日最高： {format_chinese_number(str(cp_max30))}{when}")
+    except Exception as e:
+        print(f"取得 30 日最高戰力失敗: {e}")
+
     stat_info.append(f"屬性攻擊力： {int(maximumattstat):,}")
     stat_info.append(f"總傷害　　： {damage}%")
     stat_info.append(f"ＢＯＳＳ傷： {bossmonsterdamage}%")

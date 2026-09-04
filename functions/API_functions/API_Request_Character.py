@@ -505,6 +505,27 @@ async def request_character_set_effect_async(session: aiohttp.ClientSession, oci
             return None
 
 
+async def request_character_stat_async(session: aiohttp.ClientSession, ocid: str,
+                                      semaphore: asyncio.Semaphore) -> Optional[dict]:
+    """非同步查角色能力值（併發用）。供擷取 final_stat 中的「戰鬥力」。
+
+    錯誤訊息走 _say()（受 QUIET 控制）——全量掃描時失敗筆數可能上千，
+    逐筆 print 會拖慢整條非同步管線。
+    """
+    headers = {"x-nxopen-api-key": api_key}
+    url_string = f"https://open.api.nexon.com/{serveraddress}/v1/character/stat?ocid={ocid}"
+    async with semaphore:
+        try:
+            await rate_acquire()   # 全域速率上限
+            async with session.get(url_string, headers=headers) as response:
+                log_request(url_string, response.status)
+                response.raise_for_status()
+                return await response.json()
+        except Exception as e:
+            _say(f"stat async request failed for '{ocid}': {e}")
+            return None
+
+
 async def request_user_union_champion_async(session: aiohttp.ClientSession, ocid: str,
                                            semaphore: asyncio.Semaphore) -> Optional[dict]:
     """非同步查聯盟冠軍（併發用）。回傳該帳號的冠軍名單或 None。
@@ -592,12 +613,14 @@ async def refresh_single_character_async(session: aiohttp.ClientSession, item: d
                     level = 0
                 from functions.API_functions.API_EquipStat import EQUIP_STAT_MIN_LEVEL
                 if level >= EQUIP_STAT_MIN_LEVEL:
-                    # 三個端點併行抓取（familiar/set-effect 各僅約 1KB，成本遠低於裝備）
-                    equip, familiar, set_effect, champion = await asyncio.gather(
+                    # 四個附屬端點併行抓取（familiar/set-effect/champion/stat 各約 1~3KB，
+                    # 成本遠低於裝備端點）
+                    equip, familiar, set_effect, champion, stat = await asyncio.gather(
                         request_character_itemequipment_async(session, ocid, semaphore),
                         request_character_familiar_async(session, ocid, semaphore),
                         request_character_set_effect_async(session, ocid, semaphore),
                         request_user_union_champion_async(session, ocid, semaphore),
+                        request_character_stat_async(session, ocid, semaphore),
                     )
                     if equip:
                         from functions.API_functions.API_EquipStat import update_full_stat
@@ -610,6 +633,7 @@ async def refresh_single_character_async(session: aiohttp.ClientSession, item: d
                             set_effect_data=set_effect,
                             character_exp_rate=fresh_data.get('character_exp_rate'),
                             champion_data=champion,
+                            stat_data=stat,
                         )
         else:
             _say(f"✗ Failed to fetch fresh data for '{character_name}' from API")

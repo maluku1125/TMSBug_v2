@@ -77,6 +77,10 @@ _EXTRA_COLUMNS = [
     ('champion_grade', 'TEXT'),          # 聯盟冠軍等級 B/A/S/SS/SSS，非冠軍為 'none'
     ('total_starforce', 'INTEGER'),      # 全身裝備星力總和
     ('soul_weapon_level', 'INTEGER'),    # 武器魂武等級（無魂武為 0）
+    ('cp_current', 'INTEGER'),           # 本次取樣的戰鬥力
+    ('cp_max30', 'INTEGER'),             # 近 30 天最高戰力（由 cp_slots 算出，供排序）
+    ('cp_max30_at', 'TEXT'),             # 該最高值的取樣日 YYYY-MM-DD
+    ('cp_slots', 'TEXT'),                # JSON {ISO週: [最高值, 日期]}，保留最近 5 週
 ]
 
 _upsert_cache = {}
@@ -238,6 +242,136 @@ _FINAL_DMG = '最終傷害'
 _ATK_NAMES = ('物理攻擊力', '魔法攻擊力')
 
 
+# ---------- 戰鬥力（30 日最高，週桶環形緩衝）----------
+
+# 保留最近幾個 ISO 週。5 週足以涵蓋 30 天，且每週一格自動過期，
+# 不需要另外的清理排程，儲存量也固定。
+CP_SLOT_WEEKS = 5
+
+
+def extract_combat_power(stat_data: dict):
+    """從 /character/stat 的 final_stat 取出「戰鬥力」。取不到回 None。"""
+    if not stat_data:
+        return None
+    for item in (stat_data.get('final_stat') or []):
+        if item.get('stat_name') == '戰鬥力':
+            try:
+                return int(float(item.get('stat_value')))
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
+def _iso_week(dt) -> str:
+    y, w, _ = dt.isocalendar()
+    return f'{y}-W{w:02d}'
+
+
+def _recent_weeks(now) -> set:
+    return {_iso_week(now - datetime.timedelta(weeks=i)) for i in range(CP_SLOT_WEEKS)}
+
+
+def merge_cp_slots(old_json, cp, now=None):
+    """把本次戰力併入週桶，回傳 (slots_json, cp_max30, cp_max30_at)。
+
+    同一週內取最大值——角色脫裝期間剛好被取樣時，不會壓低該週的紀錄。
+    超過 CP_SLOT_WEEKS 週的桶直接丟棄，達成滑動視窗。
+    """
+    now = now or datetime.datetime.now()
+    try:
+        slots = json.loads(old_json) if old_json else {}
+        if not isinstance(slots, dict):
+            slots = {}
+    except (ValueError, TypeError):
+        slots = {}
+
+    keep = _recent_weeks(now)
+    slots = {k: v for k, v in slots.items()
+             if k in keep and isinstance(v, list) and len(v) == 2}
+
+    if cp and cp > 0:
+        wk = _iso_week(now)
+        cur = slots.get(wk)
+        if not cur or cp > cur[0]:
+            slots[wk] = [int(cp), now.strftime('%Y-%m-%d')]
+
+    if not slots:
+        return json.dumps({}), None, None
+    best = max(slots.values(), key=lambda v: v[0])
+    return json.dumps(slots, separators=(',', ':')), best[0], best[1]
+
+
+def cp_fields(ocid: str, stat_data: dict, now=None) -> dict:
+    """由 /character/stat 算出戰力相關欄位。取不到戰力時回空 dict（呼叫端不會寫入）。
+
+    每日刷新與 admin 全量腳本共用這一份，避免兩邊邏輯走鐘。
+    """
+    cp = extract_combat_power(stat_data)
+    if cp is None:
+        return {}
+    slots, mx, at = merge_cp_slots(_read_cp_slots(ocid), cp, now)
+    return {'cp_current': cp, 'cp_slots': slots, 'cp_max30': mx, 'cp_max30_at': at}
+
+
+def sample_and_get_cp(ocid: str, character_name: str, stat_data: dict = None,
+                     character_level=None, character_class=None):
+    """回傳 (cp_max30, cp_max30_at, 週桶數)，供 /character 之類的查詢顯示。
+
+    若 stat_data 可用且等級達門檻，順便把這次查詢當成一次取樣併入週桶——
+    /character 本來就會打 /character/stat，所以這是零 API 成本的額外樣本。
+
+    低於 EQUIP_STAT_MIN_LEVEL 者只讀不寫：否則 UPSERT 會在 Equip_Stat 插入一列
+    character_level 為 NULL 的殘缺資料，破壞該表「只收高等角色」的契約。
+    """
+    try:
+        lv = int(character_level or 0)
+    except (TypeError, ValueError):
+        lv = 0
+
+    if stat_data is not None and lv >= EQUIP_STAT_MIN_LEVEL:
+        f = cp_fields(ocid, stat_data)
+        if f:
+            f['character_level'] = lv
+            if character_class:
+                f['character_class'] = character_class
+            save_character_stat(ocid, character_name, f)
+            # 直接用剛算好的結果，省去 flush + 重讀
+            try:
+                n = len(json.loads(f['cp_slots']) or {})
+            except (ValueError, TypeError):
+                n = 0
+            return f['cp_max30'], f['cp_max30_at'], n
+
+    # 只讀路徑（等級不足、端點失敗、或本來就沒有 stat）
+    try:
+        flush_equip_stat()
+        with _lock:
+            row = _conn().execute(
+                'SELECT cp_max30, cp_max30_at, cp_slots FROM character_equip_stat '
+                'WHERE ocid = ?', (ocid,)).fetchone()
+        if not row or row[0] is None:
+            return None, None, 0
+        try:
+            n = len(json.loads(row[2]) or {}) if row[2] else 0
+        except (ValueError, TypeError):
+            n = 0
+        return row[0], row[1], n
+    except Exception:
+        return None, None, 0
+
+
+def _read_cp_slots(ocid: str):
+    """讀取既有的週桶。注意：讀的是已寫入 DB 的內容，同一輪若同一 ocid
+    被處理兩次（實際不會發生），第二次會讀到舊值。"""
+    try:
+        with _lock:
+            row = _conn().execute(
+                'SELECT cp_slots FROM character_equip_stat WHERE ocid = ?', (ocid,)).fetchone()
+        return row[0] if row else None
+    except Exception:
+        return None
+
+
 def classify_familiar(options: list) -> str:
     """依三排選項分類萌獸（順序不影響）：
     '3final' 三排終傷 / '2final_atk' 雙終傷+物攻或魔攻 / '2final_other' 雙終傷+其他 / '' 其他
@@ -338,7 +472,8 @@ def update_from_equipment(ocid: str, character_name: str, item_equipment: list):
 def update_full_stat(ocid: str, character_name: str, item_equipment: list,
                      character_level=None, character_class=None,
                      familiar_data: dict = None, set_effect_data: dict = None,
-                     character_exp_rate=None, champion_data: dict = None):
+                     character_exp_rate=None, champion_data: dict = None,
+                     stat_data: dict = None):
     """完整更新一筆：裝備（寶玉/輪迴/CD帽/手套爆傷/核心/胸章）＋萌獸＋套裝＋等級職業。
 
     回傳寫入用的欄位 dict（供呼叫端統計）。
@@ -364,6 +499,9 @@ def update_full_stat(ocid: str, character_name: str, item_equipment: list,
         fields.update(extract_familiar_stat(familiar_data))
     if set_effect_data is not None:
         fields['set_effects'] = extract_set_effects(set_effect_data)
+    # 戰鬥力：端點失敗時（None）完全不動這幾個欄位
+    if stat_data is not None:
+        fields.update(cp_fields(ocid, stat_data))
     save_character_stat(ocid, character_name, fields)
     return fields
 
