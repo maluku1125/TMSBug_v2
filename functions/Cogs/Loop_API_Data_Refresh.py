@@ -1,9 +1,33 @@
+import configparser
 import datetime
 import asyncio
+import os
 import sqlite3
 from discord.ext import commands, tasks
 from functions.API_functions.API_Request_Character import refresh_all_expired_character_data
 from functions.API_functions.API_DataBase_Character import character_basic_info_path
+
+# ── 管線獨立的切換旗標（ARCHITECTURE.md §14.9）──────────────
+#
+# 刷新管線已搬到 TMSAnalysis/pipeline/ + server.py。這個旗標決定「誰來跑」：
+#
+#     true  （預設）Bot 自己跑，行為與過去完全相同
+#     false          Bot 不跑，交給 TMSAnalysis/server.py 的排程
+#
+# 切換是可逆的：改回 true 重啟 Bot 就回到原狀，資料庫一個 byte 都不用動。
+# ⚠️ 改成 false 之前，請先確認 server.py 已經在跑，否則沒有任何東西會刷新。
+
+_CONFIG = os.environ.get(
+    'TMSBOT_CONFIG', r'C:\Users\User\Desktop\DiscordBot\Config\TMSBug_v2_config.ini')
+
+
+def _refresh_enabled() -> bool:
+    try:
+        c = configparser.ConfigParser()
+        c.read(_CONFIG, encoding='utf-8')
+        return c.getboolean('api', 'enable_refresh_loop', fallback=True)
+    except Exception:                      # noqa: BLE001 —— 讀不到就維持原行為
+        return True
 
 # 幾天輪完全部角色（每日刷新 1/N）
 REFRESH_CYCLE_DAYS = 7
@@ -34,10 +58,17 @@ timezone = datetime.timezone(datetime.timedelta(hours=8))
 class Loop_API_Data_Refresh(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.enabled = _refresh_enabled()
+        if not self.enabled:
+            print(f"{get_now_YMDHMS()}, Data Refresh Loop 已停用"
+                  f"（enable_refresh_loop=false，由 TMSAnalysis/server.py 負責）")
+            return
         print(f"{get_now_YMDHMS()}, Data Refresh Loop initializing...")
         self.API_AllData_Refresh.start()
 
     def cog_unload(self):
+        if not getattr(self, 'enabled', True):
+            return
         self.API_AllData_Refresh.cancel()
         print(f"{get_now_YMDHMS()}, API Data Refresh Loop stopped")
     

@@ -1,6 +1,8 @@
 import discord
 import datetime
 from Data.SmallData import worldlogo, worldemoji
+# 頁尾要的是母體人數，不是榜單長度（榜單只有前 5,000 + 各職業 100）
+from tmsapi.stats import ranking_population
 
 class RankingView(discord.ui.View):
     def __init__(self, ranking_data: list = None, character_class: str = None):
@@ -192,7 +194,7 @@ class RankingView(discord.ui.View):
         
         # Set timestamp
         embed.timestamp = datetime.datetime.now()
-        embed.set_footer(text=f"{'-'*19}排行自{format(len(self.ranking_data), ',')}位玩家 | TMSBug API 資料查詢{'-'*19}")
+        embed.set_footer(text=f"{'-'*19}排行自{format(ranking_population(self.character_class), ',')}位玩家 | TMSBug API 資料查詢{'-'*19}")
 
         return embed
     
@@ -325,7 +327,7 @@ def create_ranking_embed(ranking_data: list, include_view: bool = True, characte
             )
             
             embed.timestamp = datetime.datetime.now()
-            embed.set_footer(text=f"{'-'*19}排行自{format(len(ranking_data), ',')}位玩家 | TMSBug API 資料查詢{'-'*19}")
+            embed.set_footer(text=f"{'-'*19}排行自{format(ranking_population(character_class), ',')}位玩家 | TMSBug API 資料查詢{'-'*19}")
             
             return {
                 "embed": embed,
