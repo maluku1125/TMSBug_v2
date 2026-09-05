@@ -2,14 +2,12 @@ import discord
 import datetime
 import unicodedata
 from Data.SmallData import worldlogo, worldemoji
-# 改讀 build.py 產出的 JSON（ARCHITECTURE.md §14 階段 3）——
-# 這九項分析原本 Bot 與網站各有一份實作，答案已經開始分歧。
-from tmsapi.stats import (
+from functions.API_functions.API_Analyse import (
     get_class_distribution_analysis,
     get_world_distribution_analysis,
     get_level_distribution_analysis
 )
-from tmsapi.stats import (
+from functions.API_functions.API_EquipStat import (
     get_gem_ranking_normalized, get_equipment_ownership,
     get_glove_crit_distribution, get_familiar_distribution, get_hat_cd_distribution,
     get_classes_with_stats, get_soul_weapon_distribution, get_champion_grade_distribution)

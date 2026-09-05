@@ -59,8 +59,33 @@ _EXTRA_COLUMNS = [
     ('hat_name', 'TEXT'),                # 帽子名稱（供各職業帽子分布統計）
     ('hat_cd', 'INTEGER'),               # 帽子技能冷卻總秒數（正數，例 6 表示 -6秒）
     ('glove_crit_lines', 'INTEGER'),     # 手套主潛能爆擊傷害排數 0~3
+    # 現金道具
+    ('has_heavenly_breath', 'INTEGER'),  # 天上的氣息 0/1
+    ('has_blackwing_badge', 'INTEGER'),  # 黑翼胸章 0/1
+    ('has_mx131', 'INTEGER'),            # MX-131 0/1
+    ('has_gather_ring', 'INTEGER'),      # 凝聚的戒指（現金）0/1
+    ('has_lucida_earring', 'INTEGER'),   # 露希妲耳環（現金）0/1
+    ('has_inner_storm', 'INTEGER'),      # 內面暴風（現金）0/1
+    ('has_oracle_ring', 'INTEGER'),      # 神諭者的戒指（現金）0/1
+    ('has_burning_ring', 'INTEGER'),     # 燃燒之戒（現金）0/1
+    ('has_ascetic_ring', 'INTEGER'),     # 苦行的戒指（現金）0/1
+    ('has_sunset_ring', 'INTEGER'),      # 夕陽的現身（現金）0/1
+    ('has_midnight_ring', 'INTEGER'),    # 午夜的現身（現金）0/1
+    ('has_dawn_ring', 'INTEGER'),        # 黎明的現身（現金）0/1
+    ('has_noon_ring', 'INTEGER'),        # 正午的現身（現金）0/1
+    # 漆黑BOSS套組
     ('has_control_core', 'INTEGER'),     # 全面控制核心 0/1
     ('has_genesis_badge', 'INTEGER'),    # 創世的胸章 0/1
+    ('has_mitra', 'INTEGER'),            # 米特拉的憤怒（徽章，分職業）0/1
+    ('has_lipstick', 'INTEGER'),         # 口紅控制器標誌（臉飾）0/1
+    ('has_magic_eyepatch', 'INTEGER'),   # 附有魔力的眼罩（眼飾）0/1
+    ('has_suffering', 'INTEGER'),        # 苦痛的根源（墜飾）0/1
+    ('has_giant_fear', 'INTEGER'),       # 巨大的恐怖 0/1
+    ('has_dreamy_belt', 'INTEGER'),      # 夢幻的腰帶 0/1
+    ('has_black_heart', 'INTEGER'),      # 黑心 0/1
+    ('has_commander_star', 'INTEGER'),   # 指揮官力量耳環 0/1
+    ('has_cursed_book', 'INTEGER'),      # 受詛咒的青/赤/黃/綠魔導書 0/1
+    # 光輝BOSS套組
     ('has_nightmare', 'INTEGER'),        # 恍惚的惡夢（戒指）0/1
     ('has_whisper', 'INTEGER'),          # 根源的耳語（戒指）0/1
     ('has_death_oath', 'INTEGER'),       # 死亡之誓（墜飾）0/1
@@ -75,12 +100,14 @@ _EXTRA_COLUMNS = [
     ('set_effects', 'TEXT'),             # JSON: [["套裝名", 件數], ...]
     ('character_exp_rate', 'REAL'),      # 角色經驗%（裝備刷新當下的快照）
     ('champion_grade', 'TEXT'),          # 聯盟冠軍等級 B/A/S/SS/SSS，非冠軍為 'none'
-    ('total_starforce', 'INTEGER'),      # 全身裝備星力總和
+    ('total_starforce', 'INTEGER'),      # 星力（取自 /character/stat，與遊戲內顯示一致）
     ('soul_weapon_level', 'INTEGER'),    # 武器魂武等級（無魂武為 0）
     ('cp_current', 'INTEGER'),           # 本次取樣的戰鬥力
     ('cp_max30', 'INTEGER'),             # 近 30 天最高戰力（由 cp_slots 算出，供排序）
     ('cp_max30_at', 'TEXT'),             # 該最高值的取樣日 YYYY-MM-DD
     ('cp_slots', 'TEXT'),                # JSON {ISO週: [最高值, 日期]}，保留最近 5 週
+    ('hexa_stat', 'TEXT'),               # JSON: [["主屬性名", 主等級], ...] 套用中的屬性核心
+    ('tower_rings', 'TEXT'),             # JSON: [["戒指名", 等級], ...] 帶 special_ring_level 的戒指
 ]
 
 _upsert_cache = {}
@@ -179,18 +206,67 @@ def extract_equip_stat(item_equipment: list):
     return gem_stat, gem_value, has_samsara
 
 
-# 追蹤的特殊裝備：(DB欄位, 顯示名稱)；以 item_name 精確比對
+# 追蹤的特殊裝備：(DB欄位, 顯示名稱)；預設以 item_name 精確比對。
+# 名稱列在 PREFIX_ITEMS 裡的改成前綴比對 —— 有些道具分職業版本，
+# 例如「米特拉的憤怒：劍士 / 法師 / 盜賊 / 弓箭手 / 海盜」，
+# 精確比對會全部漏掉（實測 LV270+ 有 47.7% 持有，是漆黑套組裡最普及的一件）。
 TRACKED_ITEMS = [
+    # 現金道具（由 item-equipment 提供）
     ('has_samsara', '輪迴碑石'),
+    ('has_heavenly_breath', '天上的氣息'),
+    ('has_blackwing_badge', '黑翼胸章'),
+    ('has_mx131', 'MX-131'),
+    # 漆黑BOSS套組
     ('has_control_core', '全面控制核心'),
     ('has_genesis_badge', '創世的胸章'),
+    ('has_mitra', '米特拉的憤怒'),
+    ('has_lipstick', '口紅控制器標誌'),
+    ('has_magic_eyepatch', '附有魔力的眼罩'),
+    ('has_suffering', '苦痛的根源'),
+    ('has_giant_fear', '巨大的恐怖'),
+    ('has_dreamy_belt', '夢幻的腰帶'),
+    ('has_black_heart', '黑心'),
+    ('has_commander_star', '指揮官力量耳環'),
+    ('has_cursed_book', '受詛咒的'),      # 青/赤/黃/綠魔導書，前綴比對
+    # 光輝BOSS套組
     ('has_nightmare', '恍惚的惡夢'),
     ('has_whisper', '根源的耳語'),
     ('has_death_oath', '死亡之誓'),
     ('has_immortal_legacy', '不朽的遺產'),
     ('has_pride_sin', '傲慢的原罪'),
 ]
+
+# 由 /character/cashitem-equipment 提供的現金道具。
+# 這幾件在 item-equipment 裡查不到，必須另外打一支端點。
+CASH_ITEMS = [
+    ('has_gather_ring', '凝聚的戒指'),
+    ('has_lucida_earring', '露希妲耳環'),
+    ('has_inner_storm', '內面暴風'),
+    ('has_oracle_ring', '神諭者的戒指'),
+    ('has_burning_ring', '燃燒之戒'),
+    ('has_ascetic_ring', '苦行的戒指'),
+    ('has_sunset_ring', '夕陽的現身'),
+    ('has_midnight_ring', '午夜的現身'),
+    ('has_dawn_ring', '黎明的現身'),
+    ('has_noon_ring', '正午的現身'),
+]
+_CASH_TO_COL = {name: col for col, name in CASH_ITEMS}
+
+# 塔界戒指：item_equipment 裡帶 special_ring_level 的戒指。
+# 一個角色最多兩枚（實測高戰力族群 64.8% 有兩枚），所以存 JSON 而非布林欄位，
+# 而且等級（4~6）才是重點，只記「有沒有」會失去意義。
+TOWER_RING_FIELD = 'special_ring_level'
+
+# 需要前綴比對的道具（有職業／顏色變體）
+#   米特拉的憤怒：劍士 / 法師 / 盜賊 / 弓箭手 / 海盜
+#   受詛咒的青 / 赤 / 黃 / 綠魔導書
+# ⚠️ 名稱一律以實際 API 回傳為準。先前寫成「指揮官的星耳環」「被詛咒的魔導書」
+# 都比對不到（正確是「指揮官力量耳環」「受詛咒的X魔導書」），全庫統計是 0
+# 卻不會有任何錯誤 —— 加新項目後務必抽樣驗證真的抓得到。
+PREFIX_ITEMS = {'米特拉的憤怒', '受詛咒的'}
+
 _ITEM_TO_COL = {name: col for col, name in TRACKED_ITEMS}
+_PREFIX_TO_COL = [(name, col) for col, name in TRACKED_ITEMS if name in PREFIX_ITEMS]
 _CD_RE = re.compile(r'技能冷卻時間\s*-\s*(\d+)\s*秒')
 _MAIN_POT = ('potential_option_1', 'potential_option_2', 'potential_option_3')
 _ADD_POT = ('additional_potential_option_1', 'additional_potential_option_2',
@@ -213,6 +289,11 @@ def extract_equip_extra(item_equipment: list) -> dict:
         slot = it.get('item_equipment_slot') or ''
         name = (it.get('item_name') or '').strip()
         col = _ITEM_TO_COL.get(name)
+        if col is None:
+            for prefix, pcol in _PREFIX_TO_COL:
+                if name.startswith(prefix):
+                    col = pcol
+                    break
         if col and col != 'has_samsara':
             out[col] = 1
         # 全身星力總和
@@ -255,6 +336,24 @@ def extract_combat_power(stat_data: dict):
         return None
     for item in (stat_data.get('final_stat') or []):
         if item.get('stat_name') == '戰鬥力':
+            try:
+                return int(float(item.get('stat_value')))
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
+def extract_total_starforce(stat_data: dict):
+    """從 /character/stat 取「星力」。取不到回 None。
+
+    改用 API 值而非逐件加總 item_equipment 的 starforce：實測同一時刻兩者仍有
+    +15~+37 的落差（定義不同，非時間差），採用 API 值才會與玩家在遊戲內看到的一致，
+    網站的排行與比對也才有意義。
+    """
+    if not stat_data:
+        return None
+    for item in (stat_data.get('final_stat') or []):
+        if item.get('stat_name') == '星力':
             try:
                 return int(float(item.get('stat_value')))
             except (TypeError, ValueError):
@@ -440,6 +539,86 @@ def extract_set_effects(set_effect_data: dict):
     return json.dumps(rows, ensure_ascii=False) if rows else None
 
 
+# 屬性核心目前開放 1~3 顆，官方會逐步開到 6。這裡直接掃到 6，
+# 未開放的欄位不會出現在回應裡，多掃不會有副作用。
+HEXA_STAT_SLOTS = 6
+
+
+def extract_tower_rings(item_equipment: list):
+    """抽取帶 special_ring_level 的戒指 [[名稱, 等級], ...]，存成 JSON 字串。
+
+    ⚠️ 沒有任何一枚時回傳 '[]' 而不是 None —— 與「還沒掃描過」（NULL）區分開。
+    這個區分在統計分母上是關鍵，混在一起會讓持有率整個算錯。
+    """
+    if item_equipment is None:
+        return None
+    rows = []
+    for it in item_equipment:
+        lv = it.get(TOWER_RING_FIELD)
+        if lv in (None, 0, '0'):
+            continue
+        name = (it.get('item_name') or '').strip()
+        if not name:
+            continue
+        try:
+            rows.append([name, int(lv)])
+        except (TypeError, ValueError):
+            continue
+    rows.sort(key=lambda r: (-r[1], r[0]))
+    return json.dumps(rows, ensure_ascii=False)
+
+
+def extract_cash_items(cash_data: dict) -> dict:
+    """從 cashitem-equipment 抽取追蹤中的現金道具。
+
+    ⚠️ 只看 cash_item_equipment_base（實際穿在身上的），不看 preset_*
+    ——那些是預設外觀組合，不代表角色目前裝備著。
+    """
+    if not cash_data:
+        return {}
+    out = {col: 0 for col, _ in CASH_ITEMS}
+    for it in (cash_data.get('cash_item_equipment_base') or []):
+        col = _CASH_TO_COL.get((it.get('cash_item_name') or '').strip())
+        if col:
+            out[col] = 1
+    return out
+
+
+def extract_hexa_stat(hexa_stat_data: dict):
+    """抽取**套用中**的屬性核心 [[主屬性名, 主等級], ...]，存成 JSON 字串。
+
+    ⚠️ 只取 character_hexa_stat_core*，不要 preset_hexa_stat_core* ——
+    後者是預設組合，同一顆會有 slot 0/1 兩份，不是玩家當前生效的配置。
+
+    ⚠️ 主等級可能是 0（核心已裝上但沒點）。判斷「有沒有這顆」要看陣列存在與否，
+    不能用 `if level`。
+
+    ⚠️ **一顆都沒套用回傳 '[]' 而不是 None。** 實測四成的 LV260+ 角色如此，
+    這個比例本身就是分析結果，必須和「還沒掃過」區分開來：
+        NULL → 從未掃描        '[]' → 掃過了，零顆
+    兩者混為 NULL 會讓「未套用比例」的分母整個算錯。
+    """
+    if not hexa_stat_data:
+        return None
+    rows = []
+    for i in range(1, HEXA_STAT_SLOTS + 1):
+        key = 'character_hexa_stat_core' if i == 1 else f'character_hexa_stat_core_{i}'
+        arr = hexa_stat_data.get(key) or []
+        if not arr:
+            continue
+        core = arr[0] or {}
+        name = core.get('main_stat_name')
+        lv = core.get('main_stat_level')
+        if name is None:
+            continue
+        try:
+            lv = int(lv)
+        except (TypeError, ValueError):
+            lv = 0
+        rows.append([name, lv])
+    return json.dumps(rows, ensure_ascii=False)      # 零顆也要寫 '[]'，見上方說明
+
+
 def save_character_stat(ocid: str, character_name: str, fields: dict):
     """排入緩衝。只寫入 fields 中實際提供的欄位，未提供者保留 DB 既有值。"""
     try:
@@ -473,7 +652,8 @@ def update_full_stat(ocid: str, character_name: str, item_equipment: list,
                      character_level=None, character_class=None,
                      familiar_data: dict = None, set_effect_data: dict = None,
                      character_exp_rate=None, champion_data: dict = None,
-                     stat_data: dict = None):
+                     stat_data: dict = None, hexa_stat_data: dict = None,
+                     cash_data: dict = None):
     """完整更新一筆：裝備（寶玉/輪迴/CD帽/手套爆傷/核心/胸章）＋萌獸＋套裝＋等級職業。
 
     回傳寫入用的欄位 dict（供呼叫端統計）。
@@ -499,9 +679,21 @@ def update_full_stat(ocid: str, character_name: str, item_equipment: list,
         fields.update(extract_familiar_stat(familiar_data))
     if set_effect_data is not None:
         fields['set_effects'] = extract_set_effects(set_effect_data)
-    # 戰鬥力：端點失敗時（None）完全不動這幾個欄位
+    # 戰鬥力與星力：端點失敗時（None）完全不動這幾個欄位
     if stat_data is not None:
         fields.update(cp_fields(ocid, stat_data))
+        sf = extract_total_starforce(stat_data)
+        if sf is not None:
+            fields['total_starforce'] = sf   # 覆蓋 extract_equip_extra 的逐件加總
+    # 屬性核心：端點失敗時（None）不動欄位。「一顆都沒套用」會寫成 '[]'，
+    # 與「從未掃描」的 NULL 區分開。
+    if hexa_stat_data is not None:
+        fields['hexa_stat'] = extract_hexa_stat(hexa_stat_data)
+    # 塔界戒指與裝備同源，item_equipment 進得來就一定算得出來
+    fields['tower_rings'] = extract_tower_rings(item_equipment)
+    # 現金道具端點失敗時（None）不動這幾欄，避免把好資料清成 0
+    if cash_data is not None:
+        fields.update(extract_cash_items(cash_data))
     save_character_stat(ocid, character_name, fields)
     return fields
 

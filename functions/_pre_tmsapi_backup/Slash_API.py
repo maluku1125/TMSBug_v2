@@ -9,8 +9,7 @@ from discord.errors import NotFound
 from functions.API_functions.CreateCharacterEmbed import create_character_basic_embed
 from functions.API_functions.CreateGuildEmbed import create_guild_basic_embed   
 from functions.API_functions.CreateCharacterEquipmentEmbed import create_character_equipment_embed
-# 等級榜改讀 JSON（前 5,000 名，/rank 只顯示前 100）
-from tmsapi.stats import get_all_characters_level_exp_ranking
+from functions.API_functions.API_Ranking import get_all_characters_level_exp_ranking
 from functions.API_functions.CreateRankingEmbed import create_ranking_embed
 from functions.API_functions.CreateEXPTrackingEmbed import create_exp_tracking_embed
 from functions.API_functions.CreateUnionTrackingEmbed import create_union_tracking_embed

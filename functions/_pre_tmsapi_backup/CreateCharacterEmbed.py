@@ -4,9 +4,7 @@ from discord.ext import commands
 
 from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix, request_character_symbolequipment, request_character_hexamatrix_stat
 from functions.API_functions.API_Request_union import request_user_union
-# 30 日最高戰力需要寫入 Equip_Stat.db，而寫入權已收歸管線（階段 4）。
-# 改呼叫 server.py 的內部 API；服務沒開時回 (None, None, 0)，這一行就不顯示。
-from tmsapi.internal import sample_and_get_cp
+from functions.API_functions.API_EquipStat import sample_and_get_cp
 import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment, common_cores_open
