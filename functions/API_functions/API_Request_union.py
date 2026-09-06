@@ -2,8 +2,8 @@ import requests
 from typing import Optional
 import datetime
 import configparser
-from functions.API_functions.API_DataBase_Character import save_character_ocid_db, get_character_ocid_db
-from functions.API_functions.API_RequestLogger import logged_get
+from tmsapi.store.character import save_character_ocid_db, get_character_ocid_db
+from tmsapi.logger import logged_get
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()

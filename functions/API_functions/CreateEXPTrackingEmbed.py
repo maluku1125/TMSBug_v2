@@ -1,6 +1,6 @@
 import discord
 import datetime
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic
+from tmsapi.request import get_character_ocid, request_character_basic
 from functions.API_functions.CreateCharacterEmbed import apply_look_params
 from Data.BotEmojiList import EmojiList
 
@@ -77,7 +77,7 @@ def create_exp_tracking_embed(character_name: str, action_params: dict = None) -
     
     try:
         # Get current character data
-        current_data = request_character_basic(ocid, use_cache=False)
+        current_data = request_character_basic(ocid)
         
         if not current_data:
             embed = discord.Embed(
@@ -101,7 +101,7 @@ def create_exp_tracking_embed(character_name: str, action_params: dict = None) -
         for days in periods:
             try:
                 date_str = (adjusted_datetime - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
-                data = request_character_basic(ocid, use_cache=False, date=date_str)
+                data = request_character_basic(ocid, date=date_str)
                 if data:
                     historical_data[days] = data
             except Exception as e:
@@ -117,7 +117,7 @@ def create_exp_tracking_embed(character_name: str, action_params: dict = None) -
                 else:
                     # 使用調整後的日期時間來計算每日資料
                     date_str = (adjusted_datetime - datetime.timedelta(days=i)).strftime('%Y-%m-%d')
-                    data = request_character_basic(ocid, use_cache=False, date=date_str)
+                    data = request_character_basic(ocid, date=date_str)
                     if data:
                         daily_data[i] = data
             except Exception as e:

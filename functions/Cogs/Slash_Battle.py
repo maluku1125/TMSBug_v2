@@ -10,7 +10,7 @@ import os
 import aiohttp
 from PIL import Image
 
-from functions.API_functions.API_Request_Character import (
+from tmsapi.request import (
     get_character_ocid, request_character_stat, request_character_hexamatrix,
     request_character_basic,
 )

@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix, request_character_symbolequipment, request_character_hexamatrix_stat
+from tmsapi.request import get_character_ocid, request_character_basic, request_character_stat, request_character_hexamatrix, request_character_symbolequipment, request_character_hexamatrix_stat
 from functions.API_functions.API_Request_union import request_user_union
 # 30 日最高戰力需要寫入 Equip_Stat.db，而寫入權已收歸管線（階段 4）。
 # 改呼叫 server.py 的內部 API；服務沒開時回 (None, None, 0)，這一行就不顯示。
@@ -54,7 +54,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
         return embed
     
     try:
-        character_basic_data = request_character_basic(ocid, use_cache=False)  # Do not use cache, get data directly from API
+        character_basic_data = request_character_basic(ocid)  # Do not use cache, get data directly from API
         character_stat_data = request_character_stat(ocid)
         character_hexamatrix_data = request_character_hexamatrix(ocid)
         character_hexamatrix_stat_data = request_character_hexamatrix_stat(ocid)
@@ -74,7 +74,7 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
     character_basic_data_7days_ago = None
     try:
         seven_days_ago = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
-        character_basic_data_7days_ago = request_character_basic(ocid, use_cache=False, date=seven_days_ago)
+        character_basic_data_7days_ago = request_character_basic(ocid, date=seven_days_ago)
     except Exception as e:
         print(f"獲取七天前資料失敗: {e}")
         character_basic_data_7days_ago = None 

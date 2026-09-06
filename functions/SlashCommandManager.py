@@ -496,7 +496,7 @@ class SlashCommandManager:
             
             # 當月 API 分析（總次數 + 各 API 請求次數）
             try:
-                from functions.API_functions.API_RequestLogger import get_month_summary
+                from tmsapi.logger import get_month_summary
                 api_month = get_month_summary()
                 sep = '─' * 28
                 api_lines = '\n'.join(
@@ -637,7 +637,7 @@ class SlashCommandManager:
 
         # API 統計（延遲匯入避免循環依賴）
         try:
-            from functions.API_functions.API_RequestLogger import get_month_summary
+            from tmsapi.logger import get_month_summary
             api = get_month_summary(year, month)
             prev_api = get_month_summary(py, pm)
         except Exception as e:

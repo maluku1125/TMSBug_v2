@@ -3,7 +3,7 @@ from typing import Optional
 import datetime
 import configparser
 from functions.API_functions.API_DataBase_Guild import save_guildid_db, get_guildid_db, init_Guild_ID_database
-from functions.API_functions.API_RequestLogger import logged_get
+from tmsapi.logger import logged_get
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()

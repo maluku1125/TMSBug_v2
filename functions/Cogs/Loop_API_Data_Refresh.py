@@ -4,8 +4,8 @@ import asyncio
 import os
 import sqlite3
 from discord.ext import commands, tasks
-from functions.API_functions.API_Request_Character import refresh_all_expired_character_data
-from functions.API_functions.API_DataBase_Character import character_basic_info_path
+from tmsapi.request import refresh_all_expired_character_data
+from tmsapi.store.character import character_basic_info_path
 
 # ── 管線獨立的切換旗標（ARCHITECTURE.md §14.9）──────────────
 #
@@ -93,8 +93,8 @@ class Loop_API_Data_Refresh(commands.Cog):
 
             # 刷新期間關閉逐筆 print：主控台輸出是同步 I/O，數萬筆會癱瘓 event loop
             # （實測會出現 discord.gateway "heartbeat blocked for more than N seconds"）
-            import functions.API_functions.API_Request_Character as _rc
-            from functions.API_functions.API_RateLimiter import set_global_rate
+            import tmsapi.request as _rc
+            from tmsapi.ratelimit import set_global_rate
             _prev_quiet = _rc.QUIET
             _rc.QUIET = True
             set_global_rate(REFRESH_RATE)

@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 執行期資料（資料庫、快取、日誌都在 DiscordBotlog\API\ 之下，不進版控）
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# 設定檔含 Discord token 與 NEXON API key —— 實際位置在專案外的 Config\，
+# 這幾條是萬一有人把副本放進來時的第二道防線
+*.ini
+.env
+*.env

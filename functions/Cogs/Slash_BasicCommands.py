@@ -9,7 +9,7 @@ from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
 from functions.MSCrawler import Format_ApplePrizeData, Format_FashionBoxPrizeData, save_apple_json_file, save_fashionbox_json_file
 from functions.GetPrize import reloaddata
 from ..SlashCommandManager import UseSlashCommand, GetSlashCommandUsage, SaveSystemStats, GetLastHourCommandCount, GetTopCommandsSimple, GetDailyTrend, GetMonthlyReport
-from functions.API_functions.API_RequestLogger import get_last_hour_count as GetLastHourAPICount, get_daily_counts as GetDailyAPICounts
+from tmsapi.logger import get_last_hour_count as GetLastHourAPICount, get_daily_counts as GetDailyAPICounts
  
 process = psutil.Process()
 
@@ -27,7 +27,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v3.12.0'
+version = 'v3.12.2'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()

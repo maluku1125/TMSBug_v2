@@ -243,7 +243,7 @@ class ActionSettingModal(discord.ui.Modal):
         try:
             preview_name = user_db.get_user_character_slot(user_id, 1)
             if preview_name:
-                from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic
+                from tmsapi.request import get_character_ocid, request_character_basic
                 from functions.API_functions.CreateCharacterEmbed import apply_look_params
                 ocid = get_character_ocid(preview_name)
                 if ocid:

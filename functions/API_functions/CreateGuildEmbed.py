@@ -3,8 +3,8 @@ from discord import app_commands
 from discord.ext import commands
 
 from functions.API_functions.API_Request_Guild import get_guildid, request_guild_basic
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_basic
-from functions.API_functions.API_DataBase_Character import get_character_basic_info_db
+from tmsapi.request import get_character_ocid, request_character_basic
+from tmsapi.store.character import get_character_basic_info_db
 import datetime
 import math
 import asyncio

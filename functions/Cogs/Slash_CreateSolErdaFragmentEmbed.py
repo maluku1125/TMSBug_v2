@@ -7,7 +7,7 @@ import json
 import os
 from functions.tinyfunctions import probably
 from functions.SlashCommandManager import UseSlashCommand
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_hexamatrix
+from tmsapi.request import get_character_ocid, request_character_hexamatrix
 from functions.database_manager import UserDataDB
 from functions.CombineCharacter import combine_character_images
 

@@ -1,6 +1,6 @@
 import discord
 
-from functions.API_functions.API_Request_Character import (
+from tmsapi.request import (
     get_character_ocid, request_character_basic, request_character_hexamatrix, request_character_stat
 )
 from functions.API_functions.API_Request_union import request_user_union_champion

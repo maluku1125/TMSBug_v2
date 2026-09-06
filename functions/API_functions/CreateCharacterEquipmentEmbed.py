@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from functions.API_functions.API_Request_Character import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment, request_character_pet_equipment, request_character_beauty_equipment, request_character_ability, request_character_hyper_stat, request_character_familiar
+from tmsapi.request import get_character_ocid, request_character_itemequipment, request_character_cashitemequipment, request_character_pet_equipment, request_character_beauty_equipment, request_character_ability, request_character_hyper_stat, request_character_familiar
 import datetime
 
 from functions.Cogs.Slash_CalculateScrolls import scrolls_fitting
