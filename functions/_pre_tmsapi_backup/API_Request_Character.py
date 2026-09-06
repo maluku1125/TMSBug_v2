@@ -1,32 +1,22 @@
-import requests
-import aiohttp
-import asyncio
-from typing import Optional
-import datetime
-import configparser
-from functions.API_functions.API_DataBase_Character import (
-    save_character_ocid_db, get_character_ocid_db,
-    save_character_basic_info_db, get_character_basic_info_with_fallback, get_all_expired_character_lists,
-    delete_character_data_by_ocid
-)
-from functions.API_functions.API_RequestLogger import logged_get, log_request
-from functions.API_functions.API_RateLimiter import acquire as rate_acquire
+"""
+API_Request_Character.py —— 轉發層（階段 1）
 
-# 批次作業時把逐筆 print 關掉：主控台輸出是同步 I/O，
-# 大量輸出會阻塞 event loop（實測會導致 discord heartbeat blocked）。
-QUIET = False
+實作已搬到 tmsapi.request，本檔只把自己**替換**成那個模組。
 
+⚠️ 為什麼是 `sys.modules[__name__] = _impl` 而不是 `from ... import *`：
 
-def _say(msg):
-    if not QUIET:
-        print(msg)
+    Loop_API_Data_Refresh 會做 `_rc.QUIET = True` 去改模組層級變數。
+    如果用 `import *`，那個賦值會落在這個轉發模組上，真正的實作看不到，
+    批次刷新時的 print 就不會被關掉 —— 而那正是當初 discord heartbeat
+    blocked 的成因。替換 sys.modules 之後，任何 import 這個路徑的地方
+    拿到的都是實作模組本身，屬性賦值會正確生效。
 
+回退方式：把本檔換回 git 中的原始內容（備份在 functions/_pre_tmsapi_backup/API_Request_Character.py）。
+"""
 
-try:
-    _TMSBot_CONF = configparser.ConfigParser()
-    config_path = 'C:\\Users\\User\\Desktop\\DiscordBot\\Config\\TMSBug_v2_config.ini'
-    _TMSBot_CONF.read(config_path, encoding="utf-8")
+import sys as _sys
 
+<<<<<<<< HEAD:functions/_pre_tmsapi_backup/API_Request_Character.py
     api_key = _TMSBot_CONF["api"]["api_key"]
     
 except FileNotFoundError:
@@ -884,4 +874,9 @@ def _refresh_all_expired_character_data_sync(refresh_days: int = 9999) -> dict:
     print("=====================================")
     
     return result_stats
+========
+from tmsapi.request import *          # noqa: F401,F403  —— 讓靜態檢查看得到名稱
+import tmsapi.request as _impl
+>>>>>>>> 507aa47904f616dbb928e321c9836ce0631fe57c:functions/API_functions/API_Request_Character.py
 
+_sys.modules[__name__] = _impl
