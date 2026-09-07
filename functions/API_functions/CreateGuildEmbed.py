@@ -15,7 +15,46 @@ from Data.BotEmojiList import EmojiList
 
 
 
-def create_guild_basic_embed(guild_name: str, world_name: str, include_view: bool = False):
+# 一批要抓幾個成員。每抓完一批才回到 event loop 更新進度。
+MEMBER_BATCH = 20
+
+
+def _blank_member(name):
+    return {'name': name, 'level': 0, 'exp_rate': 0.0, 'class': '-', 'sort_key': -1}
+
+
+def _fetch_member(member_name):
+    """抓單一成員的等級／職業。**同步、會打 HTTP**，只能在執行緒裡呼叫。"""
+    try:
+        ocid = get_character_ocid(member_name)
+        if not ocid:
+            return _blank_member(member_name)
+        # 優先用 7 天內的 DB 資料；輪替週期就是 7 天，所以幾乎都會命中
+        character_data = get_character_basic_info_db(ocid, cache_days=7)
+        if not character_data:
+            character_data = request_character_basic(ocid)
+        if not character_data:
+            return _blank_member(member_name)
+
+        level = character_data.get('character_level', 0)
+        exp_rate = character_data.get('character_exp_rate', 0)
+        character_class = character_data.get('character_class', '未知') or '未知'
+        character_class = character_class.replace('大魔導士(冰、雷)', '大魔導士（冰、雷）')
+        character_class = character_class.replace('大魔導士(火、毒)', '大魔導士（火、毒）')
+        return {'name': member_name, 'level': int(level),
+                'exp_rate': float(exp_rate), 'class': character_class,
+                'sort_key': int(level) * 100 + float(exp_rate)}
+    except Exception:                                       # noqa: BLE001
+        return _blank_member(member_name)
+
+
+def _fetch_members(names):
+    return [_fetch_member(n) for n in names]
+
+
+def create_guild_basic_embed(guild_name: str, world_name: str,
+                             include_view: bool = False,
+                             build_view: bool = True):
     """
     Create basic guild embed
     
@@ -29,7 +68,8 @@ def create_guild_basic_embed(guild_name: str, world_name: str, include_view: boo
         If include_view=False: embed
     """
     if include_view:
-        return create_guild_basic_embed_with_view(guild_name, world_name)
+        return create_guild_basic_embed_with_view(guild_name, world_name,
+                                                  build_view=build_view)
     else:
         return create_guild_basic_embed_without_view(guild_name, world_name)
 
@@ -268,87 +308,33 @@ class GuildView(discord.ui.View):
         if interaction:
             await interaction.edit_original_response(embed=loading_embed, view=self)
         
-        # Get detailed information for each member (優先從資料庫獲取)
+        # ⚠️ 這裡原本是逐筆同步 HTTP（最多 200 個成員 × 2 次請求），
+        # 每筆阻塞約 120ms，中間只靠 `await asyncio.sleep(0.05)` 讓出 ——
+        # event loop 有七成時間是凍住的，Discord 會噴 "heartbeat blocked"。
+        #
+        # 改成每 MEMBER_BATCH 個丟一次執行緒，抓完才回 loop 更新進度。
+        # 順便拿掉每筆 0.05 秒的人工延遲（200 人就是 10 秒）。
         detailed_members = []
-        
-        for i, member_name in enumerate(guild_members):
-            try:
-                # Update progress every 20 members
-                if i % 20 == 0 and interaction:
-                    progress = (i / len(guild_members)) * 100
-                    loading_embed.set_field_at(1, 
-                        name="🔄 載入中...",
-                        value=f"正在處理第 {i+1}/{len(guild_members)} 位成員... ({progress:.1f}%)\n當前處理: {member_name}",
-                        inline=False
-                    )
+        total_members = len(guild_members)
+
+        for i in range(0, total_members, MEMBER_BATCH):
+            batch = guild_members[i:i + MEMBER_BATCH]
+
+            if interaction:
+                progress = (i / total_members) * 100 if total_members else 100
+                loading_embed.set_field_at(1,
+                    name="🔄 載入中...",
+                    value=f"正在處理第 {i+1}/{total_members} 位成員..."
+                          f" ({progress:.1f}%)\n當前處理: {batch[0]}",
+                    inline=False
+                )
+                try:
                     await interaction.edit_original_response(embed=loading_embed, view=self)
-                
-                # Get character OCID
-                ocid = get_character_ocid(member_name)
-                if ocid:
-                    # 優先從資料庫獲取7天內的資料
-                    character_data = get_character_basic_info_db(ocid, cache_days=7)
-                    
-                    # 如果資料庫沒有7天內的資料，才使用API請求
-                    if not character_data:
-                        print(f"no data in 7days use api data: {member_name}")
-                        api_data = request_character_basic(ocid)
-                        if api_data:
-                            character_data = api_data
-                    else:
-                        print(f"use database data: {member_name}")
-                    
-                    if character_data:
-                        level = character_data.get('character_level', 0)
-                        exp_rate = character_data.get('character_exp_rate', 0)
-                        character_class = character_data.get('character_class', '未知')
-                        
-                        # Fix bracket issues for specific classes
-                        character_class = character_class.replace('大魔導士(冰、雷)', '大魔導士（冰、雷）')
-                        character_class = character_class.replace('大魔導士(火、毒)', '大魔導士（火、毒）')
-                        
-                        # Calculate sorting key (level * 100 + exp_rate for proper sorting)
-                        sort_key = int(level) * 100 + float(exp_rate)
-                        
-                        detailed_members.append({
-                            'name': member_name,
-                            'level': int(level),
-                            'exp_rate': float(exp_rate),
-                            'class': character_class,
-                            'sort_key': sort_key
-                        })
-                    else:
-                        # If can't get character data, add with default values (sort at end)
-                        detailed_members.append({
-                            'name': member_name,
-                            'level': 0,
-                            'exp_rate': 0.0,
-                            'class': '-',
-                            'sort_key': -1  # Sort at end
-                        })
-                else:
-                    # If can't get OCID, add with default values (sort at end)
-                    detailed_members.append({
-                        'name': member_name,
-                        'level': 0,
-                        'exp_rate': 0.0,
-                        'class': '-',
-                        'sort_key': -1  # Sort at end
-                    })
-                
-                # 減少延遲時間，因為主要使用資料庫
-                await asyncio.sleep(0.05)
-                    
-            except Exception as e:
-                # If any error occurs, add member with default values (sort at end)
-                detailed_members.append({
-                    'name': member_name,
-                    'level': 0,
-                    'exp_rate': 0.0,
-                    'class': '-',
-                    'sort_key': -1  # Sort at end
-                })
-        
+                except Exception:                           # noqa: BLE001
+                    pass
+
+            detailed_members.extend(await asyncio.to_thread(_fetch_members, batch))
+
         # Sort members by level and exp_rate (descending)
         detailed_members.sort(key=lambda x: x['sort_key'], reverse=True)
         
@@ -560,7 +546,21 @@ def create_guild_basic_embed_without_view(guild_name: str, world_name: str) -> d
     return embed
 
 
-def create_guild_basic_embed_with_view(guild_name: str, world_name: str) -> dict:
+# ⚠️ build_view 的用途
+#
+# 本函式是同步的、會打數次 HTTP，直接從 async 指令呼叫會凍住 event loop
+# （Discord 噴 "heartbeat blocked"）。要用 asyncio.to_thread 丟到執行緒，
+# 但 `discord.ui.View` 的建構需要 running event loop，在工作執行緒裡會
+# RuntimeError（discord.py 2.5.2 實測）。
+#
+# 所以 build_view=False 時不建 View，改回傳一個零參數的 view_factory，
+# 由呼叫端在 event loop 上呼叫它。呼叫端範例：
+#
+#     result = await asyncio.to_thread(create_xxx_embed, ..., build_view=False)
+#     if result.get("view_factory"):
+#         result["view"] = result["view_factory"]()
+def create_guild_basic_embed_with_view(guild_name: str, world_name: str,
+                                      build_view: bool = True) -> dict:
     """Create guild embed with view"""
     
     guild_id = get_guildid(guild_name, world_name)
@@ -591,9 +591,13 @@ def create_guild_basic_embed_with_view(guild_name: str, world_name: str) -> dict
     embed = create_guild_basic_embed_without_view(guild_name, world_name)
     
     # Create view
-    view = GuildView(guild_name, world_name, guild_basic_data)
+    def _make_view():
+        return GuildView(guild_name, world_name, guild_basic_data)
+
+    view = _make_view() if build_view else None
     
-    return {"embed": embed, "view": view}
+    return {"embed": embed, "view": view,
+            "view_factory": None if build_view else _make_view}
 
 
 

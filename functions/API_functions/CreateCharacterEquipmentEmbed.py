@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -897,7 +898,8 @@ class EquipmentView(discord.ui.View):
                 
                 @discord.ui.button(label="預設1", style=discord.ButtonStyle.success)
                 async def preset_1_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    result = create_character_equipment_embed(self.character_name, self.character_basic_data)
+                    _pre = await asyncio.to_thread(_equipment_fetch, self.character_name)
+                    result = create_character_equipment_embed(self.character_name, self.character_basic_data, prefetched=_pre)
                     embed = result["embed"]
                     view = result["view"]
                     if view and embed:
@@ -909,7 +911,8 @@ class EquipmentView(discord.ui.View):
                 
                 @discord.ui.button(label="預設2", style=discord.ButtonStyle.success)
                 async def preset_2_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    result = create_character_equipment_embed(self.character_name, self.character_basic_data)
+                    _pre = await asyncio.to_thread(_equipment_fetch, self.character_name)
+                    result = create_character_equipment_embed(self.character_name, self.character_basic_data, prefetched=_pre)
                     embed = result["embed"]
                     view = result["view"]
                     if view and embed:
@@ -921,7 +924,8 @@ class EquipmentView(discord.ui.View):
                 
                 @discord.ui.button(label="預設3", style=discord.ButtonStyle.success)
                 async def preset_3_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-                    result = create_character_equipment_embed(self.character_name, self.character_basic_data)
+                    _pre = await asyncio.to_thread(_equipment_fetch, self.character_name)
+                    result = create_character_equipment_embed(self.character_name, self.character_basic_data, prefetched=_pre)
                     embed = result["embed"]
                     view = result["view"]
                     if view and embed:
@@ -947,10 +951,41 @@ class EquipmentView(discord.ui.View):
             item.disabled = True
 
 
-def create_character_equipment_embed(character_name: str, character_basic_data: dict = None) -> dict:
- 
+# ⚠️ 為什麼是 prefetched 而不是 build_view
+#
+# 本函式的 embed 是**由 View 產生的**（`view.create_embed("weapon")`），
+# 所以 View 一定要建 —— 不能像公會那支那樣延後。而 `discord.ui.View` 的建構
+# 需要 running event loop，在工作執行緒裡會 RuntimeError（discord.py 2.5.2 實測）。
+#
+# 所以改成拆兩段：慢的 8 次 HTTP 用 `_equipment_fetch()` 丟執行緒，
+# 快的 View+embed 建構留在 event loop 上。呼叫端範例：
+#
+#     pre = await asyncio.to_thread(_equipment_fetch, name)
+#     result = create_character_equipment_embed(name, basic, prefetched=pre)
+def _equipment_fetch(character_name: str):
+    """只做 HTTP（1 次 /id + 7 次裝備端點）。**可安全丟執行緒。**
+
+    回傳 (ocid, data) —— 找不到角色時 ocid 為 None。
+    """
     ocid = get_character_ocid(character_name)
-    
+    if not ocid:
+        return (None, None)
+    return (ocid, {
+        'equipment': request_character_itemequipment(ocid),
+        'cashitem': request_character_cashitemequipment(ocid),
+        'pet': request_character_pet_equipment(ocid),
+        'beauty': request_character_beauty_equipment(ocid),
+        'ability': request_character_ability(ocid),
+        'hyper': request_character_hyper_stat(ocid),
+        'familiar': request_character_familiar(ocid),
+    })
+
+
+def create_character_equipment_embed(character_name: str, character_basic_data: dict = None,
+                                     prefetched=None) -> dict:
+
+    ocid, _d = _equipment_fetch(character_name) if prefetched is None else prefetched
+
     if not ocid:
         embed = discord.Embed(
             title="錯誤",
@@ -959,15 +994,14 @@ def create_character_equipment_embed(character_name: str, character_basic_data: 
             timestamp=datetime.datetime.now()
         )
         return {"embed": embed, "view": None}
-    
-    # Get equipment data
-    character_equipment_data = request_character_itemequipment(ocid)
-    character_cashitem_equipment_data = request_character_cashitemequipment(ocid)
-    character_pet_equipment_data = request_character_pet_equipment(ocid)
-    character_beauty_equipment_data = request_character_beauty_equipment(ocid)
-    character_ability_data = request_character_ability(ocid)
-    character_hyper_stat_data = request_character_hyper_stat(ocid)
-    character_familiar_data = request_character_familiar(ocid)
+
+    character_equipment_data = _d['equipment']
+    character_cashitem_equipment_data = _d['cashitem']
+    character_pet_equipment_data = _d['pet']
+    character_beauty_equipment_data = _d['beauty']
+    character_ability_data = _d['ability']
+    character_hyper_stat_data = _d['hyper']
+    character_familiar_data = _d['familiar']
 
     if not character_equipment_data:
         embed = discord.Embed(
@@ -998,5 +1032,5 @@ def create_character_equipment_embed(character_name: str, character_basic_data: 
     # Create View and initial embed
     view = EquipmentView(character_name, character_equipment_data, character_cashitem_equipment_data, character_pet_equipment_data, character_beauty_equipment_data, character_ability_data, character_hyper_stat_data, current_preset="preset_1", character_basic_data=character_basic_data, character_familiar_data=character_familiar_data)
     initial_embed = view.create_embed("weapon")  # Default display weapons
-    
+
     return {"embed": initial_embed, "view": view}

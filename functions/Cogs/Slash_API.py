@@ -1,6 +1,16 @@
+import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
+
+# ⚠️ 這些 create_*_embed 是**同步**函式，內部會打數次到數十次 HTTP。
+# 直接從 async 指令呼叫會整個凍住 event loop —— Discord 隨即噴
+# "heartbeat blocked"，嚴重時 shard 斷線。實測 /exptracking 一次最多打 10 次
+# character/basic，正常也要 1.2 秒，外部 API 稍慢就破 10 秒。
+#
+# 用 asyncio.to_thread 丟到執行緒。⚠️ 只有「不建立 discord.ui.View」的函式
+# 能這樣包 —— View 的建構需要 running event loop，在工作執行緒裡會
+# RuntimeError（discord.py 2.5.2 實測）。
 
 import datetime
 import time
@@ -8,7 +18,8 @@ import logging
 from discord.errors import NotFound
 from functions.API_functions.CreateCharacterEmbed import create_character_basic_embed
 from functions.API_functions.CreateGuildEmbed import create_guild_basic_embed   
-from functions.API_functions.CreateCharacterEquipmentEmbed import create_character_equipment_embed
+from functions.API_functions.CreateCharacterEquipmentEmbed import (
+    create_character_equipment_embed, _equipment_fetch)
 # 等級榜改讀 JSON（前 5,000 名，/rank 只顯示前 100）
 from tmsapi.stats import get_all_characters_level_exp_ranking
 from functions.API_functions.CreateRankingEmbed import create_ranking_embed
@@ -89,7 +100,10 @@ class CharacterView(discord.ui.View):
                 if action and (action.get('action') or action.get('emotion') or action.get('wmotion')):
                     action_params = action
 
-            result = create_character_basic_embed(self.character_name, return_data=True, action_params=action_params)
+            # ⚠️ 這裡**不能**用 to_thread —— get_character_basic_embed 是同步方法
+            # （View 的 callback 會直接呼叫）。要改成非阻塞得先把整條路徑改 async。
+            result = create_character_basic_embed(
+                self.character_name, return_data=True, action_params=action_params)
             if isinstance(result, dict):
                 self.character_basic_data = result["character_basic_data"]
                 return result["embed"]
@@ -131,7 +145,8 @@ class CharacterView(discord.ui.View):
         if self.current_mode != "preset_1":
             self.current_mode = "preset_1"
             try:
-                result = create_character_equipment_embed(self.character_name, self.character_basic_data)
+                _pre = await asyncio.to_thread(_equipment_fetch, self.character_name)
+                result = create_character_equipment_embed(self.character_name, self.character_basic_data, prefetched=_pre)
                 embed = result["embed"]
                 view = result["view"]
                 
@@ -172,7 +187,8 @@ class CharacterView(discord.ui.View):
         if self.current_mode != "preset_2":
             self.current_mode = "preset_2"
             try:
-                result = create_character_equipment_embed(self.character_name, self.character_basic_data)
+                _pre = await asyncio.to_thread(_equipment_fetch, self.character_name)
+                result = create_character_equipment_embed(self.character_name, self.character_basic_data, prefetched=_pre)
                 embed = result["embed"]
                 view = result["view"]
                 
@@ -213,7 +229,8 @@ class CharacterView(discord.ui.View):
         if self.current_mode != "preset_3":
             self.current_mode = "preset_3"
             try:
-                result = create_character_equipment_embed(self.character_name, self.character_basic_data)
+                _pre = await asyncio.to_thread(_equipment_fetch, self.character_name)
+                result = create_character_equipment_embed(self.character_name, self.character_basic_data, prefetched=_pre)
                 embed = result["embed"]
                 view = result["view"]
                 
@@ -349,7 +366,9 @@ class ExpTrackingSelectView(discord.ui.View):
             return
 
         try:
-            result = create_exp_tracking_embed(selected_name, action_params=get_action_params(str(interaction.user.id)))
+            result = await asyncio.to_thread(
+                create_exp_tracking_embed,
+                selected_name, action_params=get_action_params(str(interaction.user.id)))
             if result["success"]:
                 thumb_url, gif_file = await make_character_gif_file(str(interaction.user.id), result.get("image_url"))
                 if gif_file:
@@ -597,7 +616,9 @@ class Slash_API(commands.Cog):
         
         try:
             # Create experience tracking embed
-            result = create_exp_tracking_embed(character_name, action_params=get_action_params(str(interaction.user.id)))
+            result = await asyncio.to_thread(
+                create_exp_tracking_embed,
+                character_name, action_params=get_action_params(str(interaction.user.id)))
 
             if result["success"]:
                 thumb_url, gif_file = await make_character_gif_file(str(interaction.user.id), result.get("image_url"))
@@ -655,7 +676,9 @@ class Slash_API(commands.Cog):
             return
 
         try:
-            result = create_champion_embed(playername)
+            result = await asyncio.to_thread(
+                create_champion_embed,
+                playername)
             await interaction.followup.send(embed=result["embed"])
             response_time = time.time() - start_time
             UseSlashCommand('api_champion', interaction, response_time, result["success"])
@@ -685,7 +708,9 @@ class Slash_API(commands.Cog):
         
         try:
             # Create union tracking embed
-            result = create_union_tracking_embed(character_name)
+            result = await asyncio.to_thread(
+                create_union_tracking_embed,
+                character_name)
             
             if result["success"]:
                 await interaction.followup.send(embed=result["embed"])
@@ -779,7 +804,10 @@ class Slash_API(commands.Cog):
             return
         
         try:
-            result = create_guild_basic_embed(guild_name, world_name, include_view=True)
+            result = await asyncio.to_thread(
+                create_guild_basic_embed, guild_name, world_name, include_view=True, build_view=False)
+            if result.get("view_factory"):
+                result["view"] = result["view_factory"]()   # View 必須在 event loop 上建
             embed = result["embed"]
             view = result["view"]
             

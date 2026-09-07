@@ -1,3 +1,12 @@
+import os
+
+# ⚠️ 必須在 import 任何 functions.* 之前 —— 那些 cog 會 import
+# tmsapi.request，而 tmsapi.config 一被 import，API key 就定案了。
+# tmsapi 的預設是管線的 key（Maplecube），Bot 在這裡指回自己的。
+os.environ.setdefault(
+    'TMSAPI_CONFIG',
+    r'C:\Users\User\Desktop\DiscordBot\Config\TMSBug_v2_config.ini')
+
 import datetime
 import discord
 from discord.ext import commands
@@ -23,6 +32,7 @@ from functions.Cogs.Slash_API import Slash_API
 from functions.Cogs.Loop_API_Data_Refresh import Loop_API_Data_Refresh
 from functions.Cogs.Slash_Setting import Slash_Setting
 from functions.Cogs.Slash_Battle import Slash_Battle
+from functions.Cogs.Loop_StatusReport import Loop_StatusReport
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -121,6 +131,8 @@ class TMSBot(commands.AutoShardedBot):
         print('Cogs:Slash_Setting loaded')
         await self.add_cog(Slash_Battle(self))
         print('Cogs:Slash_Battle loaded')
+        await self.add_cog(Loop_StatusReport(self))
+        print('Cogs:Loop_StatusReport loaded')
 
         # 列出所有已註冊的命令
         all_commands = self.tree.get_commands()

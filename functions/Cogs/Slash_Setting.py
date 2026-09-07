@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -245,9 +246,10 @@ class ActionSettingModal(discord.ui.Modal):
             if preview_name:
                 from tmsapi.request import get_character_ocid, request_character_basic
                 from functions.API_functions.CreateCharacterEmbed import apply_look_params
-                ocid = get_character_ocid(preview_name)
+                # 兩次同步 HTTP，丟執行緒避免凍住 event loop
+                ocid = await asyncio.to_thread(get_character_ocid, preview_name)
                 if ocid:
-                    basic = request_character_basic(ocid)
+                    basic = await asyncio.to_thread(request_character_basic, ocid)
                     image_url = basic.get('character_image') if basic else None
                     if image_url:
                         preview_url = apply_look_params(image_url, action, emotion, wmotion)

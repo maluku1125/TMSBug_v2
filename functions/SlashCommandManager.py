@@ -26,6 +26,33 @@ class CommandUsage:
     command_type: str
     response_time: Optional[float] = None
     success: bool = True
+    install_context: str = 'unknown'   # guild / user / dm / unknown
+
+def resolve_install_context(interaction) -> str:
+    """這次呼叫是「伺服器安裝」還是「使用者安裝」。
+
+    為什麼需要這個欄位：`guild_name` 有 4.3% 是空字串，長年沒有解釋。
+    原因是 Bot 根本不在那個伺服器裡 —— 使用者把 App 裝到自己帳號後，
+    在 Bot 沒加入的伺服器用指令。這時 Discord 只給 guild_id，
+    discord.py 只能生一個 `name=''` 的臨時 Guild 物件（guild.py
+    `_from_data`：`self.name = guild.get('name', '')`）。
+
+    有了這一欄就不必再從 `guild_name == ''` 反推。
+    """
+    try:
+        if interaction.guild_id is None:
+            return 'dm'
+        # 先問伺服器 —— 兩種安裝可以並存，而「伺服器裝了」才是 Bot 真的在裡面
+        if interaction.is_guild_integration():
+            return 'guild'
+        if interaction.is_user_integration():
+            return 'user'
+    except AttributeError:          # discord.py < 2.4 沒有這兩個方法
+        return 'unknown'
+    except Exception:               # noqa: BLE001 記錄用欄位，絕不能讓它擋下指令
+        return 'unknown'
+    return 'unknown'
+
 
 class SlashCommandManager:
     """斜線命令管理器 v2.0"""
@@ -107,7 +134,8 @@ class SlashCommandManager:
                         command_type TEXT NOT NULL,
                         response_time REAL,
                         success BOOLEAN DEFAULT 1,
-                        created_date DATE DEFAULT (date('now'))
+                        created_date DATE DEFAULT (date('now')),
+                        install_context TEXT
                     )
                 ''')
                 
@@ -138,6 +166,16 @@ class SlashCommandManager:
                 for index_sql in indexes:
                     cursor.execute(index_sql)
                 
+                # 2026-09-07：既有資料庫補上 install_context。
+                # SQLite 的 ADD COLUMN 只改 schema、不重寫資料檔，
+                # 38 萬列也是瞬間完成；舊資料留 NULL（來源不明，不要亂猜）。
+                cols = [r[1] for r in cursor.execute(
+                    "PRAGMA table_info(command_usage)")]
+                if 'install_context' not in cols:
+                    cursor.execute("ALTER TABLE command_usage "
+                                   "ADD COLUMN install_context TEXT")
+                    logger.info("command_usage 補上 install_context 欄位")
+
                 conn.commit()
                 logger.info("資料庫初始化完成")
                 
@@ -173,7 +211,8 @@ class SlashCommandManager:
                 user_name=str(interaction.user),
                 command_type=command_type,
                 response_time=response_time,
-                success=success
+                success=success,
+                install_context=resolve_install_context(interaction)
             )
             
             # 儲存到資料庫
@@ -198,8 +237,8 @@ class SlashCommandManager:
                 cursor = conn.cursor()
                 cursor.execute('''
                     INSERT INTO command_usage 
-                    (timestamp, guild_id, guild_name, user_id, user_name, command_type, response_time, success)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (timestamp, guild_id, guild_name, user_id, user_name, command_type, response_time, success, install_context)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     usage.timestamp,
                     usage.guild_id,
@@ -208,7 +247,8 @@ class SlashCommandManager:
                     usage.user_name,
                     usage.command_type,
                     usage.response_time,
-                    usage.success
+                    usage.success,
+                    usage.install_context
                 ))
                 conn.commit()
                 
