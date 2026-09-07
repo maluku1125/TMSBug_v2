@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from functions.API_functions.API_Request_Guild import get_guildid, request_guild_basic
+from functions.API_functions.API_DataBase_Guild import get_guildid_db
 from tmsapi.request import get_character_ocid, request_character_basic
 from tmsapi.store.character import get_character_basic_info_db
 import datetime
@@ -17,6 +18,21 @@ from Data.BotEmojiList import EmojiList
 
 # 一批要抓幾個成員。每抓完一批才回到 event loop 更新進度。
 MEMBER_BATCH = 20
+
+
+def _guild_is_new(guild_name: str, world_name: str) -> bool:
+    """這個公會是不是我們第一次見到（Guild_id.db 裡還沒有這一列）。
+
+    **必須在 get_guildid() 之前問。** 那支查不到就會打 API 並把結果寫進 DB，
+    問晚了每個公會看起來都是舊的。
+
+    用 get_guildid_db 而不是 get_guildid_from_cache：後者有 7 天效期，
+    早就收錄、只是快取過期的公會會被它判成新的。這裡問的是「有沒有這一列」。
+    """
+    try:
+        return get_guildid_db(f'{guild_name}_{world_name}') is None
+    except Exception:
+        return False        # 判斷不出來就不標記：寧可漏報也不要誤報
 
 
 def _blank_member(name):
@@ -75,11 +91,14 @@ def create_guild_basic_embed(guild_name: str, world_name: str,
 
 
 class GuildView(discord.ui.View):
-    def __init__(self, guild_name: str, world_name: str, guild_basic_data: dict):
+    def __init__(self, guild_name: str, world_name: str, guild_basic_data: dict,
+                 is_new: bool = False):
         super().__init__(timeout=600)  # Increased timeout to 10 minutes
         self.guild_name = guild_name
         self.world_name = world_name
         self.guild_basic_data = guild_basic_data
+        # 查詢當下算出來的，之後不能重算 —— 這時公會已經寫進 DB 了
+        self.is_new = is_new
         self.showing_members = False
         self.showing_detailed_members = False
     
@@ -93,7 +112,8 @@ class GuildView(discord.ui.View):
             self.showing_members = True
         else:
             # Hide members, return to basic info
-            embed = create_guild_basic_embed_without_view(self.guild_name, self.world_name)
+            embed = create_guild_basic_embed_without_view(
+                self.guild_name, self.world_name, is_new=self.is_new)
             button.label = "顯示公會成員"
             button.emoji = "👥" 
             self.showing_members = False
@@ -138,7 +158,8 @@ class GuildView(discord.ui.View):
                 await interaction.edit_original_response(embed=error_embed, view=self)
         else:
             # Hide detailed members, return to basic info
-            embed = create_guild_basic_embed_without_view(self.guild_name, self.world_name)
+            embed = create_guild_basic_embed_without_view(
+                self.guild_name, self.world_name, is_new=self.is_new)
             button.label = "詳細成員資訊"
             button.emoji = "📊"
             self.showing_detailed_members = False
@@ -462,8 +483,15 @@ class GuildView(discord.ui.View):
         return final_embed
 
 
-def create_guild_basic_embed_without_view(guild_name: str, world_name: str) -> discord.Embed:
-    """Create basic guild embed without view (internal use)"""
+def create_guild_basic_embed_without_view(guild_name: str, world_name: str,
+                                          is_new: bool = None) -> discord.Embed:
+    """Create basic guild embed without view (internal use)
+
+    is_new=None 表示自己判斷；呼叫端若已經先呼叫過 get_guildid()，必須把自己
+    算好的值傳進來，否則這裡再問就已經是「舊的」了。
+    """
+    if is_new is None:
+        is_new = _guild_is_new(guild_name, world_name)
     guild_id = get_guildid(guild_name, world_name)
     
     if not guild_id:
@@ -543,6 +571,11 @@ def create_guild_basic_embed_without_view(guild_name: str, world_name: str) -> d
             inline=False
         )
     
+    # 這次查詢把一個沒收錄過的公會加進了 Guild_id.db，擴增的 ② 之後就會去
+    # 抓它的成員名冊 —— 對使用者是彩蛋，對資料庫是真的多了一個公會
+    if is_new:
+        embed.set_footer(text='發現新公會!')
+
     return embed
 
 
@@ -562,6 +595,9 @@ def create_guild_basic_embed_without_view(guild_name: str, world_name: str) -> d
 def create_guild_basic_embed_with_view(guild_name: str, world_name: str,
                                       build_view: bool = True) -> dict:
     """Create guild embed with view"""
+
+    # 在任何 get_guildid() 之前先問，那支會把新公會寫進 DB
+    is_new = _guild_is_new(guild_name, world_name)
     
     guild_id = get_guildid(guild_name, world_name)
     
@@ -588,11 +624,11 @@ def create_guild_basic_embed_with_view(guild_name: str, world_name: str,
         return {"embed": embed, "view": None}
     
     # Create basic embed
-    embed = create_guild_basic_embed_without_view(guild_name, world_name)
+    embed = create_guild_basic_embed_without_view(guild_name, world_name, is_new=is_new)
     
     # Create view
     def _make_view():
-        return GuildView(guild_name, world_name, guild_basic_data)
+        return GuildView(guild_name, world_name, guild_basic_data, is_new=is_new)
 
     view = _make_view() if build_view else None
     

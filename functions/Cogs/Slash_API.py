@@ -788,10 +788,8 @@ class Slash_API(commands.Cog):
         app_commands.Choice(name="琉德", value="琉德"),
         app_commands.Choice(name="優依娜", value="優依娜"),
         app_commands.Choice(name="愛麗西亞", value="愛麗西亞"),
-        app_commands.Choice(name="米特拉", value="米特拉"),
         app_commands.Choice(name="挑戰者", value="挑戰者"),
-        app_commands.Choice(name="殺人鯨", value="殺人鯨"),
-        app_commands.Choice(name="賽蓮", value="賽蓮")
+        app_commands.Choice(name="殺人鯨", value="殺人鯨")
     ])
     async def api_guild_basic(self, interaction: discord.Interaction, guild_name: str, world_name: str):
         

@@ -227,9 +227,7 @@ class RankingView(discord.ui.View):
             discord.SelectOption(label="琉德", value="琉德", emoji=worldemoji.get("琉德", "⚔️")),
             discord.SelectOption(label="優依娜", value="優依娜", emoji=worldemoji.get("優依娜", "⚔️")),
             discord.SelectOption(label="愛麗西亞", value="愛麗西亞", emoji=worldemoji.get("愛麗西亞", "⚔️")),
-            discord.SelectOption(label="米特拉", value="米特拉", emoji=worldemoji.get("米特拉", "⚔️")),
             discord.SelectOption(label="殺人鯨", value="殺人鯨", emoji=worldemoji.get("殺人鯨", "⚔️")),
-            discord.SelectOption(label="賽蓮", value="賽蓮", emoji=worldemoji.get("賽蓮", "⚔️")),
         ]
     )
     async def world_select(self, interaction: discord.Interaction, select: discord.ui.Select):

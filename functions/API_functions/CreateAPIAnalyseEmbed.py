@@ -436,9 +436,7 @@ class APIAnalyseView(discord.ui.View):
             discord.SelectOption(label="琉德", value="琉德", emoji=worldemoji.get("琉德", "⚔️")),
             discord.SelectOption(label="優依娜", value="優依娜", emoji=worldemoji.get("優依娜", "⚔️")),
             discord.SelectOption(label="愛麗西亞", value="愛麗西亞", emoji=worldemoji.get("愛麗西亞", "⚔️")),
-            discord.SelectOption(label="米特拉", value="米特拉", emoji=worldemoji.get("米特拉", "⚔️")),
             discord.SelectOption(label="殺人鯨", value="殺人鯨", emoji=worldemoji.get("殺人鯨", "⚔️")),
-            discord.SelectOption(label="賽蓮", value="賽蓮", emoji=worldemoji.get("賽蓮", "⚔️")),
             discord.SelectOption(label="挑戰者", value="挑戰者", emoji=worldemoji.get("挑戰者", "⚔️")),
         ]
     )
@@ -533,7 +531,7 @@ class EquipAnalyseView(discord.ui.View):
 
     def _embed_familiar(self) -> discord.Embed:
         d = get_familiar_distribution()
-        embed = self._base("🐾 萌獸與連結槽統計")
+        embed = self._base("🐾 萌獸與羈絆槽統計")
         total = d['total']
         if not total:
             embed.description = "尚無統計資料（需先執行裝備統計刷新）"
@@ -552,7 +550,7 @@ class EquipAnalyseView(discord.ui.View):
             inline=False)
         lk = d['links']
         embed.add_field(
-            name="連結槽啟用",
+            name="羈絆槽啟用",
             value=("```autohotkey\n"
                    f"連結1　: {_pct(lk['1'], total)}\n"
                    f"連結2　: {_pct(lk['2'], total)}\n"
@@ -593,7 +591,7 @@ class EquipAnalyseView(discord.ui.View):
                                  description="輪迴碑石 / 全面控制核心 / 創世胸章"),
             discord.SelectOption(label="手套爆傷排數", value="glove", emoji="🧤",
                                  description="LV285 / 290 / 295 以上各 0~3 排"),
-            discord.SelectOption(label="萌獸與連結槽", value="familiar", emoji="🐾",
+            discord.SelectOption(label="萌獸與羈絆槽", value="familiar", emoji="🐾",
                                  description="召喚中萌獸組合、連結1/2/3/VIP"),
             discord.SelectOption(label="魂武等級", value="soul", emoji="🗡️",
                                  description="魂武等級分布與持有率"),
