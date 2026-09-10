@@ -158,7 +158,8 @@ class Loop_ServerAnnounce(commands.Cog):
 
         # 並發廣播（含每頻道一次重試）
         success, failures = await broadcast_to_channels(
-            self.bot, targets, lambda g, c: {'embed': embed}, concurrency=20
+            self.bot, targets, lambda g, c: {'embed': embed}, concurrency=20,
+            kind='announce', label=title[:80]
         )
 
         print(f"{get_now_HMS()}, ServerAnnounce: '{title}' sent to {success} channels, {len(failures)} failed")

@@ -185,14 +185,9 @@ def _core_name_lines(cores, force_zero=False):
 
 
 # 共用核心開放日：未達開放日先隱藏（顯示與計算都不列入）
-_COMMON2_OPEN_DATE = datetime.date(2026, 7, 29)   # 共用核心2
-_COMMON3_OPEN_DATE = datetime.date(2026, 10, 30)  # 共通核心3
-
-
-def common_cores_open(today=None):
-    """回傳 (共用核心2是否開放, 共通核心3是否開放)。"""
-    today = today or datetime.date.today()
-    return today >= _COMMON2_OPEN_DATE, today >= _COMMON3_OPEN_DATE
+# 開放日移到 tmsapi.config，Bot 與網站共用同一份 —— 各寫一份的話，
+# 開放當天一定有一邊忘了改，而且不會報錯，只會看到兩邊的完成度對不起來。
+from tmsapi.config import hexa_common_open as common_cores_open   # noqa: E402
 
 
 def build_core_pairs(levels, c2_open=True, c3_open=True):

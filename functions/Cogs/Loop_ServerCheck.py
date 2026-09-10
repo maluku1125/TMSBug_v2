@@ -264,7 +264,8 @@ class Loop_ServerCheck(commands.Cog):
 
                 # 並發廣播（含每頻道一次重試）
                 channelsendcountsuccess, failures = await broadcast_to_channels(
-                    self.bot, targets, make_payload, concurrency=20
+                    self.bot, targets, make_payload, concurrency=20,
+                    kind='servercheck_up', label='登入口已開啟'
                 )
                 channelsendcountfail = len(failures) + len(remove_list)
 
@@ -409,7 +410,8 @@ class Loop_ServerCheck(commands.Cog):
 
             # 並發廣播（含每頻道一次重試）
             channelsendcountsuccess, failures = await broadcast_to_channels(
-                self.bot, targets, lambda g, c: {'content': "MapleStory 登入口已關閉。"}, concurrency=20
+                self.bot, targets, lambda g, c: {'content': "MapleStory 登入口已關閉。"}, concurrency=20,
+                kind='servercheck_down', label='登入口已關閉'
             )
             channelsendcountfail = len(failures) + len(remove_list)
 

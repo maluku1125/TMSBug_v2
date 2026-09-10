@@ -522,8 +522,19 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
             character_basic_data['character_image'] = image_url
         embed.set_thumbnail(url=image_url)
              
+    # access_flag：官方 2024-06-07 加進 /character/basic 的欄位，語意是
+    # 「最近 7 天內是否登入過」。回傳是字串 'true'/'false'；查無或舊資料
+    # 可能是 None，那種情況不標記 —— 寧可少說也不要說錯。
+    _access = character_basic_data.get('access_flag')
+    if _access is None or str(_access).strip() == '':
+        _access_tag = ''
+    elif str(_access).lower() == 'true':
+        _access_tag = ' (🟢7日內登入)'
+    else:
+        _access_tag = ' (🔴7日未登入)'
+
     embed.add_field(
-        name="基本資訊",
+        name=f"基本資訊{_access_tag}",
         value=f"```ml\n{'\n'.join(character_info)}```",
         inline=False
     )

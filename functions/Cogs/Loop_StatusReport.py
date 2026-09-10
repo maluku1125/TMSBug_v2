@@ -18,14 +18,20 @@ Loop_StatusReport —— 每 30 秒把 Bot 的內部狀態寫成一個 JSON 檔�
 * `warnings` —— 攔 discord.py 自己發的 WARNING（含 heartbeat blocked）。
   以前這些只會滑過主控台，沒盯著就錯過了。
 
-## 兩個檔案
+## 三個檔案
 
 * `status/<專案>.json` —— **當下狀態**，每 30 秒整個覆蓋
 * `status/events_<專案>.jsonl` —— **事件歷史**，一行一筆，永久累積
+* `status/beat_<專案>.jsonl` —— **存活心跳**，每半小時一行
 
 分開的理由：狀態檔要能被無腦覆蓋（後台只關心最新一份），
 事件則必須留著 —— 「昨天半夜 shard 2 斷過三次」這種問題，
 快照答不出來。一天大概數十行，一年也才幾 MB。
+
+心跳又是第三種東西：它要回答「過去七天有哪幾個小時是活的」。
+事件只在**出事**時才有一行，沒事的時段一片空白 —— 分不出
+「那幾小時很平安」還是「那幾小時 Bot 根本沒在跑」。
+所以心跳是無論如何每半小時都留一行，一天 48 行。
 
 事件來源有三個：Bot 啟動、`discord` logger（gateway 斷線／RESUMED／
 heartbeat blocked）、以及 `Loop_ServerCheck` 的 online↔offline 轉換。
@@ -57,6 +63,7 @@ _PROJECT_NAME = os.path.basename(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))))
 _STATUS_PATH = os.path.join(_STATUS_DIR, f'{_PROJECT_NAME}.json')
 _EVENTS_PATH = os.path.join(_STATUS_DIR, f'events_{_PROJECT_NAME}.jsonl')
+_BEAT_PATH = os.path.join(_STATUS_DIR, f'beat_{_PROJECT_NAME}.jsonl')
 
 REPORT_SECONDS = 30
 SYSTEM_STATS_EVERY = 60          # 60 × 30 秒 = 30 分鐘寫一列 system_stats
@@ -79,6 +86,16 @@ _handler_installed = False
 
 def get_now_HMS():
     return datetime.datetime.now().strftime('%H:%M:%S')
+
+
+def _slot_key(now=None):
+    """目前所在的半小時格，例如 2026-09-09T14:30。
+
+    用「格」而不是每 30 秒寫一行：後台要的是「這半小時活著嗎」，
+    每 30 秒留一行的話一天 2,880 行，資訊量卻一樣。
+    """
+    now = now or datetime.datetime.now()
+    return now.strftime('%Y-%m-%dT%H:') + ('30' if now.minute >= 30 else '00')
 
 
 class _EventCollector(logging.Handler):
@@ -120,10 +137,22 @@ def _install_handler():
     _handler_installed = True
 
 
-def _write_both(payload: dict, events: list):
-    """一次執行緒切換做完兩件事。"""
+def _write_both(payload: dict, events: list, beat: dict = None):
+    """一次執行緒切換做完三件事。"""
     _write_atomic(payload)
     _flush_events(events)
+    if beat:
+        _flush_beat(beat)
+
+
+def _flush_beat(beat: dict):
+    """心跳也是單純 append。寫失敗就算了 —— 它是觀測，不是本體。"""
+    try:
+        os.makedirs(_STATUS_DIR, exist_ok=True)
+        with open(_BEAT_PATH, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(beat, ensure_ascii=False) + '\n')
+    except Exception:
+        pass
 
 
 def _write_atomic(payload: dict):
@@ -161,6 +190,7 @@ class Loop_StatusReport(commands.Cog):
         self.max_drift = 0.0
         self.ticks = 0
         self.prev_server = None      # 上一輪的 servercheck 結論，用來偵測轉換
+        self.last_slot = None        # 上一次留心跳的半小時格
         _install_handler()
         self.report.start()
 
@@ -215,10 +245,22 @@ class Loop_StatusReport(commands.Cog):
                 _event('start', f'Bot 啟動（{len(guilds)} 個伺服器，'
                                 f'{c.shard_count or 1} shard）')
 
-            # 事件先湊齊再一起寫，兩個檔案在同一個執行緒切換裡完成
+            # 換格才留心跳。重啟後 last_slot 是 None，所以同一格會多出一行 ——
+            # 那反而是有用的訊號（那一格內重啟過），讀取端照格去重即可。
+            beat = None
+            slot = _slot_key()
+            if slot != self.last_slot:
+                self.last_slot = slot
+                beat = {'slot': slot, 'at': payload['reported_at'],
+                        'ready': payload['ready'],
+                        'latency_ms': payload['latency_ms'],
+                        'guilds': payload['guilds'],
+                        'uptime_sec': payload['uptime_sec']}
+
+            # 事件先湊齊再一起寫，三個檔案在同一個執行緒切換裡完成
             batch = list(_pending)
             _pending.clear()
-            await asyncio.to_thread(_write_both, payload, batch)
+            await asyncio.to_thread(_write_both, payload, batch, beat)
 
             # 公會／使用者數的長期曲線。原本只有跑 dashboard 指令時才寫一筆，
             # 所以 11 個月只有 51 列 —— 這裡補上週期性寫入。
