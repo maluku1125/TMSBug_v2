@@ -1,3 +1,6 @@
+import asyncio
+import io
+import json
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -69,7 +72,7 @@ class HelpCommandView(discord.ui.View):
             name="活動與查詢",
             value=(
                 "```\n"
-                "/events當期活動 - 顯示當前進行中的活動\n"
+                "/events當前活動 - 顯示當前進行中的活動\n"
                 "/prize當期抽獎機率 - 查詢當期抽獎機率\n"
                 "```"
             ),
@@ -80,10 +83,20 @@ class HelpCommandView(discord.ui.View):
             value=(
                 "```\n"
                 "/solerda碎片進度 - 查詢角色六轉進度與所需材料\n"
-                "/formulas各種公式 - 各種公式的簡易計算機\n"
+                "/formulas各式公式 - 各種公式的簡易計算機\n"
                 "/scrolls卷軸模擬器 - 卷軸模擬器\n"
                 "/cubes洗方塊 - 洗方塊模擬器\n"
-                "/starforce衛星 -衛星模擬\n"
+                "/starforce衝星 - 衝星模擬器\n"
+                "/getprize抽 - 黃金蘋果抽輪迴碑石模擬\n"
+                "```"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="娛樂",
+            value=(
+                "```\n"
+                "/battle對戰 - 與其他玩家的本尊角色決鬥(雙方需先用 /setting 綁定 1本)\n"
                 "```"
             ),
             inline=False,
@@ -110,7 +123,7 @@ class HelpCommandView(discord.ui.View):
                 "```\n"
                 "/servercheck - 伺服器開機通知設定(僅群主)\n"
                 "/serverannounce - 官網公告通知設定(僅群主)\n"
-                "/setting設定 - 設定連結角色\n"
+                "/setting設定 - 綁定角色、角色動作、對戰感言\n"
                 "```"
             ),
             inline=False,
@@ -118,98 +131,131 @@ class HelpCommandView(discord.ui.View):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
+#-----------------開發者面板-----------------
+# 作者執行 /help 時另外送出（ephemeral，只有作者看得到），取代原本的 dev_func 參數。
+# 結果一律 ephemeral：/help 常在公開頻道用，避免點一下就把統計貼到頻道上。
+
+def _error_embed(title, e):
+    return discord.Embed(title=f"❌ {title}", description=f"錯誤: {e}", color=discord.Color.red())
+
+
+async def _send_text(interaction: discord.Interaction, text: str, filename: str, fence: str = None):
+    """Discord 訊息上限 2000 字，超過就改成附檔。"""
+    content = f"```{fence}\n{text}\n```" if fence is not None else text
+    if len(content) <= 2000:
+        await interaction.followup.send(content=content, ephemeral=True)
+    else:
+        file = discord.File(io.BytesIO(text.encode('utf-8')), filename=filename)
+        await interaction.followup.send(file=file, ephemeral=True)
+
+
+class MonthlyReportSelect(discord.ui.Select):
+    def __init__(self):
+        today = datetime.date.today()
+        y, m = today.year, today.month
+        options = []
+        for i in range(12):
+            ym = f"{y:04d}-{m:02d}"
+            options.append(discord.SelectOption(label=ym + ("（本月，未結束）" if i == 0 else ""), value=ym))
+            y, m = (y, m - 1) if m > 1 else (y - 1, 12)
+        super().__init__(placeholder="📅 月報（選擇月份）", options=options, row=1)
+
+    async def callback(self, interaction: discord.Interaction):
+        start = time.time()
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        year, month = (int(x) for x in self.values[0].split('-'))
+        try:
+            report_text = await asyncio.to_thread(GetMonthlyReport, year, month)
+            await _send_text(interaction, report_text, f"monthly_{self.values[0]}.txt")
+            UseSlashCommand('help_monthly', interaction, time.time() - start)
+        except Exception as e:
+            await interaction.followup.send(embed=_error_embed("月報載入失敗", e), ephemeral=True)
+            UseSlashCommand('help_monthly', interaction, time.time() - start, False)
+
+
+class DevPanelView(discord.ui.View):
+    def __init__(self, client: commands.Bot):
+        super().__init__(timeout=600)
+        self.client = client
+        self.add_item(MonthlyReportSelect())
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if str(interaction.user.id) == owner_id:
+            return True
+        await interaction.response.send_message("僅限作者使用", ephemeral=True)
+        return False
+
+    @discord.ui.button(label="儀表板", style=discord.ButtonStyle.primary, emoji="📊", row=0)
+    async def dashboard_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        start = time.time()
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            guild_count = len(self.client.guilds)
+            user_count = sum([_.member_count or 0 for _ in self.client.guilds if not _.unavailable])
+
+            # 兩個都是同步 SQLite 查詢，丟到執行緒免得凍住 shard
+            def work():
+                SaveSystemStats(guild_count, user_count)
+                return GetSlashCommandUsage(30, self.client)
+
+            embed = await asyncio.to_thread(work)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            UseSlashCommand('help_dashboard', interaction, time.time() - start)
+        except Exception as e:
+            await interaction.followup.send(embed=_error_embed("儀表板載入失敗", e), ephemeral=True)
+            UseSlashCommand('help_dashboard', interaction, time.time() - start, False)
+
+    @discord.ui.button(label="查看抽獎表", style=discord.ButtonStyle.secondary, emoji="🎁", row=0)
+    async def prize_view_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            # 會開 headless Chrome 爬官網，要好幾秒，必須丟執行緒
+            apple, fashionbox = await asyncio.to_thread(
+                lambda: (Format_ApplePrizeData(), Format_FashionBoxPrizeData()))
+            text = json.dumps({'黃金蘋果': apple, '時尚隨機箱': fashionbox}, ensure_ascii=False, indent=1)
+            await _send_text(interaction, text, "prizetable.json", fence="json")
+        except Exception as e:
+            await interaction.followup.send(embed=_error_embed("抽獎表讀取失敗", e), ephemeral=True)
+
+    @discord.ui.button(label="更新抽獎表", style=discord.ButtonStyle.secondary, emoji="💾", row=0)
+    async def prize_save_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            appleresult, fashionboxresult = await asyncio.to_thread(
+                lambda: (save_apple_json_file(), save_fashionbox_json_file()))
+            await interaction.followup.send(
+                f"已更新抽獎機率表\n黃金蘋果 : {appleresult}\n時尚隨機箱 : {fashionboxresult}", ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(embed=_error_embed("抽獎表更新失敗", e), ephemeral=True)
+
+    @discord.ui.button(label="重載抽獎表", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
+    async def prize_reload_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            reloaddata()
+            await interaction.response.send_message("已重新加載抽獎機率表(黃金蘋果,時尚隨機箱)", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(embed=_error_embed("抽獎表重載失敗", e), ephemeral=True)
+
+
 class Slash_BasicCommands(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
 
     #-----------------ping-----------------
-    @app_commands.command(name="ping", description="ping")
+    @app_commands.command(name="ping", description="BOT延遲")
     async def ping(self, interaction: discord.Interaction):
         bot_latency = round(self.client.latency * 1000)
         UseSlashCommand('ping', interaction)
         await interaction.response.send_message(f"pong, latency is {bot_latency} ms.")
 
     #-----------------help-----------------
-    @app_commands.command(name="help",description="help")
-    @app_commands.describe(dev_func = "dev_func")
-
-    async def help(self, interaction: discord.Interaction, dev_func: str = None):
-        
-        if dev_func == 'getprizetable' and str(interaction.user.id) == '310164490391912448':
-            print('getprizetable')
+    # 作者執行時，除了一般說明外，另外送出只有作者看得到的開發者面板（DevPanelView）
+    @app_commands.command(name="help", description="BOT資訊與指令說明")
+    async def help(self, interaction: discord.Interaction):
+        # 先 defer：下面的營運統計要查 API 請求記錄，沒先回應的話
+        # 互動 3 秒就過期，使用者只會看到「應用程式沒有回應」
+        if not interaction.response.is_done():
             await interaction.response.defer()
-            apple_formatted_data = Format_ApplePrizeData()
-            fashionbox_formatted_data = Format_FashionBoxPrizeData()
-            
-            await interaction.edit_original_response(content=f'{apple_formatted_data}\n{fashionbox_formatted_data}')
-        
-        if dev_func == 'addprizetable' and str(interaction.user.id) == '310164490391912448':
-            print('addprizetable')
-            await interaction.response.defer()
-            appleresult = save_apple_json_file()
-            fashionmboxresult =save_fashionbox_json_file()
-            await interaction.edit_original_response(content=f'已更新抽獎機率表\n黃金蘋果 : {appleresult}\n時尚隨機箱 : {fashionmboxresult}')
-
-        if dev_func == 'reloadprize' and str(interaction.user.id) == '310164490391912448':
-            print('reloadprize')
-            reloaddata()
-            await interaction.response.send_message(content=f'已重新加載抽獎機率表(黃金蘋果,時尚隨機箱)')
-            
-        # 開發者功能處理 - 合併的 usage/dashboard/stats 功能
-        if dev_func and str(interaction.user.id) == '310164490391912448':
-            # 月報：dev_func = "monthly"（當月）或 "monthly 2026-05"（指定月份）
-            if dev_func.split()[0] == "monthly":
-                report_start_time = time.time()
-                await interaction.response.defer()
-                try:
-                    year = month = None
-                    parts = dev_func.split()
-                    if len(parts) > 1 and '-' in parts[1]:
-                        year, month = (int(x) for x in parts[1].split('-')[:2])
-                    report_text = GetMonthlyReport(year, month)
-                    await interaction.edit_original_response(content=report_text)
-                    UseSlashCommand('help_monthly', interaction, time.time() - report_start_time)
-                    return
-                except Exception as e:
-                    error_embed = discord.Embed(
-                        title="❌ 月報載入失敗",
-                        description=f"錯誤: {str(e)}\n格式：`monthly` 或 `monthly 2026-05`",
-                        color=discord.Color.red()
-                    )
-                    await interaction.edit_original_response(embed=error_embed)
-                    UseSlashCommand('help_monthly', interaction, time.time() - report_start_time, False)
-                    return
-
-            if dev_func == "dashboard":
-                print(f"slash_command_{dev_func}")
-                dashboard_start_time = time.time()
-                await interaction.response.defer()  # 因為可能需要較長時間處理
-                
-                try:
-                    # 保存當前系統統計
-                    guild_count = len(self.client.guilds)
-                    user_count = sum([_.member_count or 0 for _ in self.client.guilds if not _.unavailable])
-                    SaveSystemStats(guild_count, user_count)
-                    
-                    # 創建詳細儀表板
-                    embed = GetSlashCommandUsage(30, self.client)
-                    
-                    response_time = time.time() - dashboard_start_time
-                    UseSlashCommand(f'help_{dev_func}', interaction, response_time)
-                    await interaction.edit_original_response(embed=embed)
-                    return
-                    
-                except Exception as e:
-                    error_embed = discord.Embed(
-                        title="❌ 儀表板載入失敗",
-                        description=f"錯誤: {str(e)}",
-                        color=discord.Color.red()
-                    )
-                    await interaction.edit_original_response(embed=error_embed)
-                    UseSlashCommand(f'help_{dev_func}', interaction, time.time() - dashboard_start_time, False)
-                    return
-
-        # 預設 help 模式 - 顯示基本幫助資訊
         embed = discord.Embed(
             title=f"**TMS新楓之谷BOT**", 
             description = f'', 
@@ -259,14 +305,17 @@ class Slash_BasicCommands(commands.Cog):
             inline=False,
         )
         # 營運狀態
-        last_hour_count = GetLastHourCommandCount()
-        last_hour_api_count = GetLastHourAPICount()
-        daily_trend = GetDailyTrend(7)
+        # 這四個都是同步 SQLite 查詢，其中 API 記錄那張表有 3,278 萬筆，
+        # 直接在 event loop 上跑會把所有 shard 一起凍住十幾秒
+        # （2026-09-13 實測 12.9 秒，heartbeat blocked）。丟到執行緒。
+        (last_hour_count, last_hour_api_count, daily_trend,
+         api_daily) = await asyncio.to_thread(
+            lambda: (GetLastHourCommandCount(), GetLastHourAPICount(),
+                     GetDailyTrend(7), GetDailyAPICounts(7)))
         separator = '\u2500' * 28
         operation_text = f"指令觸發/hr: {last_hour_count}\n"
         operation_text += f"API請求/hr: {last_hour_api_count}\n"
         if daily_trend:
-            api_daily = GetDailyAPICounts(7)
             operation_text += f"{separator}\n"
             operation_text += '\n'.join([
                 f"{day['date']} | {day['count']:>6,} | {api_daily.get(day['date'], 0):>6,}"
@@ -279,7 +328,7 @@ class Slash_BasicCommands(commands.Cog):
             inline=False,
         )
         # 最熱門指令
-        top_commands = GetTopCommandsSimple(30, 5)
+        top_commands = await asyncio.to_thread(GetTopCommandsSimple, 30, 5)
         if top_commands:
             cmd_text = '\n'.join([
                 f"{cmd['command']:23s} | {cmd['count']:>6,} 次"
@@ -296,16 +345,18 @@ class Slash_BasicCommands(commands.Cog):
         embed.set_footer(text='-' * 72)
         UseSlashCommand('help', interaction)
         view = HelpCommandView()
-        await interaction.response.send_message(embed=embed, view=view)
+        await interaction.edit_original_response(embed=embed, view=view)
+        if str(interaction.user.id) == owner_id:
+            await interaction.followup.send("🛠️ 開發者面板（只有你看得到）", view=DevPanelView(self.client), ephemeral=True)
     #-----------------MEMO-----------------
-    @app_commands.command(name="練等備忘", description="練等備忘")
+    @app_commands.command(name="練等備忘", description="練等前的檢查清單（設定、裝備、消耗品）")
     async def farmingmemo(self, interaction: discord.Interaction):
         embed = CreateFarmingEmbed()
         UseSlashCommand('farmingmemo', interaction)
         await interaction.response.send_message(embed=embed)
 
   
-    @app_commands.command(name="打王備忘", description="打王備忘")
+    @app_commands.command(name="打王備忘", description="打王前的檢查清單（設定、裝備、技能、消耗品）")
     async def combatmemo(self, interaction: discord.Interaction):
         embed = CreateCombatEmbed()
         UseSlashCommand('Bossingmemo', interaction)

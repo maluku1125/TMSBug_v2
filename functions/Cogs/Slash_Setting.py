@@ -459,7 +459,7 @@ class Slash_Setting(commands.Cog):
         else:
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @app_commands.command(name="setting設定", description="TMS_Bug個人設定")
+    @app_commands.command(name="setting設定", description="綁定角色、角色動作、對戰感言設定")
     @app_commands.describe(
         type="類型（不選則顯示設定總覽）",
         type2="細項（選「角色」後可填 1本~6本；「角色動作」免填）",

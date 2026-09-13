@@ -10,7 +10,7 @@ class Slash_CalculateScrolls(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
     #-----------------BOSS-----------------
-    @app_commands.command(name="scrolls卷軸模擬器", description="BOSS資料")
+    @app_commands.command(name="scrolls卷軸模擬器", description="輸入卷數與紫字，推算用了哪種卷軸")
     @app_commands.describe(equiptype = "裝備類型", equipscrollscount = "裝備卷數", purplevalue = "紫字數值")
     @app_commands.choices(
         equiptype = [

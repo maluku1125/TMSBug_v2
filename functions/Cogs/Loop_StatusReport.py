@@ -50,6 +50,7 @@ import logging
 import os
 import re
 import time
+import traceback
 
 import psutil
 from discord.ext import commands, tasks
@@ -108,6 +109,11 @@ class _EventCollector(logging.Handler):
     def emit(self, record):
         try:
             msg = record.getMessage()
+            # 沒有 traceback 的錯誤等於沒說話：view 的例外原本只留下一行
+            # 「Ignoring exception in view ...」，看不出是哪一行炸的，
+            # 2026-09-13 查「設定動作」按鈕就卡在這裡。
+            if record.exc_info:
+                msg += '\n' + ''.join(traceback.format_exception(*record.exc_info))
             warn = record.levelno >= logging.WARNING
             if not warn and not _EVENT_RE.search(msg):
                 return
@@ -118,11 +124,13 @@ class _EventCollector(logging.Handler):
                 'kind': 'warning' if warn else 'gateway',
                 'level': record.levelname,
                 'shard': int(m.group(1)) if m else None,
-                'text': msg[:300],
+                # 事件檔留得下完整 traceback；狀態檔是每 30 秒整個覆寫的
+                # 快照，塞 4000 字進去只會把它撐大，所以那邊仍然只留摘要
+                'text': msg[:4000],
             }
             _pending.append(ev)
             if warn:
-                _warnings.append(ev)
+                _warnings.append({**ev, 'text': msg[:300]})
         except Exception:            # 蒐集狀態失敗絕不能影響 Bot 本身
             pass
 

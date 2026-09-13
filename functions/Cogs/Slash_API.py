@@ -732,7 +732,7 @@ class Slash_API(commands.Cog):
             UseSlashCommand('api_uniontracking', interaction, response_time, False)
 
 
-    @app_commands.command(name="apianalyse楓谷分析", description="API資料分析")
+    @app_commands.command(name="apianalyse楓谷分析", description="楓谷資料分析：職業、世界、等級、寶玉、裝備、CD帽、冠軍")
     @app_commands.describe(analysis_type="分析類型")
     @app_commands.choices(analysis_type=[
         app_commands.Choice(name="職業分析", value="class"),

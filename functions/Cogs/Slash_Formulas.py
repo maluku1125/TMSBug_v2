@@ -125,7 +125,7 @@ class Slash_Formulas(commands.Cog):
         self.client = client
 
     #----------------------------------
-    @app_commands.command(name="formulas各式公式", description="各種公式")
+    @app_commands.command(name="formulas各式公式", description="公式計算：戰地攻擊力、等差終傷、等差經驗")
     @app_commands.describe(
             formulas = "功能", 
             var_1 = "變數1", var_2 = "變數2", var_3 = "變數3", var_4 = "變數4", var_5 = "變數5",

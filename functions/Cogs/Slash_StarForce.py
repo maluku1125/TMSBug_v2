@@ -45,7 +45,7 @@ class Slash_StarForce(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
         
-    @app_commands.command(name="starforce衝星", description="衝星")
+    @app_commands.command(name="starforce衝星", description="衝星模擬器")
     @app_commands.describe(target = "目標裝備", startlevel = "起始等級")
     async def starforcesimulator(self, interaction: discord.Interaction, target: str, startlevel: int=0 ):
         

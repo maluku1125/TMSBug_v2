@@ -21,7 +21,7 @@ class Slash_CreatePrizeEmbed(commands.Cog):
             Choice(name = "輪迴", value = "FrenzyTotem"),
             ]
     )
-    @app_commands.command(name="getprize抽", description="抽獎")
+    @app_commands.command(name="getprize抽", description="黃金蘋果抽輪迴碑石模擬")
     async def getprize(self, interaction: discord.Interaction, type: str):
         if type == "FrenzyTotem":
             Message = use_apple_FrenzyTotem(interaction.user.mention)

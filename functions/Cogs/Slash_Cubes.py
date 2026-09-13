@@ -29,7 +29,7 @@ class Slash_Cubes(commands.Cog):
         self.client = client
         
     #-----------------BOSS-----------------
-    @app_commands.command(name="cubes洗方塊", description="洗方塊")
+    @app_commands.command(name="cubes洗方塊", description="洗方塊模擬器（潛能、附加、萌獸方塊）")
     @app_commands.describe(cubetype = "方塊類型", target = "目標部位/類型")
     @app_commands.choices(
         cubetype = [
@@ -55,7 +55,6 @@ class Slash_Cubes(commands.Cog):
             Choice(name = "下衣", value = "bottom"),
             Choice(name = "手套", value = "gloves"),
             Choice(name = "鞋子", value = "shoes"),
-            Choice(name = "下衣", value = "bottom"),
             Choice(name = "披風", value = "cape"),
             Choice(name = "腰帶", value = "belt"),
             Choice(name = "心臟", value = "heart"),
