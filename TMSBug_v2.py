@@ -29,7 +29,6 @@ from functions.Cogs.Loop_ServerAnnounce import Loop_ServerAnnounce
 from functions.Cogs.Slash_GuildFunction import Slash_GuildFunctions
 from functions.Cogs.Slash_StarForce import Slash_StarForce
 from functions.Cogs.Slash_API import Slash_API
-from functions.Cogs.Loop_API_Data_Refresh import Loop_API_Data_Refresh
 from functions.Cogs.Slash_Setting import Slash_Setting
 from functions.Cogs.Slash_Battle import Slash_Battle
 from functions.Cogs.Loop_StatusReport import Loop_StatusReport
@@ -125,8 +124,6 @@ class TMSBot(commands.AutoShardedBot):
         print('Cogs:Slash_StarForce loaded')
         await self.add_cog(Slash_API(self))
         print('Cogs:Slash_API loaded')
-        await self.add_cog(Loop_API_Data_Refresh(self))
-        print('Cogs:Loop_API_Data_Refresh loaded')
         await self.add_cog(Slash_Setting(self))
         print('Cogs:Slash_Setting loaded')
         await self.add_cog(Slash_Battle(self))
