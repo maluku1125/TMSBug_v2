@@ -65,6 +65,11 @@ _PROJECT_NAME = os.path.basename(os.path.dirname(os.path.dirname(
 _STATUS_PATH = os.path.join(_STATUS_DIR, f'{_PROJECT_NAME}.json')
 _EVENTS_PATH = os.path.join(_STATUS_DIR, f'events_{_PROJECT_NAME}.jsonl')
 _BEAT_PATH = os.path.join(_STATUS_DIR, f'beat_{_PROJECT_NAME}.jsonl')
+# 後台 → Bot 的單向指令檔（目前只有 cog 熱重載）。
+# 為什麼是檔案而不是在 Bot 開端點：理由同本檔開頭 —— 不在這個 event loop
+# 上再加一個 HTTP server。後台寫一筆，這裡每輪順便讀，結果寫回另一個檔。
+_CMD_PATH = os.path.join(_STATUS_DIR, f'command_{_PROJECT_NAME}.json')
+_CMD_RESULT_PATH = os.path.join(_STATUS_DIR, f'command_result_{_PROJECT_NAME}.json')
 
 REPORT_SECONDS = 30
 SYSTEM_STATS_EVERY = 60          # 60 × 30 秒 = 30 分鐘寫一列 system_stats
@@ -163,6 +168,31 @@ def _flush_beat(beat: dict):
         pass
 
 
+def _reloadable():
+    """可熱重載的 cog 清單（定義在 Bot 主檔）。拿不到就回空的，不讓回報失敗。"""
+    try:
+        from ..cogs_registry import RELOADABLE_COGS
+        return RELOADABLE_COGS
+    except Exception:                                       # noqa: BLE001
+        return []
+
+
+def _read_command():
+    try:
+        with open(_CMD_PATH, encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def _write_result(res: dict):
+    os.makedirs(_STATUS_DIR, exist_ok=True)
+    tmp = _CMD_RESULT_PATH + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(res, f, ensure_ascii=False)
+    os.replace(tmp, _CMD_RESULT_PATH)
+
+
 def _write_atomic(payload: dict):
     """先寫暫存檔再 os.replace —— 後台永遠讀到完整的 JSON，不會讀到寫到一半的。"""
     os.makedirs(_STATUS_DIR, exist_ok=True)
@@ -199,11 +229,58 @@ class Loop_StatusReport(commands.Cog):
         self.ticks = 0
         self.prev_server = None      # 上一輪的 servercheck 結論，用來偵測轉換
         self.last_slot = None        # 上一次留心跳的半小時格
+        self.last_cmd_id = None      # 後台指令檔的最後一筆 id（見 _handle_command）
         _install_handler()
         self.report.start()
 
     def cog_unload(self):
         self.report.cancel()
+
+    async def _handle_command(self):
+        """後台的 cog 熱重載指令。每輪回報時順便看一次。
+
+        ## 只認「沒處理過的 id」
+
+        啟動時先把現有指令的 id 記下來但**不執行** —— 否則每次重啟都會把
+        上一次的指令再跑一遍。id 由後台產生，換一個才算新指令。
+
+        ## 只放行 extension
+
+        `RELOADABLE_COGS` 以外的一律拒絕。Loop_* 帶著 tasks.loop，而這支
+        正是執行 reload 的那一個，重載自己等於抽掉腳下的地板。
+        """
+        cmd = await asyncio.to_thread(_read_command)
+        if not cmd or not cmd.get('id') or cmd['id'] == self.last_cmd_id:
+            return
+        self.last_cmd_id = cmd['id']
+        if self.ticks <= 1:
+            return                      # 啟動後的第一輪只記 id，不執行舊指令
+
+        action = (cmd.get('action') or 'reload').lower()
+        cog = cmd.get('cog') or ''
+        res = {'id': cmd['id'], 'action': action, 'cog': cog,
+               'at': datetime.datetime.now().isoformat(timespec='seconds')}
+        try:
+            from ..cogs_registry import RELOADABLE_COGS
+            if cog not in RELOADABLE_COGS:
+                raise ValueError(f'{cog} 不在可重載清單裡')
+            t0 = time.monotonic()
+            target = f'functions.Cogs.{cog}'
+            if action == 'reload':
+                await self.client.reload_extension(target)
+            elif action == 'load':
+                await self.client.load_extension(target)
+            elif action == 'unload':
+                await self.client.unload_extension(target)
+            else:
+                raise ValueError(f'未知的動作：{action}')
+            res.update(ok=True, ms=round((time.monotonic() - t0) * 1000),
+                       commands=len(self.client.tree.get_commands()))
+            _event('cog', f'{action} {cog} 成功（{res["ms"]} ms）')
+        except Exception as e:                              # noqa: BLE001
+            res.update(ok=False, error=f'{type(e).__name__}: {e}')
+            _event('cog', f'{action} {cog} 失敗：{res["error"]}')
+        await asyncio.to_thread(_write_result, res)
 
     @tasks.loop(seconds=REPORT_SECONDS)
     async def report(self):
@@ -238,6 +315,9 @@ class Loop_StatusReport(commands.Cog):
                 'users': sum(g.member_count or 0 for g in guilds
                              if not g.unavailable),
                 'cogs': sorted(c.cogs),
+                # 後台的「重載 cog」清單就是照這兩個欄位畫的
+                'extensions': sorted(e.rsplit('.', 1)[-1] for e in c.extensions),
+                'reloadable': list(_reloadable()),
                 'commands': len(c.tree.get_commands()),
                 'loop_drift': round(drift, 2),
                 'loop_drift_max': round(self.max_drift, 2),
@@ -275,6 +355,9 @@ class Loop_StatusReport(commands.Cog):
             if self.ticks % SYSTEM_STATS_EVERY == 1:
                 await asyncio.to_thread(SaveSystemStats,
                                         payload['guilds'], payload['users'])
+
+            # 後台的 cog 指令。放最後：先把狀態寫出去，再處理可能會丟例外的事
+            await self._handle_command()
         except Exception as e:                              # noqa: BLE001
             print(f'{get_now_HMS()}, StatusReport: {type(e).__name__}: {e}')
 

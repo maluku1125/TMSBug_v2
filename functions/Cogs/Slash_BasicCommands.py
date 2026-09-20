@@ -1,17 +1,12 @@
 import asyncio
-import io
-import json
 import discord
 from discord import app_commands
 from discord.ext import commands
-import datetime
 import psutil
 import time
 
 from functions.CreateMemoEmbed import CreateFarmingEmbed, CreateCombatEmbed
-from functions.MSCrawler import Format_ApplePrizeData, Format_FashionBoxPrizeData, save_apple_json_file, save_fashionbox_json_file
-from functions.GetPrize import reloaddata
-from ..SlashCommandManager import UseSlashCommand, GetSlashCommandUsage, SaveSystemStats, GetLastHourCommandCount, GetTopCommandsSimple, GetDailyTrend, GetMonthlyReport
+from ..SlashCommandManager import UseSlashCommand, GetLastHourCommandCount, GetTopCommandsSimple, GetDailyTrend
 from tmsapi.logger import get_last_hour_count as GetLastHourAPICount, get_daily_counts as GetDailyAPICounts
  
 process = psutil.Process()
@@ -30,7 +25,7 @@ memory_usage_percent = memory_usage_mb / total_memory_mb * 100
 owner_id = '310164490391912448'
 
 # 版本  
-version = 'v3.12.4'
+version = 'v3.12.8'
 
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
@@ -131,110 +126,6 @@ class HelpCommandView(discord.ui.View):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-#-----------------開發者面板-----------------
-# 作者執行 /help 時另外送出（ephemeral，只有作者看得到），取代原本的 dev_func 參數。
-# 結果一律 ephemeral：/help 常在公開頻道用，避免點一下就把統計貼到頻道上。
-
-def _error_embed(title, e):
-    return discord.Embed(title=f"❌ {title}", description=f"錯誤: {e}", color=discord.Color.red())
-
-
-async def _send_text(interaction: discord.Interaction, text: str, filename: str, fence: str = None):
-    """Discord 訊息上限 2000 字，超過就改成附檔。"""
-    content = f"```{fence}\n{text}\n```" if fence is not None else text
-    if len(content) <= 2000:
-        await interaction.followup.send(content=content, ephemeral=True)
-    else:
-        file = discord.File(io.BytesIO(text.encode('utf-8')), filename=filename)
-        await interaction.followup.send(file=file, ephemeral=True)
-
-
-class MonthlyReportSelect(discord.ui.Select):
-    def __init__(self):
-        today = datetime.date.today()
-        y, m = today.year, today.month
-        options = []
-        for i in range(12):
-            ym = f"{y:04d}-{m:02d}"
-            options.append(discord.SelectOption(label=ym + ("（本月，未結束）" if i == 0 else ""), value=ym))
-            y, m = (y, m - 1) if m > 1 else (y - 1, 12)
-        super().__init__(placeholder="📅 月報（選擇月份）", options=options, row=1)
-
-    async def callback(self, interaction: discord.Interaction):
-        start = time.time()
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        year, month = (int(x) for x in self.values[0].split('-'))
-        try:
-            report_text = await asyncio.to_thread(GetMonthlyReport, year, month)
-            await _send_text(interaction, report_text, f"monthly_{self.values[0]}.txt")
-            UseSlashCommand('help_monthly', interaction, time.time() - start)
-        except Exception as e:
-            await interaction.followup.send(embed=_error_embed("月報載入失敗", e), ephemeral=True)
-            UseSlashCommand('help_monthly', interaction, time.time() - start, False)
-
-
-class DevPanelView(discord.ui.View):
-    def __init__(self, client: commands.Bot):
-        super().__init__(timeout=600)
-        self.client = client
-        self.add_item(MonthlyReportSelect())
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if str(interaction.user.id) == owner_id:
-            return True
-        await interaction.response.send_message("僅限作者使用", ephemeral=True)
-        return False
-
-    @discord.ui.button(label="儀表板", style=discord.ButtonStyle.primary, emoji="📊", row=0)
-    async def dashboard_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        start = time.time()
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            guild_count = len(self.client.guilds)
-            user_count = sum([_.member_count or 0 for _ in self.client.guilds if not _.unavailable])
-
-            # 兩個都是同步 SQLite 查詢，丟到執行緒免得凍住 shard
-            def work():
-                SaveSystemStats(guild_count, user_count)
-                return GetSlashCommandUsage(30, self.client)
-
-            embed = await asyncio.to_thread(work)
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            UseSlashCommand('help_dashboard', interaction, time.time() - start)
-        except Exception as e:
-            await interaction.followup.send(embed=_error_embed("儀表板載入失敗", e), ephemeral=True)
-            UseSlashCommand('help_dashboard', interaction, time.time() - start, False)
-
-    @discord.ui.button(label="查看抽獎表", style=discord.ButtonStyle.secondary, emoji="🎁", row=0)
-    async def prize_view_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            # 會開 headless Chrome 爬官網，要好幾秒，必須丟執行緒
-            apple, fashionbox = await asyncio.to_thread(
-                lambda: (Format_ApplePrizeData(), Format_FashionBoxPrizeData()))
-            text = json.dumps({'黃金蘋果': apple, '時尚隨機箱': fashionbox}, ensure_ascii=False, indent=1)
-            await _send_text(interaction, text, "prizetable.json", fence="json")
-        except Exception as e:
-            await interaction.followup.send(embed=_error_embed("抽獎表讀取失敗", e), ephemeral=True)
-
-    @discord.ui.button(label="更新抽獎表", style=discord.ButtonStyle.secondary, emoji="💾", row=0)
-    async def prize_save_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            appleresult, fashionboxresult = await asyncio.to_thread(
-                lambda: (save_apple_json_file(), save_fashionbox_json_file()))
-            await interaction.followup.send(
-                f"已更新抽獎機率表\n黃金蘋果 : {appleresult}\n時尚隨機箱 : {fashionboxresult}", ephemeral=True)
-        except Exception as e:
-            await interaction.followup.send(embed=_error_embed("抽獎表更新失敗", e), ephemeral=True)
-
-    @discord.ui.button(label="重載抽獎表", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
-    async def prize_reload_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            reloaddata()
-            await interaction.response.send_message("已重新加載抽獎機率表(黃金蘋果,時尚隨機箱)", ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(embed=_error_embed("抽獎表重載失敗", e), ephemeral=True)
 
 
 class Slash_BasicCommands(commands.Cog):
@@ -249,7 +140,8 @@ class Slash_BasicCommands(commands.Cog):
         await interaction.response.send_message(f"pong, latency is {bot_latency} ms.")
 
     #-----------------help-----------------
-    # 作者執行時，除了一般說明外，另外送出只有作者看得到的開發者面板（DevPanelView）
+    # 作者與一般使用者看到的內容相同（2026-09-20 移除開發者面板）——
+    # 儀表板與月報後台都有，而且那邊不受 Discord 的 3 秒互動逾時限制。
     @app_commands.command(name="help", description="BOT資訊與指令說明")
     async def help(self, interaction: discord.Interaction):
         # 先 defer：下面的營運統計要查 API 請求記錄，沒先回應的話
@@ -346,8 +238,6 @@ class Slash_BasicCommands(commands.Cog):
         UseSlashCommand('help', interaction)
         view = HelpCommandView()
         await interaction.edit_original_response(embed=embed, view=view)
-        if str(interaction.user.id) == owner_id:
-            await interaction.followup.send("🛠️ 開發者面板（只有你看得到）", view=DevPanelView(self.client), ephemeral=True)
     #-----------------MEMO-----------------
     @app_commands.command(name="練等備忘", description="練等前的檢查清單（設定、裝備、消耗品）")
     async def farmingmemo(self, interaction: discord.Interaction):
@@ -362,3 +252,9 @@ class Slash_BasicCommands(commands.Cog):
         UseSlashCommand('Bossingmemo', interaction)
         await interaction.response.send_message(embed=embed)
         
+
+# 讓這支可以被 load_extension／reload_extension 熱抽換（2026-09-20）。
+# setup_hook 改用 load_extension 之後，後台就能單獨重載這一個 cog，
+# 不必為了改一行文案重啟整台 Bot（5 個 shard、近 5,000 個伺服器要重連）。
+async def setup(client: commands.Bot):
+    await client.add_cog(Slash_BasicCommands(client))

@@ -822,3 +822,9 @@ class Slash_API(commands.Cog):
             await interaction.followup.send(embed=error_embed)
             response_time = time.time() - start_time
             UseSlashCommand('api_guild', interaction, response_time, False)
+
+# 讓這支可以被 load_extension／reload_extension 熱抽換（2026-09-20）。
+# setup_hook 改用 load_extension 之後，後台就能單獨重載這一個 cog，
+# 不必為了改一行文案重啟整台 Bot（5 個 shard、近 5,000 個伺服器要重連）。
+async def setup(client: commands.Bot):
+    await client.add_cog(Slash_API(client))

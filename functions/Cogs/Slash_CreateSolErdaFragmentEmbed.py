@@ -378,3 +378,9 @@ def CreateSolErdaProgress(character_name, hexa_equipment, solerda_stock=0, fragm
 
     embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/1196836355225952336.webp?size=96&quality=lossless')
     return embed
+
+# 讓這支可以被 load_extension／reload_extension 熱抽換（2026-09-20）。
+# setup_hook 改用 load_extension 之後，後台就能單獨重載這一個 cog，
+# 不必為了改一行文案重啟整台 Bot（5 個 shard、近 5,000 個伺服器要重連）。
+async def setup(client: commands.Bot):
+    await client.add_cog(Slash_CreateSolErdaFragmentEmbed(client))

@@ -15,23 +15,11 @@ import asyncio
 import logging
 
 
-from functions.Cogs.Slash_BasicCommands import Slash_BasicCommands
-from functions.Cogs.Slash_RequestUnionRank import Slash_RequestUnionRank
-from functions.Cogs.Slash_CreateBossDataEmbed import Slash_CreateBossDataEmbed
-from functions.Cogs.Slash_CreatePrizeEmbed import Slash_CreatePrizeEmbed
-from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Slash_CreateSolErdaFragmentEmbed
-from functions.Cogs.Slash_RequestMapleEvents import Slash_RequestMapleEvents
-from functions.Cogs.Slash_Formulas import Slash_Formulas
-from functions.Cogs.Slash_CalculateScrolls import Slash_CalculateScrolls
-from functions.Cogs.Slash_Cubes import Slash_Cubes
 from functions.Cogs.Loop_ServerCheck import Loop_ServerCheck
 from functions.Cogs.Loop_ServerAnnounce import Loop_ServerAnnounce
-from functions.Cogs.Slash_GuildFunction import Slash_GuildFunctions
-from functions.Cogs.Slash_StarForce import Slash_StarForce
-from functions.Cogs.Slash_API import Slash_API
-from functions.Cogs.Slash_Setting import Slash_Setting
-from functions.Cogs.Slash_Battle import Slash_Battle
 from functions.Cogs.Loop_StatusReport import Loop_StatusReport
+
+from functions.cogs_registry import RELOADABLE_COGS
 
 try:
     _TMSBot_CONF = configparser.ConfigParser()
@@ -96,38 +84,26 @@ class TMSBot(commands.AutoShardedBot):
 
         print('\n🔧 Loading Cogs...')
         
-        await self.add_cog(Slash_BasicCommands(self))
-        print('Cogs:Slash_BasicCommands loaded')
-        await self.add_cog(Slash_RequestUnionRank(self))
-        print('Cogs:Slash_RequestUnionRank loaded')
-        await self.add_cog(Slash_CreateBossDataEmbed(self))
-        print('Cogs:Slash_CreateBossDataEmbed loaded')
-        await self.add_cog(Slash_CreatePrizeEmbed(self))
-        print('Cogs:Slash_CreatePrizeEmbed loaded')
-        await self.add_cog(Slash_CreateSolErdaFragmentEmbed(self))
-        print('Cogs:Slash_CreateSolErdaFragmentEmbed loaded')
-        await self.add_cog(Slash_RequestMapleEvents(self))
-        print('Cogs:Slash_RequestMapleEvents loaded')
-        await self.add_cog(Slash_Formulas(self))
-        print('Cogs:Slash_Formulas loaded')
-        await self.add_cog(Slash_CalculateScrolls(self))
-        print('Cogs:Slash_CalculateScrolls loaded')
-        await self.add_cog(Slash_Cubes(self))
-        print('Cogs:Slash_Cubes loaded')
+        # ── 可熱重載的 cog（extension）────────────────────────
+        #
+        # 這些走 load_extension 而不是 add_cog：後台就能單獨 reload 一支，
+        # 改一行文案不必重啟整台 Bot（5 個 shard、近 5,000 個伺服器要重連，
+        # 還會多做一次全域指令同步）。reload_extension 是原子的 ——
+        # 新版載入失敗時 discord.py 會把舊版整個還原回去。
+        #
+        # ⚠️ Loop_* 不放這裡：它們帶 tasks.loop，而 Loop_StatusReport 正是
+        # 執行 reload 的那一支，重載自己等於抽掉腳下的地板。那三支要改就重啟。
+        for name in RELOADABLE_COGS:
+            try:
+                await self.load_extension(f'functions.Cogs.{name}')
+                print(f'Cogs:{name} loaded')
+            except Exception as e:
+                print(f'✗ Cogs:{name} 載入失敗：{type(e).__name__}: {e}')
+
         await self.add_cog(Loop_ServerCheck(self))
         print('Cogs:Loop_ServerCheck loaded')
         await self.add_cog(Loop_ServerAnnounce(self))
         print('Cogs:Loop_ServerAnnounce loaded')
-        await self.add_cog(Slash_GuildFunctions(self))
-        print('Cogs:Slash_GuildFunctions loaded')
-        await self.add_cog(Slash_StarForce(self))
-        print('Cogs:Slash_StarForce loaded')
-        await self.add_cog(Slash_API(self))
-        print('Cogs:Slash_API loaded')
-        await self.add_cog(Slash_Setting(self))
-        print('Cogs:Slash_Setting loaded')
-        await self.add_cog(Slash_Battle(self))
-        print('Cogs:Slash_Battle loaded')
         await self.add_cog(Loop_StatusReport(self))
         print('Cogs:Loop_StatusReport loaded')
 
