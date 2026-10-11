@@ -20,6 +20,8 @@ import datetime
 import json
 import os
 
+import discord
+
 # 與 Loop_ServerAnnounce／Loop_StatusReport 一致：紀錄放專案外的 log 目錄
 _LOG_DIR = 'C:\\Users\\User\\Desktop\\DiscordBotlog\\Function'
 _PROJECT_NAME = os.path.basename(
@@ -73,7 +75,19 @@ async def broadcast_to_channels(bot, targets, make_payload, concurrency=20,
         async with sem:
             channel = bot.get_channel(channel_id)
             if channel is None:
-                return (guild_id, channel_id, 'channel_not_found')
+                # ⚠️ 快取查不到 ≠ 頻道不存在。`get_channel` 只翻 Bot 自己的
+                # 本地快取，而公告推播連續 8 次都剛好有 1 個頻道查不到；
+                # 2026-10-06 用 REST 逐一驗過，那 40 個頻道**全部還在**、
+                # Bot 也還在那 40 個伺服器裡。所以這裡改成再向 API 問一次，
+                # 問到了就照常送 —— 不然訊息會因為快取的狀態而默默少送一份。
+                try:
+                    channel = await bot.fetch_channel(channel_id)
+                except discord.NotFound:
+                    return (guild_id, channel_id, 'channel_deleted')
+                except discord.Forbidden:
+                    return (guild_id, channel_id, 'no_access')
+                except Exception as e:                      # noqa: BLE001
+                    return (guild_id, channel_id, e)
             try:
                 if not channel.permissions_for(channel.guild.me).send_messages:
                     return (guild_id, channel_id, 'no_permission')
@@ -117,9 +131,13 @@ async def broadcast_to_channels(bot, targets, make_payload, concurrency=20,
         reasons[r] = reasons.get(r, 0) + 1
     # 丟到執行緒寫檔：這裡還在 event loop 上，而 loop 的敏感度是這個專案
     # 付過學費的（heartbeat blocked 那一串）
+    # 連哪一台失敗都記下來。只記原因統計的話，下次再出現「36/37」還是得
+    # 重新把 40 個頻道全部掃一遍才知道是誰（2026-10-06 就掃了一次）。
     await asyncio.to_thread(_write_log, {
         'at': at, 'kind': kind, 'label': label,
         'targets': len(targets), 'success': success, 'failed': len(failures),
-        'elapsed': round(elapsed, 2), 'reasons': reasons})
+        'elapsed': round(elapsed, 2), 'reasons': reasons,
+        'failed_targets': [{'guild': g, 'channel': c, 'reason': _reason(e)}
+                           for g, c, e in failures[:20]]})
 
     return success, failures

@@ -7,6 +7,13 @@ from functions.database_manager import GuildFunctionDB
 
 # 初始化資料庫
 db = GuildFunctionDB()
+
+# /serverannounce 的收取範圍文案。與 Loop_ServerAnnounce 的分類判斷對應：
+# maint = 分類 67（例行維護開關機）加上標題命中關鍵字的（例如更新下載通知）
+KIND_TEXT = {
+    'maint': '只收維護／開關機（例行維護、開機、關機、手動更新下載）',
+    'all': '全部公告（含商城、活動、異常說明等）',
+}
     
 class Slash_GuildFunctions(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -147,13 +154,18 @@ class Slash_GuildFunctions(commands.Cog):
         UseSlashCommand('ServerCheckSetting', interaction)
 
     #-----------------serverannounce-----------------
-    @app_commands.command(name="serverannounce", description="管理官網公告通知設定（維護/開關機/手動更新）")
+    @app_commands.command(name="serverannounce", description="管理官網公告通知設定")
     @app_commands.describe(
         channel="通知頻道 (未填則為當前頻道)",
+        kinds="要收哪些公告 (未填則維持原設定，新設定預設只收維護類)",
         delete="輸入'確認'來刪除此伺服器的設定 (預設不用輸入)",
         info="輸入'確認'來查看此伺服器的設定 (預設不用輸入)"
     )
-    async def serverannounce(self, interaction: discord.Interaction, channel: discord.TextChannel = None, delete: str = None, info: str = None):
+    @app_commands.choices(kinds=[
+        app_commands.Choice(name="只收維護／開關機（預設）", value="maint"),
+        app_commands.Choice(name="全部公告（含商城、活動）", value="all"),
+    ])
+    async def serverannounce(self, interaction: discord.Interaction, channel: discord.TextChannel = None, kinds: app_commands.Choice[str] = None, delete: str = None, info: str = None):
         # 私訊中無 guild，直接擋下（DM 的 user 沒有 guild_permissions）
         if interaction.guild is None:
             await interaction.response.send_message("此指令僅能在伺服器中使用。", ephemeral=True)
@@ -178,6 +190,8 @@ class Slash_GuildFunctions(commands.Cog):
                     color=0x00ff00
                 )
                 embed.add_field(name="📢 通知頻道", value=channel_info, inline=False)
+                embed.add_field(name="📂 收取範圍", value=KIND_TEXT.get(
+                    config.get('kinds', 'maint'), '只收維護／開關機'), inline=False)
                 embed.add_field(name="⏰ 最後更新", value=config.get('updated_at', '未知'), inline=False)
                 embed.set_footer(text="使用 /serverannounce delete:確認 來刪除設定")
                 await interaction.response.send_message(embed=embed)
@@ -211,7 +225,18 @@ class Slash_GuildFunctions(commands.Cog):
             return
 
         # 設定頻道（型別參數由 Discord 端保證有效）
-        target_channel = channel or interaction.channel
+        existing = db.get_announce_config(guild_id)
+        # 只帶 kinds 來改收取範圍時，沿用原本的頻道 —— 否則會被默默搬到
+        # 「下指令的那個頻道」，而使用者完全沒要求改頻道
+        if channel is None and kinds is not None and existing:
+            target_channel = interaction.guild.get_channel(existing['Announce_Channel'])
+        else:
+            target_channel = channel or interaction.channel
+        if target_channel is None:
+            await interaction.response.send_message(
+                "❌ 原本設定的頻道已經不存在了，請用 `channel` 參數指定一個新的。",
+                ephemeral=True)
+            return
         channel_id = target_channel.id
 
         if not target_channel.permissions_for(interaction.guild.me).send_messages:
@@ -219,7 +244,9 @@ class Slash_GuildFunctions(commands.Cog):
                 f"❌ 機器人沒有權限在目標頻道 (<#{channel_id}>) 發送訊息，設定未儲存。", ephemeral=True)
             return
 
-        db.set_announce_channel(guild_id, channel_id)
+        kind_value = kinds.value if kinds else None
+        db.set_announce_channel(guild_id, channel_id, kind_value)
+        effective = kind_value or (existing or {}).get('kinds') or 'maint'
 
         try:
             await target_channel.send("📢 官網公告通知已設定（測試訊息）")
@@ -229,9 +256,11 @@ class Slash_GuildFunctions(commands.Cog):
                 color=0x00ff00
             )
             embed.add_field(name="📢 通知頻道", value=f"<#{channel_id}>", inline=False)
+            embed.add_field(name="📂 收取範圍", value=KIND_TEXT[effective], inline=False)
             embed.add_field(
                 name="📝 說明",
-                value="官網出現「維護公告 / 開機公告 / 關機公告 / 手動更新下載開放通知」時，會在指定頻道發送公告標題與連結（每30分鐘檢查一次）。",
+                value=("官網有新公告時會在指定頻道發送標題與連結（每 30 分鐘檢查一次）。\n"
+                       "用 `/serverannounce kinds:` 可以隨時改收取範圍，不會動到頻道設定。"),
                 inline=False
             )
             embed.set_footer(text="使用 /serverannounce info:確認 查看設定 | /serverannounce delete:確認 刪除設定")

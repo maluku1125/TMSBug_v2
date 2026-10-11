@@ -24,9 +24,16 @@ class GuildFunctionDB:
                 CREATE TABLE IF NOT EXISTS guild_announce (
                     guild_id TEXT PRIMARY KEY,
                     channel_id INTEGER,
+                    kinds TEXT DEFAULT 'maint',
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            # 既有資料庫補欄位。預設 'maint' —— 現有的訂閱者當初是為了
+            # 「維護/開關機」才設定的，升級不該擅自把商城活動也塞給他們。
+            cols = [r[1] for r in cursor.execute('PRAGMA table_info(guild_announce)')]
+            if 'kinds' not in cols:
+                cursor.execute(
+                    "ALTER TABLE guild_announce ADD COLUMN kinds TEXT DEFAULT 'maint'")
             conn.commit()
     
     def get_guild_config(self, guild_id: str) -> Optional[Dict]:
@@ -88,24 +95,46 @@ class GuildFunctionDB:
             return cursor.rowcount > 0
 
     # ---------- 官網公告通知 (guild_announce) ----------
-    def set_announce_channel(self, guild_id: str, channel_id: int):
-        """設定或更新 Guild 的公告通知頻道"""
+    def set_announce_channel(self, guild_id: str, channel_id: int,
+                            kinds: Optional[str] = None):
+        """設定或更新 Guild 的公告通知頻道。
+
+        kinds=None 代表「不動原本的選擇」——只改頻道時不該把種類重設掉。
+        所以這裡用 UPSERT 而不是 INSERT OR REPLACE（後者會把沒帶到的欄位
+        洗成預設值）。
+        """
+        now = datetime.datetime.now()
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
-                INSERT OR REPLACE INTO guild_announce (guild_id, channel_id, updated_at)
-                VALUES (?, ?, ?)
-            ''', (guild_id, channel_id, datetime.datetime.now()))
+            if kinds is None:
+                cursor.execute('''
+                    INSERT INTO guild_announce (guild_id, channel_id, updated_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(guild_id) DO UPDATE SET
+                        channel_id = excluded.channel_id,
+                        updated_at = excluded.updated_at
+                ''', (guild_id, channel_id, now))
+            else:
+                cursor.execute('''
+                    INSERT INTO guild_announce (guild_id, channel_id, kinds, updated_at)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(guild_id) DO UPDATE SET
+                        channel_id = excluded.channel_id,
+                        kinds = excluded.kinds,
+                        updated_at = excluded.updated_at
+                ''', (guild_id, channel_id, kinds, now))
             conn.commit()
 
     def get_announce_config(self, guild_id: str) -> Optional[Dict]:
         """取得單一 Guild 的公告通知設定"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT channel_id, updated_at FROM guild_announce WHERE guild_id = ?', (guild_id,))
+            cursor.execute('SELECT channel_id, updated_at, kinds FROM guild_announce '
+                           'WHERE guild_id = ?', (guild_id,))
             row = cursor.fetchone()
             if row:
-                return {'Announce_Channel': row[0], 'updated_at': row[1]}
+                return {'Announce_Channel': row[0], 'updated_at': row[1],
+                        'kinds': row[2] or 'maint'}
             return None
 
     def get_all_announce_configs(self) -> Dict[str, int]:
@@ -113,6 +142,20 @@ class GuildFunctionDB:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT guild_id, channel_id FROM guild_announce')
+            return {row[0]: row[1] for row in cursor.fetchall()}
+
+    def get_announce_targets(self, kind: str) -> Dict[str, int]:
+        """要收 `kind` 這類公告的頻道 {guild_id: channel_id}。
+
+        kind='maint' 全部訂閱者都收；其他種類只給選了 'all' 的伺服器。
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            if kind == 'maint':
+                cursor.execute('SELECT guild_id, channel_id FROM guild_announce')
+            else:
+                cursor.execute("SELECT guild_id, channel_id FROM guild_announce "
+                               "WHERE kinds = 'all'")
             return {row[0]: row[1] for row in cursor.fetchall()}
 
     def remove_announce_channel(self, guild_id: str) -> bool:
