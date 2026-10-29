@@ -2,6 +2,7 @@ import discord
 import datetime
 from functions.API_functions.API_Request_union import get_character_ocid, request_user_union
 from Data.SmallData import unionicon, worldemoji
+from functions import ansi
 
 def get_adjusted_datetime():
     """
@@ -344,33 +345,38 @@ def create_union_tracking_embed(character_name: str) -> dict:
     # Add current union info
     embed.add_field(
         name="🏆 當前戰地/神器",
-        value=f"```autohotkey\n{current_union_grade}\n戰地等級：{current_union_level:,}\n神器等級：{current_artifact_level}```",
+        value=ansi.block([current_union_grade,
+                          f"戰地等級：{current_union_level:,}",
+                          f"神器等級：{current_artifact_level}"]),
         inline=False
     )
     
     # Add individual period growth fields (inline)
     embed.add_field(
         name="📈 7日成長",
-        value=f"```autohotkey\n戰地：{period_data[7]['union_level']}\n神器：{period_data[7]['artifact_level']}```",
+        value=ansi.block([f"戰地：{period_data[7]['union_level']}",
+                          f"神器：{period_data[7]['artifact_level']}"]),
         inline=True
     )
     
     embed.add_field(
         name="📈 30日成長", 
-        value=f"```autohotkey\n戰地：{period_data[30]['union_level']}\n神器：{period_data[30]['artifact_level']}```",
+        value=ansi.block([f"戰地：{period_data[30]['union_level']}",
+                          f"神器：{period_data[30]['artifact_level']}"]),
         inline=True
     )
     
     embed.add_field(
         name="📈 90日成長",
-        value=f"```autohotkey\n戰地：{period_data[90]['union_level']}\n神器：{period_data[90]['artifact_level']}```",
+        value=ansi.block([f"戰地：{period_data[90]['union_level']}",
+                          f"神器：{period_data[90]['artifact_level']}"]),
         inline=True
     )
     
     # Add weekly breakdown
     embed.add_field(
         name="📅 近七周戰地聯盟等級",
-        value=f"```autohotkey\n{chr(10).join(weekly_breakdown)}```",
+        value=ansi.block(weekly_breakdown),
         inline=False
     )
     

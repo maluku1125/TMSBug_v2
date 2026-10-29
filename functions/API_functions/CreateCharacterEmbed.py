@@ -11,6 +11,7 @@ import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import Calculatefragment, common_cores_open
 from Data.BotEmojiList import EmojiList
+from functions.ansi import block as kv_block
 
 
 def apply_look_params(image_url: str, action: str = None, emotion: str = None, wmotion: str = None) -> str:
@@ -535,12 +536,12 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
 
     embed.add_field(
         name=f"基本資訊{_access_tag}",
-        value=f"```ml\n{'\n'.join(character_info)}```",
+        value=kv_block(character_info),
         inline=False
     )
     embed.add_field(
         name="機體資訊",
-        value=f"```ml\n{'\n'.join(stat_info)}```",
+        value=kv_block(stat_info),
         inline=False
     )
     
@@ -557,14 +558,14 @@ def create_character_basic_embed(character_name: str, return_data: bool = False,
         
         embed.add_field(
             name=f"{EmojiList.get('hexamatrix', '')}六轉核心 ({percentage:.2f}%)",
-            value=f"```ml\n{'\n'.join(hexa_info)}\n{'\n'.join(hexa_stat_info)}```",
+            value=kv_block(hexa_info, hexa_stat_info),
             inline=False
         )
        
     if symbol_info:
         embed.add_field(
             name=f"{EmojiList.get('Aut0', '')}符文{EmojiList.get('Arc0', '')}",
-            value=f"```ml\n{'\n'.join(symbol_info)}```",
+            value=kv_block(symbol_info),
             inline=False
         )
 

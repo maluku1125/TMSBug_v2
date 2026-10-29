@@ -1,4 +1,5 @@
 import discord
+from functions import ansi
 
 from tmsapi.request import (
     get_character_ocid, request_character_basic, request_character_hexamatrix, request_character_stat
@@ -84,12 +85,12 @@ def create_champion_embed(character_name):
         embed.add_field(
             name=f"#{slot}　{name}　[{grade}]",
             value=(
-                "```autohotkey\n"
-                f"職業　：{champ_class}\n"
-                f"等級　：{level_str}\n"
-                f"六轉　：{hexa_str}\n"
-                f"戰鬥力：{cp_str}\n"
-                "```"
+                ansi.block([
+                    f"職業　：{champ_class}",
+                    f"等級　：{level_str}",
+                    f"六轉　：{hexa_str}",
+                    f"戰鬥力：{cp_str}",
+                ])
             ),
             inline=False,
         )

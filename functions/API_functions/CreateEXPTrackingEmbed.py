@@ -3,6 +3,7 @@ import datetime
 from tmsapi.request import get_character_ocid, request_character_basic
 from functions.API_functions.CreateCharacterEmbed import apply_look_params
 from Data.BotEmojiList import EmojiList
+from functions import ansi
 
 def get_adjusted_datetime():
     """
@@ -270,33 +271,33 @@ def create_exp_tracking_embed(character_name: str, action_params: dict = None) -
     # Add current level info
     embed.add_field(
         name="✨ 當前等級",
-        value=f"```autohotkey\nLv.{current_level} ({current_exp_rate:.1f}%)```",
+        value=ansi.plain_block(f"Lv.{current_level} ({current_exp_rate:.1f}%)"),
         inline=False
     )
     
     # Add individual period growth fields (inline)
     embed.add_field(
         name=f"{EmojiList.get('exp_coupon', '')} 7日成長",
-        value=f"```fix\n{period_data[7]  }```",
+        value=ansi.plain_block(f"{period_data[7]}"),
         inline=True
     )
     
     embed.add_field(
         name=f"{EmojiList.get('exp_coupon', '')} 30日成長",
-        value=f"```fix\n{period_data[30]  }```",
+        value=ansi.plain_block(f"{period_data[30]}"),
         inline=True
     )
     
     embed.add_field(
         name=f"{EmojiList.get('exp_coupon', '')} 90日成長 ",
-        value=f"```fix\n{period_data[90]}```",
+        value=ansi.plain_block(f"{period_data[90]}"),
         inline=True
     )
     
     # Add daily breakdown (Second field)
     embed.add_field(
         name=f"{EmojiList.get('upper_exp_coupon', '')} 近七日 {EmojiList.get('upper_exp_coupon', '')}",
-        value=f"```ml\n{chr(10).join(daily_breakdown)}```",
+        value=ansi.block(daily_breakdown),
         inline=False
     )
     
