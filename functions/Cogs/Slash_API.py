@@ -31,12 +31,15 @@ from functions.API_functions.CreateAPIAnalyseEmbed import create_api_analyse_emb
 from functions.API_functions.CreateCharacterGIF import build_character_gif
 from functions.API_functions.CreateChampionEmbed import create_champion_embed
 from functions.API_functions.CreateAccountTrackingEmbed import (
-    collect_account, extract_cp, needs_old_rate, look_entries,
+    collect_account, extract_cp, needs_old_rate, needs_hexa, hexa_pct,
+    look_entries,
     build_embed as build_account_embed,
     page_count as account_page_count,
     page_rows as account_page_rows)
 from functions.CombineCharacter import fetch_look_images, compose_roster
-from tmsapi.request import request_character_stat_async, request_character_basic_async
+from tmsapi.request import (request_character_stat_async,
+                           request_character_basic_async,
+                           request_character_hexamatrix_async)
 
 from functions.SlashCommandManager import UseSlashCommand
 from functions.database_manager import UserDataDB
@@ -469,15 +472,14 @@ def _account_fail_embed(name):
     """
     return discord.Embed(
         title="查無這個角色",
-        description=(
-            f"資料庫裡沒有「{name}」。\n\n"
-            "帳號查詢全部讀本機資料，不會即時去問官方，所以還沒被收錄的角色"
-            "（新角色、或長期沒上線被清掉的）查不到。確認一下名字有沒有打錯。"),
+        description=f"資料庫裡沒有「{name}」。",
         color=0xff0000)
 
 
 async def _fetch_page_data(rows):
-    """現打這一頁要的兩種資料，回傳 ({ocid: 戰力}, {ocid: 七天前的經驗%})。
+    """現打這一頁要的三種資料。
+
+    回傳 ({ocid: 戰力}, {ocid: 七天前的經驗%}, {ocid: 六轉練度%})。
 
     **戰力**為什麼不讀本機快取：`Equip_Stat.db` 只收 LV260 以上
     （`EQUIP_STAT_MIN_LEVEL = 260`），實測帳號角色有一半在那之下、完全沒有列，
@@ -487,13 +489,20 @@ async def _fetch_page_data(rows):
     lvl_hist 就能算得精確，不必多打。帶 date 的 basic 查詢不會寫進資料庫
     （request.py 裡的條件是 `not date and save_to_db`），不會污染管線的資料。
 
-    兩種請求一起送。全域限流器預設 350 req/s（官方上限 500），一頁十幾個請求
-    不會排擠到管線；ocid 已經從本機資料庫拿到了，不必再打一次 id 端點。
+    **六轉練度**只有 LV260 以上的角色要。本機 `Equip_Stat.db` 也有一份
+    `hexa_skill`，但它跟戰力同一個毛病：只收 260 以上、而且是輪替刷新寫的，
+    會落後好幾天。練度是玩家剛投完碎片就會回來看的數字，現打才有意義。
+
+    三種請求一起送，併發開到 24 —— 一頁 12 隻幾乎全是 260 以上的話，
+    戰力 12 ＋ 六轉 12 要 24 條才會在同一輪打完（開 12 就得跑兩輪、延遲加倍）。
+    全域限流器預設 350 req/s（官方上限 500），這點量不會排擠到管線；
+    ocid 已經從本機資料庫拿到了，不必再打一次 id 端點。
     """
-    sem = asyncio.Semaphore(12)
+    sem = asyncio.Semaphore(24)
     old_jobs = needs_old_rate(rows)
+    hexa_jobs = needs_hexa(rows)
     async with aiohttp.ClientSession() as session:
-        cp_res, old_res = await asyncio.gather(
+        cp_res, old_res, hexa_res = await asyncio.gather(
             asyncio.gather(
                 *[request_character_stat_async(session, r['ocid'], sem) for r in rows],
                 return_exceptions=True),
@@ -501,6 +510,10 @@ async def _fetch_page_data(rows):
                 *[request_character_basic_async(session, ocid, sem, date=d,
                                                 save_to_db=False)
                   for ocid, d in old_jobs],
+                return_exceptions=True),
+            asyncio.gather(
+                *[request_character_hexamatrix_async(session, ocid, sem)
+                  for ocid in hexa_jobs],
                 return_exceptions=True))
 
     cp = {}
@@ -515,7 +528,13 @@ async def _fetch_page_data(rows):
             old[ocid] = float(res.get('character_exp_rate'))
         except (TypeError, ValueError):
             pass
-    return cp, old
+
+    # 端點本身已經把例外吞掉回 None 了，isinstance 這道是保險 ——
+    # 失敗要留成 None（顯示 —），不能漏 key，不然會跟「還沒抓」混在一起
+    hexa = {}
+    for ocid, res in zip(hexa_jobs, hexa_res):
+        hexa[ocid] = None if isinstance(res, BaseException) else hexa_pct(res)
+    return cp, old, hexa
 
 
 async def _compose_page_look(rows):
@@ -561,6 +580,7 @@ class AccountTrackingView(discord.ui.View):
         self.npage = account_page_count(data['rows'])
         self.cp = {}
         self.old_rates = {}
+        self.hexa = {}          # {ocid: 六轉練度%}，只有 260 以上的角色會有
         self.img = {}           # {頁碼: 合成好的 PNG bytes}
         self.show_look = True   # 預設顯示；按鈕留著是為了能一鍵比對有圖/無圖的寬度
 
@@ -594,9 +614,10 @@ class AccountTrackingView(discord.ui.View):
         rows = account_page_rows(self.data['rows'], self.page)
         todo = [r for r in rows if r['ocid'] not in self.cp]
         if todo:
-            cp, old = await _fetch_page_data(todo)
+            cp, old, hexa = await _fetch_page_data(todo)
             self.cp.update(cp)
             self.old_rates.update(old)
+            self.hexa.update(hexa)
 
         # 沒按「顯示外觀」就完全不合成，也不下載 —— 預設狀態一次外部請求都不發
         png = None
@@ -609,7 +630,7 @@ class AccountTrackingView(discord.ui.View):
         # 檔名帶頁碼：同名附件在翻頁時有機會被客戶端拿舊的快取圖頂替
         fname = 'roster_p%d.png' % (self.page + 1) if png else None
         embed = build_account_embed(self.character_name, self.data, self.page,
-                                    self.cp, self.old_rates, fname)
+                                    self.cp, self.old_rates, self.hexa, fname)
         file = discord.File(io.BytesIO(png), filename=fname) if png else None
         return embed, file
 

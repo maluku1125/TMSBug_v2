@@ -30,102 +30,105 @@ version = 'v3.12.8'
 # 在程式開始運行時記錄當前的時間
 start_time = time.time()
 
+# 指令分類。鍵 = 指令名，值 = 分類；字典的順序就是清單裡的順序。
+#
+# ⚠️ 清單**本身**是從 client.tree 即時產生的，這張表只決定「分到哪一組、
+# 排第幾個」。沒列到的指令會掉進「其他」，所以之後新增指令就算忘了更新
+# 這裡，它一樣會出現在 /help 上。
+#
+# 會改成這樣是因為以前整份清單是手寫的：accounttracking 上線之後，
+# /help 裡一直沒有它（2026-10-30 對帳才發現）。手寫清單遲早會漏。
+CATEGORY = {
+    # 基本功能
+    'help': '基本功能',
+    'ping': '基本功能',
+    '打王備忘': '基本功能',
+    '練等備忘': '基本功能',
+    # BOSS查詢
+    'bossarc困王': 'BOSS查詢',
+    'bossaut困王': 'BOSS查詢',
+    'easyboss里程周王': 'BOSS查詢',
+    # 活動與查詢
+    'events當前活動': '活動與查詢',
+    'prize當期抽獎機率': '活動與查詢',
+    # 計算與模擬
+    'solerda碎片進度': '計算與模擬',
+    'formulas各式公式': '計算與模擬',
+    'scrolls卷軸模擬器': '計算與模擬',
+    'cubes洗方塊': '計算與模擬',
+    'starforce衝星': '計算與模擬',
+    'getprize抽': '計算與模擬',
+    # 娛樂
+    'battle對戰': '娛樂',
+    # API功能
+    'character角色查詢': 'API功能',
+    'guild公會查詢': 'API功能',
+    'accounttracking帳號追蹤': 'API功能',
+    'exptracking經驗追蹤': 'API功能',
+    'uniontracking戰地追蹤': 'API功能',
+    'champion聯盟冠軍': 'API功能',
+    'union戰地查詢': 'API功能',
+    'rank排行': 'API功能',
+    'apianalyse楓谷分析': 'API功能',
+    # 設定
+    'servercheck': '設定',
+    'serverannounce': '設定',
+    'setting設定': '設定',
+}
+
+CATEGORY_ORDER = ('基本功能', 'BOSS查詢', '活動與查詢', '計算與模擬',
+                  '娛樂', 'API功能', '設定', '其他')
+
+# 指令自己的 description 是給 Discord 的輸入提示用的，有幾個塞進清單會
+# 換行把版面撐爛，或是少了只有這裡才講得清楚的前提（例如對戰要先綁本尊）。
+# 這裡覆寫成短版；沒列到的就直接用指令自己的 description。
+SHORT = {
+    'battle對戰': '與其他玩家的本尊角色決鬥（雙方需先用 /setting 綁 1 本）',
+    'servercheck': '伺服器開機通知設定（僅群主）',
+    'serverannounce': '官網公告通知設定（僅群主）',
+    'apianalyse楓谷分析': '職業、世界、等級、寶玉、裝備、CD帽、冠軍分析',
+    'accounttracking帳號追蹤': '列出同帳號所有角色的等級、經驗、戰力與成長',
+}
+
+_ORDER = {name: i for i, name in enumerate(CATEGORY)}
+
+
+def build_command_embed(client) -> discord.Embed:
+    """指令清單。內容來自 client.tree，所以不會跟實際註冊的指令脫節。"""
+    groups = {}
+    for cmd in client.tree.get_commands():
+        if not isinstance(cmd, app_commands.Command):
+            continue                    # Group 沒有自己的說明，略過
+        cat = CATEGORY.get(cmd.name, '其他')
+        desc = SHORT.get(cmd.name) or cmd.description or ''
+        groups.setdefault(cat, []).append(
+            (_ORDER.get(cmd.name, 9999), f'/{cmd.name} - {desc}'))
+
+    embed = discord.Embed(title='📋 指令說明', color=0x32EBA7)
+    total = 0
+    for cat in CATEGORY_ORDER:
+        rows = groups.get(cat)
+        if not rows:
+            continue
+        rows.sort()
+        total += len(rows)
+        embed.add_field(
+            name=cat,
+            value='```\n' + '\n'.join(r[1] for r in rows) + '\n```',
+            inline=False)
+    embed.set_footer(text=f'共 {total} 個指令')
+    return embed
+
+
 class HelpCommandView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, client):
         super().__init__(timeout=180)
+        self.client = client
 
     @discord.ui.button(label="指令說明", style=discord.ButtonStyle.primary, emoji="📋")
     async def command_info_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = discord.Embed(
-            title="📋 指令說明",
-            color=0x32EBA7,
-        )
-        embed.add_field(
-            name="基本功能",
-            value=(
-                "```\n"
-                "/help - 幫助\n"
-                "/ping - BOT延遲\n"
-                "/打王備忘 - 顯示打王備忘\n"
-                "/練等備忘 - 顯示練等備忘\n"               
-                "```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="BOSS查詢",
-            value=(
-                "```\n"
-                "/bossarc困王 - 查詢ARC區的BOSS資料\n"
-                "/bossaut困王 - 查詢AUT區的BOSS資料\n"
-                "/easyboss里程周王 - 查詢史戴以前的BOSS資料\n"
-                "```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="活動與查詢",
-            value=(
-                "```\n"
-                "/events當前活動 - 顯示當前進行中的活動\n"
-                "/prize當期抽獎機率 - 查詢當期抽獎機率\n"
-                "```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="計算與模擬",
-            value=(
-                "```\n"
-                "/solerda碎片進度 - 查詢角色六轉進度與所需材料\n"
-                "/formulas各式公式 - 各種公式的簡易計算機\n"
-                "/scrolls卷軸模擬器 - 卷軸模擬器\n"
-                "/cubes洗方塊 - 洗方塊模擬器\n"
-                "/starforce衝星 - 衝星模擬器\n"
-                "/getprize抽 - 黃金蘋果抽輪迴碑石模擬\n"
-                "```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="娛樂",
-            value=(
-                "```\n"
-                "/battle對戰 - 與其他玩家的本尊角色決鬥(雙方需先用 /setting 綁定 1本)\n"
-                "```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="API功能",
-            value=(
-                "```\n"
-                "/character角色查詢 - API 角色查詢\n"
-                "/guild公會查詢 - API 公會查詢\n"
-                "/exptracking經驗追蹤 - API 角色經驗追蹤\n"
-                "/uniontracking戰地追蹤 - API 角色戰地追蹤\n"
-                "/champion聯盟冠軍 - API 聯盟冠軍查詢\n"
-                "/rank排行 - API 角色排行榜\n"
-                "/apianalyse楓谷分析 - API 資料分析\n"
-                "/union戰地查詢 - API 戰地查詢\n"
-                "```"
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="設定",
-            value=(
-                "```\n"
-                "/servercheck - 伺服器開機通知設定(僅群主)\n"
-                "/serverannounce - 官網公告通知設定(僅群主)\n"
-                "/setting設定 - 綁定角色、角色動作、對戰感言\n"
-                "```"
-            ),
-            inline=False,
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
+        await interaction.response.send_message(
+            embed=build_command_embed(self.client), ephemeral=True)
 
 
 class Slash_BasicCommands(commands.Cog):
@@ -236,7 +239,7 @@ class Slash_BasicCommands(commands.Cog):
         # 虛線足標：一整條連續虛線撐住 embed 寬度，避免跑版（數字可調整寬度）
         embed.set_footer(text='-' * 72)
         UseSlashCommand('help', interaction)
-        view = HelpCommandView()
+        view = HelpCommandView(self.client)
         await interaction.edit_original_response(embed=embed, view=view)
     #-----------------MEMO-----------------
     @app_commands.command(name="練等備忘", description="練等前的檢查清單（設定、裝備、消耗品）")

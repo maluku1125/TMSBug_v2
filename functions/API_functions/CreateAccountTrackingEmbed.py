@@ -19,10 +19,11 @@
     實測帳號角色有一半在那之下，所以每頁 12 隻一律現打。
   * **升等者**的七天前經驗% —— 見 `row_growth()` 的說明。實測只有 5.7% 的角色
     七天內有升等，一頁平均多打不到一次。
+  * 六轉練度 —— 只有 LV260 以上要，見 `hexa_pct()`。
 
 ## 版面
 
-一個角色一個 embed field（`inline=True`），由 Discord 自己排版 ——
+一個角色四到五行、一個 embed field（`inline=True`），由 Discord 自己排版 ——
 手機會自動改成一欄，不會像等寬表格那樣橫捲。碼塊裡只放
 「欄位名：值」，欄位名一律兩個中文字，所以中文字數固定、不會歪
 （Discord 碼塊的中文字不是剛好兩個半形字寬，補空白對齊那套在這裡行不通）。
@@ -36,10 +37,16 @@ from tmsapi.config import CHARACTER_BASIC_DB
 from tmsapi.store import roster
 from functions import ansi
 from functions.API_functions.CreateEXPTrackingEmbed import calculate_exp_growth
+from functions.Cogs.Slash_CreateSolErdaFragmentEmbed import (
+    CalculateHexaMaterials, build_core_pairs, common_cores_open,
+    extract_hexa_levels)
 
 PER_PAGE = 12
 MAX_PAGES = 5
 MAX_CHARS = PER_PAGE * MAX_PAGES
+
+# 六轉（HEXA）要 LV260 才開得了，260 以下不印那一行、也不打那一次 API。
+HEXA_MIN_LEVEL = 260
 
 _conn_cache = None
 
@@ -271,19 +278,60 @@ def needs_old_rate(rows):
             if r['d_lv'] and r['old_date']]
 
 
+def needs_hexa(rows):
+    """這一頁有哪些角色要查六轉配點。回傳 [ocid, ...]。"""
+    return [r['ocid'] for r in rows if r['level'] >= HEXA_MIN_LEVEL]
+
+
+def hexa_pct(hexa_data):
+    """六轉練度%：已投入碎片 ÷ 全滿碎片。端點失敗回 None。
+
+    **用碎片當權重，不是「等級總和 ÷ (核心數×30)」。** 碎片是玩家真正付出的
+    成本，而每一級的花費差了兩個數量級（技能核心升到 30 級那一下要 400 片，
+    1→2 只要 10 片），拿等級平均會把一顆 29→30 的投入算得跟 1→2 一樣輕。
+
+    這也正是 `/character角色查詢` 的「六轉核心 (xx%)」用的算法 ——
+    兩邊共用 `Calculatefragment` 的那張成本表，同一隻角色不會給出兩個數字
+    （已比對 400 隻，兩條路徑完全相同）。
+
+    未開放的共用核心不列入分母（開放日在 `tmsapi.config`），所以官方多開
+    一顆核心的時候，數字不會在開放前就被分母稀釋。
+
+    LV260 但還沒做六轉任務的角色，端點會回空清單（實測 400 隻裡有 51 隻，
+    12.8%）—— 那是真的 0%，不是查不到，所以照算不當失敗。
+    """
+    if hexa_data is None:
+        return None
+    eq = hexa_data.get('character_hexa_core_equipment') or []
+    c2, c3 = common_cores_open()
+    pairs, *_ = build_core_pairs(extract_hexa_levels(eq), c2, c3)
+    *_, frag, max_frag = CalculateHexaMaterials(pairs)
+    return frag / max_frag * 100 if max_frag else None
+
+
+def hexa_cell(r, hexa_map):
+    """六轉那一格。還沒抓到回 `...`（跟戰力一致），端點失敗回 `—`。"""
+    if not hexa_map or r['ocid'] not in hexa_map:
+        return '...'
+    pct = hexa_map[r['ocid']]
+    return '—' if pct is None else '%.2f%%' % pct
+
+
 def look_entries(rows):
     """這一頁要合成的造型，順序跟 field 一致（圖上的名字就是靠這個對位）。"""
     return [(r['name'], r.get('image')) for r in rows]
 
 
 def build_embed(character_name, data, page, cp_map=None, old_rates=None,
-                image_name=None):
+                hexa_map=None, image_name=None):
     """組出第 page 頁（0-based）。
 
     一個角色一個 field，`inline=True` 交給 Discord 排版（桌機一列三個、
     手機自動收成一欄）。碼塊裡的欄位名一律兩個中文字，中文字數固定才不會歪。
 
-    `image_name` 是同時上傳的合成造型圖檔名；Discord 會把它排在所有 field
+    `hexa_map` 是 {ocid: 六轉練度%}，只有 LV260 以上的角色會在裡面。
+
+`image_name` 是同時上傳的合成造型圖檔名；Discord 會把它排在所有 field
     底下，所以圖上每格都寫了角色名，不然對不出是哪一隻。
     """
     rows = data['rows']
@@ -299,23 +347,28 @@ def build_embed(character_name, data, page, cp_map=None, old_rates=None,
 
     for r in page_rows(rows, page):
         cp = cp_map.get(r['ocid']) if cp_map else None
-        # 四行、不加欄位名：一行一件事，行首的圖示就是標題，省下來的寬度很有感
+        # 一行一件事、不加欄位名：行首的圖示就是標題，省下來的寬度很有感
         # （欄位只有 embed 的三分之一寬）。因為沒有「：」可切，用不上 ansi.block，
         # 顏色在這裡自己上 —— 上藍的是「會變的那個數字」：經驗% 與成長量。
-        # 等級、戰力、「7日」這些不會一直跳的維持預設色，職業用粗體當標頭。
+        # 等級、戰力、六轉練度這些不會一直跳的維持預設色，職業用粗體當標頭。
+        lines = [
+            ansi.bold(r['cls']),
+            '🎖️%d(%s)' % (r['level'],
+                           ansi.paint('%.1f%%' % r['exp_rate'],
+                                      ansi.BRIGHT_BLUE)),
+            '⬆️7日' + ansi.paint(row_growth(r, old_rates), ansi.BRIGHT_BLUE),
+            '⚔️' + (ansi.paint(fmt_cp(cp), cp_color(cp))
+                    if cp_map and r['ocid'] in cp_map else '...'),
+        ]
+        # 六轉練度排在戰力後面：這兩個都是現打回來的，同時從 `...` 變成數字，
+        # 擺在一起才不會看起來像有一行卡住沒更新。260 以下沒有六轉，整行不印。
+        if r['level'] >= HEXA_MIN_LEVEL:
+            lines.append('6️⃣' + hexa_cell(r, hexa_map))
         embed.add_field(
             # 燈號取代流水號：編號只是用來跟造型圖對位，但圖上本來就寫了名字，
             # 那個位置拿來放「近 7 日有沒有上線」更有用。
             name='%s %s' % ('🟢' if r['online'] else '🔴', r['name']),
-            value=ansi.plain_block('\n'.join([
-                ansi.bold(r['cls']),
-                '🎖️%d(%s)' % (r['level'],
-                               ansi.paint('%.1f%%' % r['exp_rate'],
-                                          ansi.BRIGHT_BLUE)),
-                '⬆️7日' + ansi.paint(row_growth(r, old_rates), ansi.BRIGHT_BLUE),
-                '⚔️' + (ansi.paint(fmt_cp(cp), cp_color(cp))
-                        if cp_map and r['ocid'] in cp_map else '...'),
-            ])),
+            value=ansi.plain_block('\n'.join(lines)),
             inline=True)
 
     if image_name:
